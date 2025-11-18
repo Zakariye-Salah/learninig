@@ -1,0 +1,134 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Test — LearningHub</title>
+  <style>
+    body{font-family:system-ui,Arial;background:#f6f7fb;margin:0;padding:12px}
+    .card{background:#fff;padding:12px;border-radius:10px;max-width:900px;margin:12px auto;box-shadow:0 8px 24px rgba(16,24,40,0.06)}
+    .options button{display:block;width:100%;margin:6px 0;padding:10px;border-radius:8px;border:1px solid #eee}
+    .timer{font-size:20px;font-weight:700;color:#c00}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h3 id="title">Test</h3>
+    <div id="questionArea">Loading...</div>
+    <div style="display:flex;gap:8px;align-items:center;margin-top:12px">
+      <div class="timer" id="timer">20s</div>
+      <button id="startBtn">Start Test</button>
+      <button id="submitBtn" style="display:none">Submit</button>
+    </div>
+    <div id="status" style="margin-top:8px;color:#666"></div>
+  </div>
+
+<script>
+const API_BASE='http://localhost:4000';
+async function fetchJson(url, opts={}){ try{ const res = await fetch((url.startsWith('http')?url:API_BASE+url), opts); const text = await res.text(); let data=null; try{data=text?JSON.parse(text):null}catch(e){data=null} if(!res.ok) return {ok:false,error:(data&&data.error)?data.error:res.statusText,data}; return {ok:true,data}; }catch(err){return {ok:false,error:err.message};} }
+
+const urlParams = new URLSearchParams(location.search);
+const testId = urlParams.get('testId') || 'demo';
+const QUESTION_SECONDS = 20;
+let attempt = null;
+let questions = [];
+let index = 0;
+let timer = null;
+let timeLeft = QUESTION_SECONDS;
+const answers = [];
+
+async function loadTest() {
+  // Try to fetch test from backend if available
+  const r = await fetchJson('/api/tests/' + encodeURIComponent(testId) );
+  if (r.ok && r.data) {
+    // if backend returned test object, use it
+    questions = r.data.questions || [];
+    document.getElementById('title').innerText = r.data.title || 'Test';
+  } else {
+    // fallback demo questions
+    questions = [
+      { id: 'q1', text: { en: '2+2=?' }, options: [ {id:'a', text:{en:'3'}}, {id:'b', text:{en:'4'}, isCorrect:true}, {id:'c', text:{en:'5'}} ] },
+      { id: 'q2', text: { en: 'Capital of France?' }, options: [ {id:'a', text:{en:'London'}}, {id:'b', text:{en:'Paris'}, isCorrect:true} ] }
+    ];
+    document.getElementById('title').innerText = 'Demo Test';
+  }
+  renderQuestion();
+}
+
+function renderQuestion(){
+  if (index >= questions.length) {
+    document.getElementById('questionArea').innerHTML = `<div>All questions answered. Click Submit.</div>`;
+    document.getElementById('submitBtn').style.display = '';
+    document.getElementById('timer').innerText = '';
+    return;
+  }
+  const q = questions[index];
+  const html = `<div><strong>Q ${index+1}:</strong> ${q.text.en}</div>
+    <div class="options">${q.options.map(o=>`<button data-id="${o.id}">${o.text.en}</button>`).join('')}</div>`;
+  document.getElementById('questionArea').innerHTML = html;
+  document.querySelectorAll('.options button').forEach(b=>{
+    b.onclick = ()=> choose(b.dataset.id);
+  });
+  startTimer();
+}
+
+function startTimer(){
+  clearInterval(timer);
+  timeLeft = QUESTION_SECONDS;
+  document.getElementById('timer').innerText = timeLeft + 's';
+  timer = setInterval(()=>{
+    timeLeft--;
+    document.getElementById('timer').innerText = timeLeft + 's';
+    if (timeLeft <= 0) {
+      clearInterval(timer);
+      recordAnswer(null, true);
+      index++;
+      renderQuestion();
+    }
+  }, 1000);
+}
+
+function recordAnswer(selectedOptionId, timedOut=false){
+  answers.push({ questionId: questions[index].id, selectedOptionId, questionIndex: index, timedOut });
+}
+
+function choose(optionId){
+  clearInterval(timer);
+  recordAnswer(optionId, false);
+  index++;
+  renderQuestion();
+}
+
+async function startTest(){
+  const token = localStorage.getItem('token');
+  const r = await fetchJson(`/api/tests/${testId}/start`, { method:'POST', headers: Object.assign({ 'Content-Type':'application/json' }, token ? { Authorization: 'Bearer ' + token } : {}) });
+  if (!r.ok) {
+    return alert('Start failed: ' + (r.error || 'Unable'));
+  }
+  attempt = r.data;
+  document.getElementById('startBtn').style.display = 'none';
+  document.getElementById('submitBtn').style.display = 'none';
+  loadTest();
+}
+
+async function submit(){
+  if (!attempt) return alert('No attempt');
+  const token = localStorage.getItem('token');
+  const r = await fetchJson(`/api/tests/${testId}/submit`, {
+    method:'POST',
+    headers: Object.assign({ 'Content-Type':'application/json' }, token ? { Authorization: 'Bearer ' + token } : {}),
+    body: JSON.stringify({ attemptId: attempt.attemptId || attempt.attemptId || (attempt._id || attempt.attemptId), answers })
+  });
+  if (r.ok) {
+    alert('Score delta: ' + r.data.scoreDelta + '\nTotal after: ' + r.data.totalAfter);
+    location.href = 'leaderboard.html';
+  } else {
+    alert('Submit error: ' + (r.error || 'Failed'));
+  }
+}
+
+document.getElementById('startBtn').onclick = startTest;
+document.getElementById('submitBtn').onclick = submit;
+loadTest();
+</script>
+</body>
+</html>

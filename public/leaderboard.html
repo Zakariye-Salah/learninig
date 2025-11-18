@@ -1,0 +1,1226 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Leaderboard — LearningHub</title>
+
+<style>
+  :root{
+    --accent:#0b5cff;
+    --bg:#f6f7fb;
+    --card:#ffffff;
+    --muted:#6b7280;
+    --nav-hover-bg: rgba(11,92,255,0.06);
+    --row-hover: rgba(11,92,255,0.03);
+    --pts-color: #111827;
+      
+  }
+
+  /* page basics */
+  body{font-family:system-ui,Arial,Helvetica,sans-serif;background:var(--bg);margin:0;padding:12px;}
+  .wrap{max-width:1000px;margin:0 auto}
+
+  /* header */
+  #site-header { background:var(--card); border-bottom:1px solid #eef2f6; position:relative; z-index:60; }
+  .sh-top { max-width:1000px; margin:0 auto; display:flex; align-items:center; gap:12px; padding:10px 12px; }
+  .sh-brand { font-weight:700; display:flex; gap:8px; align-items:center; color:#111; font-size:16px; }
+  .sh-brand .logo { font-size:20px; }
+
+  #mainNav { display:flex; gap:10px; margin-left:16px; align-items:center; }
+  #mainNav a { color:#111; text-decoration:none; padding:6px 10px; border-radius:8px; font-weight:600; transition: color .12s ease, background .12s ease, transform .12s ease; }
+  #mainNav a:hover { color:var(--accent); background: var(--nav-hover-bg); transform: translateY(-2px); }
+
+  .sh-right { margin-left:auto; display:flex; align-items:center; gap:8px; position:relative; }
+
+  .icon-btn { background:transparent; border:0; padding:8px; border-radius:8px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; transition: transform .12s ease; }
+  .small-btn { background:#fff; border:1px solid #e6e6e6; padding:6px 8px; border-radius:8px; cursor:pointer; font-size:13px; color:#111; }
+
+  /* user dropdown */
+  .user-dropdown {
+    position:absolute; top:54px; right:8px; width:260px; background:var(--card); border-radius:10px; box-shadow:0 20px 60px rgba(2,6,23,0.15);
+    transform-origin:top right; transform:translateY(-8px) scale(.98);
+    opacity:0; pointer-events:none; transition: transform .18s cubic-bezier(.2,.9,.28,1), opacity .14s ease; z-index:130;
+  }
+  .user-dropdown.open { transform:translateY(0) scale(1); opacity:1; pointer-events:auto; }
+  .user-dropdown .inner { padding:10px; display:flex; flex-direction:column; gap:8px; }
+
+  /* hamburger + mobile panel */
+  .hamburger { display:none; width:44px; height:44px; align-items:center; justify-content:center; border-radius:8px; border:0; background:transparent; cursor:pointer; }
+  .mobile-panel {
+    position:fixed; top:68px; right:12px; width:320px; max-width:92vw;
+    background:linear-gradient(180deg, rgba(255,255,255,0.98), var(--card));
+    border-radius:14px; box-shadow:0 24px 60px rgba(2,6,23,0.14);
+    transform-origin:top right; transform: translateY(-12px) scale(.98);
+    opacity:0; pointer-events:none; transition: transform .28s cubic-bezier(.2,.9,.28,1), opacity .22s ease; z-index:120;
+  }
+  .mobile-panel.open { transform: translateY(0) scale(1); opacity:1; pointer-events:auto; }
+  .mobile-panel .inner { padding:14px; display:flex; flex-direction:column; gap:8px; }
+  .mobile-panel .brand-row { display:flex;align-items:center;gap:10px;padding:8px 6px;border-bottom:1px solid #f1f5f9;margin-bottom:6px }
+  .mobile-panel a { display:block; text-align:left; padding:12px 14px; border-radius:10px; color:#111; font-size:15px; text-decoration:none; transition: transform .12s ease, background .12s ease; }
+  .mobile-panel a:hover { background: var(--nav-hover-bg); transform: translateX(6px); color: var(--accent); }
+
+  /* single-column layout (user requested single page) */
+  .page { max-width:1000px; margin:16px auto; padding:0 12px; display:block; }
+
+  .card { background:var(--card); border-radius:10px; padding:14px; box-shadow: 0 6px 18px rgba(2,6,23,0.04); margin-bottom:12px; }
+
+  .header-row { display:flex; gap:12px; align-items:center; margin-bottom:10px; flex-wrap:wrap; flex-direction:column; align-items:flex-start; }
+  #compTitle { font-weight:800; font-size:18px; }
+  #compCountdown { margin-top:6px; color:#666; }
+
+  .leader-wrap { border-radius:8px; overflow:hidden; }
+  .leader-list.top10 { max-height:none; }
+  .leader-list.all { max-height:520px; overflow:auto; }
+
+  /* row layout: rank column + content + actions */
+  .row {
+    display:flex;
+    align-items:stretch;
+    gap:12px;
+    padding:10px;
+    border-bottom:1px solid #f0f2f6;
+    position:relative;
+    transition: background .12s ease, transform .08s ease;
+  }
+  .row:hover { background: var(--row-hover); transform: translateY(-2px); }
+  .row:last-child { border-bottom:none; }
+  .row.me{ background: linear-gradient(90deg, rgba(11,92,255,0.06), rgba(11,92,255,0.03)); }
+
+/* Replace the old .rank /.rankNum rules or add these below them */
+.rank {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:6px 6px;
+  border-radius:6px;
+  flex: 0 0 auto; /* auto width so the badge shows */
+}
+
+.rankStripe {
+  width:8px;
+  border-radius:6px;
+  flex: 0 0 8px;
+  height:100%;
+  min-height:36px;
+}
+
+.rankNum {
+  min-width:36px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:700;
+  color:#ffffff;
+  border-radius:8px;
+  padding:6px 8px;
+  background: #0b1220;
+  box-shadow: 0 6px 18px rgba(2,6,23,0.03);
+}
+@media(max-width:700px){
+  .rank { width:100%; gap:6px; padding:4px; }
+  .rankStripe { height:6px; width:100%; flex-basis:100%; border-radius:6px; }
+  .rankNum { background: transparent; color:#0f172a; min-width:28px; padding:0 6px; font-weight:800; }
+}
+
+
+  .left { display:flex; flex-direction:column; gap:6px; min-width:0; flex:1; }
+  .top { display:flex; align-items:center; gap:10px; min-width:0; }
+  .leader-flag { display:inline-flex; align-items:center; justify-content:center; width:22px; height:18px; font-size:16px; }
+
+  .title { font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:15px; color:#0f172a; }
+  .sub { color:var(--muted); font-size:12px; }
+
+  .right { display:flex; align-items:center; gap:8px; margin-left:12px; white-space:nowrap; align-self:center; }
+  .pts { font-weight:800; min-width:90px; text-align:right; color:var(--pts-color); }
+
+  .pts-inline { font-weight:800; margin-left:px; white-space:nowrap; color: #149be4bd;  padding:0px 0px; border-radius:8px; box-shadow:0 6px 18px rgba(2,6,23,0.04); }
+
+  .admin-adjust { display:inline-flex; align-items:center; gap:6px; }
+  .adjust-icon { cursor:pointer; padding:6px; border-radius:6px; border:1px solid #eef2ff; background: #fff; font-weight:700; }
+
+  .muted { color:#666; font-size:13px; }
+
+  .controls { display:flex; gap:8px; align-items:center; margin-bottom:8px; flex-wrap:wrap; }
+
+  .btn-primary { background:var(--accent); color:#fff; border:none; padding:8px 10px; border-radius:6px; cursor:pointer; }
+
+  #compCountdown.countdown-live { color: #f23500; font-weight:700; transition: color 200ms ease; }
+
+  /* mobile behavior: hamburger visible on small screens */
+  @media (max-width:900px) {
+    .hamburger { display:inline-flex; }
+    #mainNav { display:none; }
+  }
+  @media (min-width:901px) {
+    .mobile-panel { display:none; }
+  }
+
+  /* mobile row compact */
+  @media(max-width:700px) {
+    .row { flex-direction:column; align-items:stretch; padding:10px; gap:8px; }
+    .rank { align-self:stretch; height:6px; width:100%; border-radius:6px; }
+    .rankNum { align-self:flex-start; background:transparent; color:#111; font-weight:700; padding:0 6px; min-width:28px; }
+    .top { width:100%; align-items:center; gap:8px; }
+    .title { white-space:normal; font-size:15px; }
+    .right { margin-left:0; align-self:flex-end; }
+    .pts { min-width:70px; text-align:right; }
+    .pts-inline { margin-left:6px; }
+  }
+
+  /* comments collapsed/expanded visuals */
+  .comments-list.collapsed { display:none; }
+  .comments-list.expanded { display:block; max-height:340px; overflow:auto; }
+
+</style>
+</head>
+<body>
+
+<!-- socket.io -->
+<script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+
+<!-- header -->
+<header id="site-header" class="card" role="banner">
+  <div class="sh-top">
+    <div class="sh-brand" aria-hidden="false">
+      <span class="logo">📚</span>
+      <span>LearningHub</span>
+    </div>
+
+    <!-- main nav (desktop) -->
+    <nav id="mainNav" aria-label="Main navigation"></nav>
+
+    <div class="sh-right" role="region" aria-label="User controls">
+      <div id="authLinks" style="display:flex;align-items:center;gap:8px"></div>
+
+      <!-- desktop user dropdown (legacy style) -->
+      <div id="userDropdown" class="user-dropdown" aria-hidden="true">
+        <div class="inner">
+          <div id="userDropdownName" style="font-weight:700"></div>
+          <div id="userDropdownEmail" class="muted" style="font-size:13px"></div>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button id="btnProfile" class="small-btn" style="flex:1">Profile</button>
+            <button id="btnLogout" class="small-btn" style="flex:1">Logout</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- mobile hamburger -->
+      <button id="btnHamburger" class="hamburger icon-btn" aria-expanded="false" aria-label="Menu" title="Menu">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none"><path d="M3 6h18M3 12h18M3 18h18" stroke="#111" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- mobile panel -->
+<div id="mobileMenu" class="mobile-panel" aria-hidden="true">
+  <div class="inner" role="menu" aria-label="Mobile navigation">
+    <div class="brand-row">
+      <span style="font-size:20px">📚</span>
+      <div style="font-weight:700">LearningHub</div>
+    </div>
+
+    <div id="mobileUserArea" style="padding:8px;border-radius:8px;background:#fbfdff;border:1px solid #eef6ff">
+      <!-- will be filled by JS: legacy dropdown: name, logout -->
+    </div>
+
+    <div id="mobileNav" style="display:flex;flex-direction:column;gap:6px">
+      <!-- js populated links -->
+    </div>
+  </div>
+</div>
+
+<!-- single column page -->
+<main class="page wrap" role="main">
+  <section>
+    <div class="card">
+      <div class="header-row">
+        <div id="compTitle">Competition</div>
+        <div id="compCountdown">—</div>
+      </div>
+
+      <div id="leaderControls" class="controls"></div>
+
+      <div class="leader-wrap" id="leaderboardWrap">
+        <div id="leaderboard" class="leader-list top10">
+          <!-- rows will be injected here -->
+        </div>
+      </div>
+
+      <div id="leaderFoot" style="margin-top:8px;color:#666;font-size:13px"></div>
+    </div>
+
+    <!-- comments -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <!-- comments hidden by default; only heading visible -->
+        <div id="commentsTitle" style="font-weight:700;cursor:pointer">Comments (0)</div>
+        <div class="muted" style="font-size:13px">Newest first</div>
+      </div>
+
+      <!-- collapsed by default -->
+      <div id="commentsBox" class="comments-list collapsed" style="margin-top:8px; max-height:320px; overflow:auto"></div>
+
+      <!-- compose hidden by default -->
+      <div id="commentsCompose" style="margin-top:10px; display:none">
+        <textarea id="commentInput" placeholder="Write a comment..." style="width:100%;border:1px solid #eef2f7;border-radius:8px;padding:10px"></textarea>
+        <div style="display:flex;justify-content:flex-end;margin-top:8px">
+          <button id="postComment" class="btn-primary">Post comment</button>
+        </div>
+      </div>
+    </div>
+
+  </section>
+</main>
+
+<script>
+  /* ---------------- CONFIG + helpers ---------------- */
+  const API_BASE = 'http://localhost:4000';
+  async function fetchJson(url, opts = {}) {
+    try {
+      const full = (url.startsWith('http') ? url : API_BASE + url);
+      const res = await fetch(full, opts);
+      const text = await res.text();
+      let data = null;
+      try { data = text ? JSON.parse(text) : null; } catch (e) { data = null; }
+      if (!res.ok) return { ok: false, error: (data && (data.error || data.message)) ? (data.error || data.message) : res.statusText, data };
+      return { ok: true, data };
+    } catch (err) { return { ok: false, error: err.message || 'Network error' }; }
+  }
+  function getToken(){ return localStorage.getItem('token'); }
+  function getUser(){ const s = localStorage.getItem('user'); return s ? JSON.parse(s) : null; }
+
+  function escapeHtml(s){
+    if (s === 0) return '0';
+    if (!s) return '';
+    return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+
+  function codeToFlagEmoji(code){
+    if (!code) return null;
+    const c = String(code).trim().toUpperCase();
+    if (c.length !== 2) return null;
+    const A = 0x1F1E6;
+    const first = c.charCodeAt(0) - 65;
+    const second = c.charCodeAt(1) - 65;
+    if (first < 0 || first > 25 || second < 0 || second > 25) return null;
+    return String.fromCodePoint(A + first) + String.fromCodePoint(A + second);
+  }
+
+  /* minimal profile cache/enrichment (keeps previous behavior) */
+  window._lh_profile_cache = window._lh_profile_cache || {};
+  function pickProfileFields(profile){
+    if (!profile) return {};
+    return {
+      countryRaw: profile.country || profile.countryCode || profile.country_code || profile.countryName || profile.location || null,
+      countryFlagEmoji: profile.countryFlagEmoji || profile.flagEmoji || profile.flag || null,
+      countryFlagUrl: profile.countryFlagUrl || profile.flagUrl || profile.flag_url || null,
+      city: profile.city || profile.town || profile.region || null,
+      countryName: profile.countryName || profile.country || null
+    };
+  }
+  function resolveIsoFromNameOrCode(val){
+    if (!val) return null;
+    const s = String(val).trim();
+    if (!s) return null;
+    if (/^[A-Za-z]{2}$/.test(s)) return s.toUpperCase();
+    if (Array.isArray(window.COUNTRIES)) {
+      const foundExact = window.COUNTRIES.find(c => c.name && c.name.toLowerCase() === s.toLowerCase());
+      if (foundExact) return String(foundExact.code).toUpperCase();
+      const foundPartial = window.COUNTRIES.find(c => c.name && s.toLowerCase().includes(c.name.toLowerCase()));
+      if (foundPartial) return String(foundPartial.code).toUpperCase();
+    }
+    return null;
+  }
+  async function enrichTopWithProfiles(top){
+    if (!Array.isArray(top) || !top.length) return top;
+    const need = top.filter(t => !(t.countryRaw || t.countryFlagEmoji || t.countryFlagUrl || t.city || t.countryName))
+                    .map(t => String(t.userId || t._id || t.id)).filter(Boolean);
+    if (!need.length) { top.forEach(item => item._isoCode = resolveIsoFromNameOrCode(item.countryRaw || item.countryName)); return top; }
+    const ids = Array.from(new Set(need));
+    const uncached = ids.filter(id => !window._lh_profile_cache[id]);
+    if (uncached.length) {
+      try {
+        const r = await fetchJson('/api/users?ids=' + encodeURIComponent(uncached.join(',')));
+        if (r && r.ok && r.data) {
+          let arr = [];
+          if (Array.isArray(r.data)) arr = r.data;
+          else if (Array.isArray(r.data.users)) arr = r.data.users;
+          else if (Array.isArray(r.users)) arr = r.users;
+          else if (r.data && typeof r.data === 'object') arr = Object.values(r.data).filter(Boolean);
+          arr.forEach(p => { if (!p) return; const id = String(p._id || p.id || p.userId || ''); if (id) window._lh_profile_cache[id] = p; });
+        }
+      } catch(e) { console.warn('batch profile fetch failed', e); }
+    }
+    const still = ids.filter(id => !window._lh_profile_cache[id]);
+    if (still.length) {
+      const perIdCandidates = [ id => `/api/users/${encodeURIComponent(id)}`, id => `/api/user/${encodeURIComponent(id)}`, id => `/api/account/users/${encodeURIComponent(id)}` ];
+      await Promise.all(still.map(async (id) => {
+        for (const cand of perIdCandidates) {
+          try {
+            const r = await fetchJson(cand(id));
+            if (r && r.ok && r.data) {
+              let p = null;
+              if (r.data.user) p = r.data.user;
+              else if (Array.isArray(r.data) && r.data[0]) p = r.data[0];
+              else if (r.data.users && Array.isArray(r.data.users) && r.data.users[0]) p = r.data.users[0];
+              else p = r.data;
+              if (p && (p._id || p.id || id)) { window._lh_profile_cache[id] = p; break; }
+            }
+          } catch(e){}
+        }
+      }));
+    }
+    const merged = top.map(item => {
+      const id = String(item.userId || item._id || item.id || '');
+      const profile = id ? window._lh_profile_cache[id] : null;
+      if (!profile) { const out = Object.assign({}, item); out._isoCode = resolveIsoFromNameOrCode(out.countryRaw || out.countryName); return out; }
+      const picked = pickProfileFields(profile);
+      const out = Object.assign({}, item);
+      if (!out.countryRaw && picked.countryRaw) out.countryRaw = picked.countryRaw;
+      if (!out.countryFlagEmoji && picked.countryFlagEmoji) out.countryFlagEmoji = picked.countryFlagEmoji;
+      if (!out.countryFlagUrl && picked.countryFlagUrl) out.countryFlagUrl = picked.countryFlagUrl;
+      if (!out.city && picked.city) out.city = picked.city;
+      if (!out.countryName && picked.countryName) out.countryName = picked.countryName;
+      out._isoCode = resolveIsoFromNameOrCode(out.countryRaw || out.countryName);
+      return out;
+    });
+    return merged;
+  }
+
+  /* ---------- socket + state ---------- */
+  let comp = null;
+  let socket = null;
+  let showingAll = false;
+  let countdownTimer = null;
+  function initSocket(){
+    const t = getToken();
+    try { socket = t ? io(API_BASE, { auth:{ token: t }}) : io(API_BASE); }
+    catch(e){ console.warn('socket init failed', e); socket = null; return; }
+    socket.on('connect', ()=> { if (comp && comp._id) socket.emit('joinCompetition', comp._id); });
+    socket.on('leaderboard:update', ()=> load());
+    socket.on('comments:new', ()=> loadComments && loadComments());
+    socket.on('comments:deleted', ()=> loadComments && loadComments());
+  }
+
+  /* ---------------- NAV & AUTH UI ---------------- */
+  function renderNav(){
+    const nav = document.getElementById('mainNav');
+    const mobileNav = document.getElementById('mobileNav');
+    const user = getUser();
+
+    if (nav) nav.innerHTML = '';
+    if (mobileNav) mobileNav.innerHTML = '';
+
+    const links = [
+      { href:'admin_dashboard.html', label:'Dashboard', adminOnly:true },
+      { href:'index.html', label:'Lessons' },
+      { href:'leaderboard.html', label:'Leaderboard' },
+      { href:'history.html', label:'History' },
+      { href:'story.html', label:'Stories' },
+      { href:'games.html', label:'Games' },
+      { href:'admin_users.html', label:'Users', adminOnly:true },
+      { href:'helpCenter.html', label:'Helper' }
+    ];
+
+    links.forEach(l => {
+      if (nav && (!l.adminOnly || (user && user.role === 'admin'))) {
+        const a = document.createElement('a'); a.href = l.href; a.innerText = l.label;
+        nav.appendChild(a);
+      }
+      if (mobileNav && (!l.adminOnly || (user && user.role === 'admin'))) {
+        const a = document.createElement('a'); a.href = l.href; a.className='mobile-nav-link'; a.innerText = l.label;
+        mobileNav.appendChild(a);
+      }
+    });
+
+    const auth = document.getElementById('authLinks');
+    if (!auth) return;
+    auth.innerHTML = '';
+    if (getToken()) {
+      const u = getUser() || {};
+      // name button (opens legacy dropdown)
+      const btn = document.createElement('button'); btn.className='small-btn'; btn.id='btnUserName'; btn.style.fontWeight='700';
+      btn.innerText = u.fullName || u.username || 'Me';
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const dd = document.getElementById('userDropdown');
+        if (!dd) return;
+        dd.classList.toggle('open');
+      });
+      auth.appendChild(btn);
+    } else {
+      const login = document.createElement('button'); login.className='small-btn'; login.innerText='Login';
+      login.onclick = async ()=> {
+        const username = prompt('username'); const password = prompt('password');
+        if (!username || !password) return;
+        const r = await fetchJson('/api/auth/login', { method:'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username, password }) });
+        if (!r.ok) return alert('Login failed: ' + (r.error || ''));
+        localStorage.setItem('token', r.data.token); localStorage.setItem('user', JSON.stringify(r.data.user));
+        renderNav();
+        load();
+      };
+      auth.appendChild(login);
+    }
+
+    // mobile user area
+    const mobileUserArea = document.getElementById('mobileUserArea');
+    if (mobileUserArea) {
+      mobileUserArea.innerHTML = '';
+      if (getToken()) {
+        const u = getUser() || {};
+        const name = document.createElement('div'); name.style.fontWeight='700'; name.innerText = u.fullName || u.username || 'Me';
+        const email = document.createElement('div'); email.className='muted'; email.style.fontSize='13px'; email.innerText = u.email || u.phone || '';
+        const logout = document.createElement('button'); logout.className='small-btn'; logout.style.marginTop='8px'; logout.innerText='Logout';
+        logout.onclick = ()=> { localStorage.removeItem('token'); localStorage.removeItem('user'); location.reload(); };
+        mobileUserArea.appendChild(name); mobileUserArea.appendChild(email); mobileUserArea.appendChild(logout);
+      } else {
+        const login = document.createElement('button'); login.className='small-btn'; login.innerText='Login';
+        login.onclick = async ()=> {
+          const username = prompt('username'); const password = prompt('password');
+          if (!username || !password) return;
+          const r = await fetchJson('/api/auth/login', { method:'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username, password }) });
+          if (!r.ok) return alert('Login failed: ' + (r.error || ''));
+          localStorage.setItem('token', r.data.token); localStorage.setItem('user', JSON.stringify(r.data.user));
+          renderNav();
+          load();
+        };
+        mobileUserArea.appendChild(login);
+      }
+    }
+  }
+
+  /* ----------------------- Rank color mapping ----------------------- */
+  function getRankColor(rank) {
+    // 1..10 mapping (greens at top)
+    const map = {
+      1: '#047857', // emerald-700
+      2: '#059669', // emerald-600
+      3: '#10b981', // emerald-500
+      4: '#34d399', // emerald-400
+      5: '#f59e0b', // amber-500
+      6: '#f97316', // orange-500
+      7: '#ef4444', // red-500
+      8: '#8b5cf6', // violet-500
+      9: '#3b82f6', // blue-500
+      10:'#64748b'  // slate-500
+    };
+    return map[rank] || '#111827';
+  }
+
+  /* ----------------- LOAD COMPETITION & TOP ----------------- */
+  async function load(){
+    renderNav && renderNav();
+    try { initSocket(); } catch(e){}
+
+    const candidates = ['/api/competitions/current','/api/leaderboard/competitions/current','/api/leaderboard/current'];
+    let res = null;
+    for (const p of candidates){
+      try { res = await fetchJson(p); if (res && res.ok) break; } catch(e) { /* try next */ }
+    }
+
+    if (!res || !res.ok) {
+      const titleEl = document.getElementById('compTitle'); if (titleEl) titleEl.innerText = 'No active competition';
+      const cdEl = document.getElementById('compCountdown'); if (cdEl) cdEl.innerText = '—';
+      renderEmptyLeader();
+      setupLeaderControls && setupLeaderControls([]);
+      return;
+    }
+
+    const d = res.data;
+    comp = d && d.competition ? d.competition : (d || null);
+    const topRaw = d && Array.isArray(d.top) ? d.top : (Array.isArray(d) ? d : (d.top || []));
+
+    let top = topRaw.map(u => ({
+      userId: (u.userId || u._id || u.id || null),
+      userName: u.userName || u.fullName || u.username || (u.name || ''),
+      points: (typeof u.points === 'number') ? u.points : (u.pointsCurrent || u.points || 0),
+      countryRaw: u.country || u.countryRaw || (u.user && (u.user.country || u.user.countryCode || u.user.countryName)) || u.countryName || null,
+      countryName: u.countryName || (u.user && u.user.countryName) || null,
+      countryFlagEmoji: u.countryFlagEmoji || u.flagEmoji || (u.user && u.user.countryFlagEmoji) || null,
+      countryFlagUrl: u.countryFlagUrl || u.flagUrl || (u.user && u.user.countryFlagUrl) || null,
+      city: u.city || (u.user && u.user.city) || u.town || u.region || null,
+      __raw: u
+    }));
+
+    try {
+      const enriched = await enrichTopWithProfiles(top);
+      if (Array.isArray(enriched) && enriched.length) top = enriched;
+    } catch (err) { console.warn('enrichTopWithProfiles failed', err); }
+
+    // keep lastTop for re-render on resize
+    window._lastTop = top;
+
+    // set title only here
+    const titleEl = document.getElementById('compTitle'); if (titleEl) titleEl.innerText = comp && comp.name ? comp.name : 'Competition';
+    setupLeaderControls && setupLeaderControls(top);
+    renderBoard && renderBoard(top);
+    if (typeof loadComments === 'function') await loadComments();
+    try { setupCompetitionCountdown && setupCompetitionCountdown(comp); } catch(e){}
+    if (socket && comp && comp._id) socket.emit('joinCompetition', comp._id);
+  }
+
+  /* ----------------- Render board (responsive) ----------------- */
+  function renderBoard(rawTop){
+    // cache for resize re-rendering
+    window._lastTop = rawTop;
+
+    const el = document.getElementById('leaderboard'); if (!el) return;
+    el.innerHTML = '';
+    const me = getUser();
+    const isAdmin = me && me.role === 'admin';
+    const arr = Array.isArray(rawTop) ? rawTop : (rawTop || []);
+
+    const norm = arr.map((u) => ({
+      userId: (u.userId || u._id || u.id || null),
+      userName: u.userName || u.fullName || u.username || 'Anonymous',
+      points: (typeof u.points === 'number') ? u.points : (u.pointsCurrent || 0),
+      countryRaw: u.countryRaw || u.country || (u.user && (u.user.country || u.user.countryCode || u.user.countryName)) || null,
+      countryName: u.countryName || null,
+      countryFlagEmoji: u.countryFlagEmoji || null,
+      countryFlagUrl: u.countryFlagUrl || null,
+      city: u.city || null,
+      _isoCode: u._isoCode || null,
+      __raw: u.__raw || u
+    }));
+
+    function resolveCountryCode(val) {
+      if (!val) return null;
+      const s = String(val).trim();
+      if (!s) return null;
+      if (s.length === 2 && /^[A-Za-z]{2}$/.test(s)) return s.toUpperCase();
+      if (Array.isArray(window.COUNTRIES)) {
+        const exact = window.COUNTRIES.find(c => c.name && c.name.toLowerCase() === s.toLowerCase());
+        if (exact && exact.code) return String(exact.code).toUpperCase();
+        const partial = window.COUNTRIES.find(c => c.name && s.toLowerCase().includes(c.name.toLowerCase()));
+        if (partial && partial.code) return String(partial.code).toUpperCase();
+      }
+      return null;
+    }
+
+    function resolveFlag(item) {
+      if (!item) return { type:'none' };
+      if (item.countryFlagEmoji) return { type:'emoji', value: item.countryFlagEmoji, countryName: item.countryName || item.countryRaw || null, countryCode: resolveCountryCode(item.countryRaw || item.countryName) || null };
+      if (item.countryFlagUrl && typeof item.countryFlagUrl === 'string' && item.countryFlagUrl.trim().startsWith('http')) return { type:'img', value: item.countryFlagUrl, countryName: item.countryName || item.countryRaw || null, countryCode: resolveCountryCode(item.countryRaw || item.countryName) || null };
+      const cc = item._isoCode || resolveCountryCode(item.countryRaw || item.countryName || '');
+      if (cc) {
+        const em = codeToFlagEmoji(cc);
+        const friendlyName = (Array.isArray(window.COUNTRIES) && window.COUNTRIES.find(c=>String(c.code).toUpperCase()===cc)?.name) || item.countryName || item.countryRaw || null;
+        return { type: em ? 'emoji' : 'none', value: em || null, countryName: friendlyName, countryCode: cc };
+      }
+      if (typeof item.countryRaw === 'string' && item.countryRaw.match(/[\u{1F1E6}-\u{1F1FF}]/u)) {
+        return { type:'emoji', value: item.countryRaw, countryName: item.countryName || null, countryCode: null };
+      }
+      return { type:'none', countryName: item.countryName || item.countryRaw || null, countryCode: null };
+    }
+
+    let visible = [];
+    if (isAdmin) visible = norm.slice();
+    else {
+      visible = norm.filter(u => (u.points && u.points > 0));
+      if (me) {
+        const meId = String(me._id || me.id || me.userId || '');
+        const found = visible.find(x => String(x.userId) === meId);
+        const meInNorm = norm.find(x => String(x.userId) === meId);
+        if (!found && meInNorm) visible.push(meInNorm);
+      }
+    }
+
+    visible.sort((a,b)=> (b.points||0) - (a.points||0));
+    let toShow = visible;
+    if (!showingAll) toShow = visible.slice(0, 10);
+
+    if (!toShow.length) { renderEmptyLeader(); return; }
+
+    const listClass = showingAll ? 'leader-list all' : 'leader-list top10';
+    el.className = listClass;
+
+    // detect mobile layout
+    const isMobile = (window.innerWidth <= 700);
+
+    toShow.forEach((t, idx) => {
+      const div = document.createElement('div'); div.className = 'row';
+      const rank = idx + 1;
+      const flagInfo = resolveFlag(t);
+
+      // RANK COLUMN
+    // RANK COLUMN (new: stripe + badge)
+const rankCol = document.createElement('div');
+rankCol.className = 'rank';
+
+const stripe = document.createElement('div');
+stripe.className = 'rankStripe';
+stripe.style.background = getRankColor(rank);
+
+const rankNum = document.createElement('div');
+rankNum.className = 'rankNum';
+rankNum.innerText = rank;
+
+// mobile tweaks (keeps badge readable on small screens)
+if (isMobile) {
+  rankNum.style.background = 'transparent';
+  rankNum.style.color = '#0f172a';
+  rankNum.style.fontSize = '13px';
+  rankNum.style.fontWeight = 800;
+} else {
+  rankNum.style.background = '#149be4bd';
+  rankNum.style.color = 'white';
+}
+
+rankCol.appendChild(stripe);
+rankCol.appendChild(rankNum);
+
+
+      // SHOW RANK BAR TO EVERYONE FOR TOP 10
+      const showRankToAll = rank <= 10;
+      if (showRankToAll) {
+        rankCol.style.display = '';
+        rankNum.style.display = '';
+      } else {
+        // for ranks > 10, only admins see it
+        if (!isAdmin) {
+          rankCol.style.display = 'none';
+          rankNum.style.display = 'none';
+        } else {
+          rankCol.style.display = '';
+          rankNum.style.display = '';
+        }
+      }
+
+      // LEFT CONTENT
+      const left = document.createElement('div'); left.className = 'left';
+      const topRow = document.createElement('div'); topRow.className = 'top';
+
+      // title (full name first)
+      const titleText = document.createElement('div'); titleText.className = 'title'; titleText.textContent = `${t.userName || 'Anonymous'}`;
+
+      // flag AFTER name
+      const flagWrap = document.createElement('span'); flagWrap.className = 'leader-flag';
+      if (flagInfo.type === 'img') {
+        const img = document.createElement('img'); img.src = flagInfo.value; img.alt = flagInfo.countryName || ''; img.style.width='20px'; img.style.height='14px'; img.style.objectFit='cover'; img.style.borderRadius='3px'; flagWrap.appendChild(img);
+      } else if (flagInfo.type === 'emoji' && flagInfo.value) flagWrap.textContent = String(flagInfo.value);
+      else flagWrap.textContent = '🌐';
+
+      if (isAdmin) topRow.appendChild(rankNum);
+      topRow.appendChild(titleText);
+      topRow.appendChild(flagWrap);
+
+      if (isMobile) {
+        const ptsInline = document.createElement('div');
+        ptsInline.className = 'pts-inline';
+        ptsInline.innerText = `${t.points || 0} pts`;
+        topRow.appendChild(ptsInline);
+      }
+
+      left.appendChild(topRow);
+
+      // country / city
+      let countryFriendly = flagInfo.countryName || (t.countryName || t.countryRaw || null);
+      if (countryFriendly && typeof countryFriendly === 'string') {
+        const maybe = countryFriendly.trim();
+        if (/^[A-Za-z]{2}$/.test(maybe)) {
+          const mapped = (Array.isArray(window.COUNTRIES) && window.COUNTRIES.find(c=>String(c.code).toUpperCase()===maybe)?.name) || null;
+          countryFriendly = mapped || null;
+        }
+        if (countryFriendly && countryFriendly === flagInfo.value) countryFriendly = null;
+      }
+
+      if (t.city || countryFriendly) {
+        const sub = document.createElement('div'); sub.className = 'sub';
+        sub.textContent = ((t.city ? t.city : '') + (t.city && countryFriendly ? ', ' : '') + (countryFriendly ? countryFriendly : '')).trim();
+        if (sub.textContent) left.appendChild(sub);
+      }
+
+      const right = document.createElement('div'); right.className = 'right';
+
+      // desktop: points at right
+      if (!isMobile) {
+        const ptsDiv = document.createElement('div'); ptsDiv.className = 'pts'; ptsDiv.innerText = (t.points || 0) + ' pts';
+        ptsDiv.dataset.userid = t.userId;
+        right.appendChild(ptsDiv);
+      }
+
+      if (isAdmin) {
+        const adjWrap = document.createElement('div'); adjWrap.className='admin-adjust';
+        const adjBtn = document.createElement('button'); adjBtn.className='adjust-icon'; adjBtn.title='Adjust points'; adjBtn.innerText='+';
+        adjWrap.appendChild(adjBtn);
+        const form = document.createElement('span'); form.style.display='none'; form.style.gap='6px'; form.style.alignItems='center'; form.style.marginLeft='6px';
+        const input = document.createElement('input'); input.type='number'; input.placeholder='± pts'; input.style.width='80px'; input.value='0';
+        const apply = document.createElement('button'); apply.className='small-btn'; apply.innerText='Add';
+        const cancel = document.createElement('button'); cancel.className='small-btn'; cancel.innerText='Cancel';
+        form.appendChild(input); form.appendChild(apply); form.appendChild(cancel); adjWrap.appendChild(form);
+        adjBtn.addEventListener('click', (e) => { e.stopPropagation(); form.style.display = form.style.display === 'none' ? 'inline-flex' : 'none'; if (form.style.display !== 'none') input.focus(); });
+        cancel.addEventListener('click', (e) => { e.stopPropagation(); form.style.display = 'none'; input.value = '0'; });
+        apply.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const delta = Number(input.value || 0);
+          if (!Number.isFinite(delta)) return alert('Enter a valid number');
+          const tkn = getToken(); if (!tkn) return alert('Admin login required');
+          apply.disabled = true; apply.innerText = 'Saving...';
+          try {
+            const resp = await fetchJson('/api/leaderboard/adjust', {
+              method:'POST',
+              headers: { 'Content-Type':'application/json', Authorization: 'Bearer ' + tkn },
+              body: JSON.stringify({ userId: t.userId, delta })
+            });
+            if (!resp.ok) alert('Failed: ' + (resp.error || 'Server error'));
+            else { if (socket) socket.emit('leaderboard:update', { userId: t.userId, delta }); const prev = Number(t.points || 0); t.points = prev + delta; if (!isMobile) { right.querySelector('.pts') && (right.querySelector('.pts').innerText = (t.points||0)+' pts'); } else { topRow.querySelector('.pts-inline') && (topRow.querySelector('.pts-inline').innerText = (t.points||0)+' pts'); } form.style.display='none'; input.value='0'; setTimeout(()=>load(),400); }
+          } catch (err) { alert('Request failed: ' + (err && err.message ? err.message : 'Network error')); console.error(err); }
+          finally { apply.disabled = false; apply.innerText = 'Add'; }
+        });
+        right.appendChild(adjWrap);
+      }
+
+      // assemble row: for top-10 show the rankCol to everyone
+      if (rank <= 10) div.appendChild(rankCol);
+      else if (isAdmin) div.appendChild(rankCol);
+      div.appendChild(left);
+      div.appendChild(right);
+
+      el.appendChild(div);
+    });
+
+    const foot = document.getElementById('leaderFoot'); if (foot) foot.innerText = `Showing ${toShow.length} of ${visible.length} users (users with >0 points only).`;
+  }
+
+  function renderEmptyLeader(){
+    const el = document.getElementById('leaderboard'); if (el) el.innerHTML = '<div class="muted">No scores yet.</div>';
+    const foot = document.getElementById('leaderFoot'); if (foot) foot.innerText = '';
+  }
+
+  /* ---------------- ADMIN controls and Clear buttons ----------------- */
+  function setupLeaderControls(top){
+    const controls = document.getElementById('leaderControls');
+    if (!controls) return;
+    controls.innerHTML = '';
+
+    const toggleBtn = document.createElement('button');
+    toggleBtn.className = 'small-btn';
+    toggleBtn.id = 'toggleViewBtn';
+    toggleBtn.innerText = showingAll ? 'View Top 10' : 'View All';
+    toggleBtn.onclick = ()=> {
+      showingAll = !showingAll;
+      renderBoard(top);
+      toggleBtn.innerText = showingAll ? 'View Top 10' : 'View All';
+    };
+    controls.appendChild(toggleBtn);
+
+    const t = getToken();
+    if (t) {
+      const clearMe = document.createElement('button');
+      clearMe.className = 'small-btn';
+      clearMe.innerText = 'Clear my points';
+      clearMe.onclick = async () => {
+        if (!confirm('Clear your points?')) return;
+        const r = await fetchJson('/api/leaderboard/clear', { method:'POST', headers: { Authorization: 'Bearer ' + t } });
+        if (!r.ok) return alert('Failed: ' + (r.error||''));
+        alert('Your points cleared');
+        if (socket) socket.emit('leaderboard:changed');
+        load();
+      };
+      controls.appendChild(clearMe);
+    }
+
+    const user = getUser();
+    if (user && user.role === 'admin') {
+      // Clear all points
+      const clearAll = document.createElement('button');
+      clearAll.className = 'small-btn';
+      clearAll.style.background = '#ffdede';
+      clearAll.innerText = 'Clear all points (admin)';
+      clearAll.onclick = async () => {
+        if (!confirm('Erase points for ALL users? This cannot be undone. Are you sure?')) return;
+        const tkn = getToken();
+        if (!tkn) return alert('Admin login required');
+        clearAll.disabled = true; clearAll.innerText = 'Clearing...';
+        try {
+          const r = await fetchJson('/api/leaderboard/clear-all', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + tkn }
+          });
+          if (!r.ok) alert('Failed: ' + (r.error || 'Server error'));
+          else { alert('All points cleared'); if (socket) socket.emit('leaderboard:changed'); load(); }
+        } catch (err) { alert('Request failed'); console.error(err); }
+        finally { clearAll.disabled = false; clearAll.innerText = 'Clear all points (admin)'; }
+      };
+      controls.appendChild(clearAll);
+
+      // Manage Competitions (admin-only) placed next to clear buttons
+      const manageBtn = document.createElement('button');
+      manageBtn.className = 'small-btn';
+      manageBtn.style.background = '#eef8ff';
+      manageBtn.innerText = 'Manage Competitions';
+      manageBtn.onclick = () => openCompetitionsAdminPanel();
+      controls.appendChild(manageBtn);
+    }
+  }
+
+  /* ---------------- COMMENTS (collapsed by default) ---------------- */
+  function renderCommentsTitle(count){ const t = document.getElementById('commentsTitle'); if (t) t.innerText = `Comments (${count})`; }
+
+  async function loadComments(){
+    if (!comp || !comp._id) { renderCommentsTitle(0); return; }
+    const r = await fetchJson('/api/leaderboard/comments?competitionId=' + encodeURIComponent(comp._id));
+    const box = document.getElementById('commentsBox');
+    if (!box) return;
+    box.innerHTML = '';
+    if (!r.ok) { renderCommentsTitle(0); box.innerText = r.error || 'Failed to load comments'; return; }
+    const comments = (r.data.comments || []).filter(c => !c.isDeleted).sort((a,b)=> new Date(b.createdAt) - new Date(a.createdAt));
+    renderCommentsTitle(comments.length);
+
+    // Keep collapsed by default (comments hidden until user clicks)
+    if (!box.classList.contains('collapsed') && !box.classList.contains('expanded')) box.classList.add('collapsed');
+
+    comments.forEach(c => {
+      const d = document.createElement('div'); d.className='comment'; d.id = 'c_' + c._id;
+      const author = escapeHtml(c.userName || 'Unknown');
+      const time = c.createdAt ? new Date(c.createdAt).toLocaleString() : '';
+      const content = escapeHtml(c.content || '');
+      let controls = '';
+      const user = getUser();
+      const isOwner = user && (String(user._id || user.id) === String(c.userId));
+      const isAdmin = user && user.role === 'admin';
+      if (isOwner || isAdmin) controls = `<div style="margin-top:6px"><button class="delBtn small-btn" data-id="${c._id}">Delete</button></div>`;
+      d.innerHTML = `<div style="font-weight:600">${author} <small style="color:#666">${time}</small></div><div style="margin-top:6px">${content}</div>${controls}`;
+      box.appendChild(d);
+    });
+
+    box.querySelectorAll('.delBtn').forEach(b => b.onclick = async (e) => {
+      const id = e.target.dataset.id;
+      if (!confirm('Delete comment?')) return;
+      const tkn = getToken();
+      if (!tkn) return alert('Login required');
+      const resp = await fetchJson('/api/leaderboard/comments/' + encodeURIComponent(id), { method:'DELETE', headers: { Authorization: 'Bearer ' + tkn } });
+      if (resp.ok) { const el = document.getElementById('c_' + id); if (el) el.remove(); renderCommentsTitle(box.querySelectorAll('.comment').length); if (socket) socket.emit('comments:deleted', { id }); }
+      else alert(resp.error || 'Delete failed');
+    });
+  }
+
+  (function wireCommentsToggle(){
+    const el = document.getElementById('commentsTitle');
+    if (!el) return;
+    el.onclick = () => {
+      const box = document.getElementById('commentsBox');
+      const compose = document.getElementById('commentsCompose');
+      if (!box || !compose) return;
+      const collapsed = box.classList.contains('collapsed');
+      if (collapsed) { box.classList.remove('collapsed'); box.classList.add('expanded'); compose.style.display = ''; }
+      else { box.classList.remove('expanded'); box.classList.add('collapsed'); compose.style.display = 'none'; }
+    };
+  })();
+
+  (function attachPost(){
+    const postBtn = document.getElementById('postComment');
+    if (!postBtn) return;
+    postBtn.addEventListener('click', async () => {
+      const tkn = getToken();
+      if (!tkn) return alert('Login required');
+      if (!comp || !comp._id) return alert('No competition selected');
+      const content = document.getElementById('commentInput').value.trim();
+      if (!content) return;
+      const r = await fetchJson('/api/leaderboard/comments', { method:'POST', headers: { 'Content-Type':'application/json', Authorization: 'Bearer ' + tkn }, body: JSON.stringify({ competitionId: comp._id, content }) });
+      if (!r.ok) return alert(r.error || 'Failed to post comment');
+      document.getElementById('commentInput').value = '';
+      loadComments();
+    });
+  })();
+
+  /* ---------------- COMPETITION COUNTDOWN (fixed: no duplicate title) ---------------- */
+  function tryParseDate(val) {
+    if (!val && val !== 0) return null;
+    if (val instanceof Date && !isNaN(val.getTime())) return val;
+    if (typeof val === 'number' && !Number.isNaN(val)) { const d = new Date(val); return isNaN(d.getTime()) ? null : d; }
+    if (typeof val === 'string') {
+      const s = val.trim(); if (!s) return null;
+      const d1 = new Date(s); if (!isNaN(d1.getTime())) return d1;
+      try { const alt = new Date(s.replace(' ', 'T')); if (!isNaN(alt.getTime())) return alt; } catch(e){}
+      try { const stripped = s.replace(/GMT.*$/i, '').trim(); const alt2 = new Date(stripped); if (!isNaN(alt2.getTime())) return alt2; } catch(e){}
+    }
+    return null;
+  }
+  function findDateOnCompetition(compObj, name) {
+    if (!compObj) return null;
+    const direct = tryParseDate(compObj); if (direct) return direct;
+    const candidates = [`${name}Date`, name, `${name}At`, `${name}sAt`, `${name}_date`, `${name}s_on`, `${name}Time`, `${name}_time`, `${name}_at`, `${name}ISO`, `${name}DateISO`];
+    for (const k of candidates) { if (compObj[k]) { const d = tryParseDate(compObj[k]); if (d) return d; } }
+    if (compObj.startDate && name === 'start') { const d = tryParseDate(compObj.startDate); if (d) return d; }
+    if (compObj.endDate && name === 'end') { const d = tryParseDate(compObj.endDate); if (d) return d; }
+    if (compObj.snapshot && typeof compObj.snapshot === 'object') { const d = findDateOnCompetition(compObj.snapshot, name); if (d) return d; }
+    if (compObj.dates && typeof compObj.dates === 'object') { const d = findDateOnCompetition(compObj.dates, name); if (d) return d; }
+    if (compObj.meta && typeof compObj.meta === 'object') { const d = findDateOnCompetition(compObj.meta, name); if (d) return d; }
+    if (compObj.schedule && typeof compObj.schedule === 'object') { const d = findDateOnCompetition(compObj.schedule, name); if (d) return d; }
+    return null;
+  }
+  function formatRemaining(ms) {
+    if (ms <= 0) return '0d:00h:00m:00s';
+    const s = Math.floor(ms / 1000);
+    const days = Math.floor(s / 86400);
+    const hours = Math.floor((s % 86400) / 3600);
+    const mins = Math.floor((s % 3600) / 60);
+    const secs = s % 60;
+    const pad = n => (n < 10 ? '0' + n : String(n));
+    return `${days}d:${pad(hours)}h:${pad(mins)}m:${pad(secs)}s`;
+  }
+  function clearCountdown(){ if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; } }
+  function setupCompetitionCountdown(compObj) {
+    clearCountdown();
+    const display = document.getElementById('compCountdown'); if (!display) return;
+    display.classList.remove('countdown-live');
+    if (!compObj) { display.innerText = '—'; return; }
+    const start = findDateOnCompetition(compObj, 'start');
+    const end = findDateOnCompetition(compObj, 'end');
+    const now = Date.now();
+    let target = null; let label = ''; let startText = start ? `Start: ${start.toLocaleString()}` : '';
+    if (start && start.getTime() > now) {
+      // competition not started yet
+      target = start;
+      label = 'Starts in';
+      display.classList.add('countdown-live');
+      function tickStart() {
+        const remaining = target.getTime() - Date.now();
+        if (remaining <= 0) { display.innerText = `${startText} · Status: starting now`; display.classList.remove('countdown-live'); clearCountdown(); setTimeout(()=>{ if (typeof load==='function') load(); },800); return; }
+        display.innerText = `${label} ${formatRemaining(remaining)} · ${startText}`;
+      }
+      tickStart();
+      countdownTimer = setInterval(tickStart, 1000);
+      return;
+    }
+    if (end && end.getTime() > now) {
+      // running and has end
+      target = end;
+      label = 'Ends in';
+      display.classList.add('countdown-live');
+      function tickEnd() {
+        const remaining = target.getTime() - Date.now();
+        if (remaining <= 0) { display.innerText = `End: ${end.toLocaleString()} · Status: ended`; display.classList.remove('countdown-live'); clearCountdown(); setTimeout(()=>{ if (typeof load==='function') load(); },800); return; }
+        // Show start date if available, else show end only
+        if (start) display.innerText = `Start: ${start.toLocaleString()} · ${label} ${formatRemaining(remaining)}`;
+        else display.innerText = `${label} ${formatRemaining(remaining)} · End: ${end.toLocaleString()}`;
+      }
+      tickEnd();
+      countdownTimer = setInterval(tickEnd, 1000);
+      return;
+    }
+    // fallback: no start/end future info
+    display.classList.remove('countdown-live');
+    if (start && end) {
+      display.innerText = `Start: ${start.toLocaleString()} · End: ${end.toLocaleString()} · Status: ended`;
+      return;
+    }
+    if (start && start.getTime() <= now && !end) {
+      display.innerText = `Start: ${start.toLocaleString()} · Status: running (no end date)`;
+      return;
+    }
+    if (end && end.getTime() <= now && !start) {
+      display.innerText = `Ended on ${end.toLocaleString()}`;
+      return;
+    }
+    display.innerText = `Schedule unknown`;
+  }
+
+  /* ---------------- ADMIN: competitions modal (same as before) ---------------- */
+  function createModal(contentHtml) {
+    const overlay = document.createElement('div');
+    overlay.className = 'admin-modal-overlay';
+    Object.assign(overlay.style, { position:'fixed', inset:0, display:'flex', alignItems:'center', justifyContent:'center', background:'rgba(0,0,0,0.35)', zIndex:9999 });
+    const box = document.createElement('div');
+    Object.assign(box.style, { width:'760px', maxWidth:'94vw', background:'#fff', borderRadius:'10px', padding:'14px', boxShadow:'0 24px 60px rgba(2,6,23,0.14)' });
+    box.innerHTML = contentHtml; overlay.appendChild(box); document.body.appendChild(overlay);
+    function close(){ overlay.remove(); }
+    overlay.addEventListener('click', (e)=> { if (e.target === overlay) close(); });
+    return { root: overlay, close, box };
+  }
+  function toLocalDateTimeInput(val) {
+    if (!val) return '';
+    const d = new Date(val); if (isNaN(d.getTime())) return '';
+    const pad = (n)=>String(n).padStart(2,'0');
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+  async function openCompetitionModal(existing) {
+    const isEdit = !!existing;
+    const nameVal = isEdit ? (existing.name || '') : '';
+    const sVal = isEdit && existing.startDate ? toLocalDateTimeInput(existing.startDate) : '';
+    const eVal = isEdit && existing.endDate ? toLocalDateTimeInput(existing.endDate) : '';
+    const html = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <h3 style="margin:0">${isEdit ? 'Edit' : 'Add'} Competition</h3>
+        <button id="compModalClose" class="small-btn">Close</button>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <label><strong>Name</strong><input id="compNameInput" type="text" value="${escapeHtml(nameVal)}" style="width:100%;padding:8px;border-radius:6px;border:1px solid #e6e6e6" /></label>
+        <label><strong>Start (local)</strong><input id="compStartInput" type="datetime-local" value="${sVal}" style="width:100%;padding:8px;border-radius:6px;border:1px solid #e6e6e6" /></label>
+        <label><strong>End (local)</strong><input id="compEndInput" type="datetime-local" value="${eVal}" style="width:100%;padding:8px;border-radius:6px;border:1px solid #e6e6e6" /></label>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px">
+          <button id="compSaveBtn" class="btn-primary">${isEdit ? 'Save' : 'Create'}</button>
+          <button id="compCancelBtn" class="small-btn">Cancel</button>
+        </div>
+        <div id="compModalMsg" style="color:#d32; margin-top:6px; display:none"></div>
+      </div>`;
+    const modal = createModal(html);
+    modal.box.querySelector('#compModalClose').addEventListener('click', ()=> modal.close());
+    modal.box.querySelector('#compCancelBtn').addEventListener('click', ()=> modal.close());
+    modal.box.querySelector('#compSaveBtn').addEventListener('click', async () => {
+      const name = modal.box.querySelector('#compNameInput').value.trim();
+      const startStr = modal.box.querySelector('#compStartInput').value;
+      const endStr = modal.box.querySelector('#compEndInput').value;
+      if (!name) { const m = modal.box.querySelector('#compModalMsg'); m.style.display=''; m.innerText='Name is required'; return; }
+      const tkn = getToken(); if (!tkn) { alert('Admin login required'); return; }
+      modal.box.querySelector('#compSaveBtn').disabled = true; modal.box.querySelector('#compSaveBtn').innerText = 'Saving...';
+      try {
+        const body = { name };
+        if (startStr) body.startDate = new Date(startStr).toISOString(); else if (isEdit) body.startDate = null;
+        if (endStr) body.endDate = new Date(endStr).toISOString(); else if (isEdit) body.endDate = null;
+        let resp;
+        if (isEdit) {
+          resp = await fetchJson(`/api/competitions/${existing._id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tkn },
+            body: JSON.stringify(body)
+          });
+        } else {
+          resp = await fetchJson('/api/competitions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tkn },
+            body: JSON.stringify(body)
+          });
+        }
+        if (!resp.ok) { const m = modal.box.querySelector('#compModalMsg'); m.style.display=''; m.innerText = resp.error || 'Save failed'; }
+        else { modal.close(); await load(); alert(isEdit ? 'Competition updated' : 'Competition created and users reset to 0 points'); }
+      } catch (err) { console.error(err); const m = modal.box.querySelector('#compModalMsg'); m.style.display=''; m.innerText = err.message || 'Save failed'; }
+      finally { modal.box.querySelector('#compSaveBtn').disabled = false; modal.box.querySelector('#compSaveBtn').innerText = isEdit ? 'Save' : 'Create'; }
+    });
+  }
+  // rest of admin panel functions unchanged (omitted here for brevity in reading)
+  async function openCompetitionsAdminPanel() {
+    // same code as previous (unchanged)...
+    const tkn = getToken(); if (!tkn) return alert('Admin login required');
+    const r = await fetchJson('/api/competitions');
+    if (!r.ok) return alert('Failed to load competitions: ' + (r.error||''));
+    const comps = (r.data && r.data.competitions) ? r.data.competitions : [];
+    const rowsHtml = comps.map(c => {
+      const sd = c.startDate ? (new Date(c.startDate)).toLocaleString() : '—';
+      const ed = c.endDate ? (new Date(c.endDate)).toLocaleString() : '—';
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px;border-bottom:1px solid #f2f4f7">
+        <div style="flex:1">
+          <div style="font-weight:700">${escapeHtml(c.name || 'Untitled')}</div>
+          <div class="muted" style="font-size:13px">${sd} → ${ed} ${c.isActive ? ' · (active)' : ''}</div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="small-btn edit-comp" data-id="${c._id}">Edit</button>
+          <button class="small-btn act-comp" data-id="${c._id}">${c.isActive ? 'Deactivate' : 'Activate'}</button>
+          <button class="small-btn del-comp" data-id="${c._id}" style="background:#fff;border-color:#f5c6c6">Delete</button>
+        </div>
+      </div>`;
+    }).join('');
+    const html = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <h3 style="margin:0">Manage Competitions</h3>
+        <div>
+          <button id="btnAddCompetition" class="btn-primary">Add Competition</button>
+          <button id="closeAdminPanel" class="small-btn" style="margin-left:8px">Close</button>
+        </div>
+      </div>
+      <div style="max-height:60vh;overflow:auto;border-radius:8px">${rowsHtml || '<div class="muted" style="padding:12px">No competitions</div>'}</div>
+      <div style="margin-top:8px;color:#666">Creating a new competition will deactivate the previous active competition and reset all users' points to 0.</div>
+    `;
+    const modal = createModal(html);
+    modal.box.querySelector('#closeAdminPanel').addEventListener('click', ()=> modal.close());
+    modal.box.querySelector('#btnAddCompetition').addEventListener('click', ()=> openCompetitionModal(null));
+    modal.box.querySelectorAll('.edit-comp').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const id = e.target.dataset.id; const item = comps.find(x => String(x._id) === String(id));
+        if (!item) return alert('Not found'); openCompetitionModal(item); modal.close();
+      });
+    });
+    modal.box.querySelectorAll('.act-comp').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const id = e.target.dataset.id; const item = comps.find(x => String(x._id) === String(id));
+        if (!item) return alert('Not found');
+        const tkn = getToken(); if (!tkn) return alert('Admin login required');
+        if (item.isActive) {
+          const zero = confirm('Zero user points when deactivating? Click OK to zero them, Cancel to only snapshot without zeroing.');
+          const resp = await fetchJson(`/api/admin/competitions/${id}/deactivate${zero? '?zero=1':''}`, { method: 'POST', headers: { Authorization: 'Bearer ' + tkn } });
+          if (!resp.ok) return alert('Deactivate failed: ' + (resp.error||''));
+          alert('Competition deactivated');
+        } else {
+          const resp = await fetchJson(`/api/admin/competitions/${id}/activate`, { method: 'POST', headers: { Authorization: 'Bearer ' + tkn } });
+          if (!resp.ok) return alert('Activate failed: ' + (resp.error||''));
+          alert('Competition activated');
+        }
+        modal.close(); await load();
+      });
+    });
+    modal.box.querySelectorAll('.del-comp').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const id = e.target.dataset.id;
+        if (!confirm('Delete this competition?')) return;
+        const tkn = getToken(); if (!tkn) return alert('Admin login required');
+        const resp = await fetchJson(`/api/competitions/${encodeURIComponent(id)}`, { method: 'DELETE', headers: { Authorization: 'Bearer ' + tkn } });
+        if (!resp.ok) return alert('Delete failed: ' + (resp.error || ''));
+        modal.close(); await load(); alert('Competition deleted');
+      });
+    });
+  }
+
+  /* ---------------- MOBILE MENU wiring & user dropdown handling ---------------- */
+  (function(){
+    const btn = document.getElementById('btnHamburger'), mobile = document.getElementById('mobileMenu');
+    function openMobile(){ if (!mobile) return; mobile.classList.add('open'); if (btn) btn.setAttribute('aria-expanded','true'); mobile.setAttribute('aria-hidden','false'); }
+    function closeMobile(){ if (!mobile) return; mobile.classList.remove('open'); if (btn) btn.setAttribute('aria-expanded','false'); mobile.setAttribute('aria-hidden','true'); }
+    function toggleMobile(){ if (!mobile) return; mobile.classList.contains('open') ? closeMobile() : openMobile(); }
+    if (btn && mobile) {
+      btn.addEventListener('click', (e) => { e.stopPropagation(); toggleMobile(); });
+      mobile.addEventListener('click', (ev) => {
+        const a = ev.target.closest('a');
+        if (a && a.classList.contains('mobile-nav-link')) { closeMobile(); }
+      });
+    }
+    document.addEventListener('click', (ev) => {
+      const dd = document.getElementById('userDropdown');
+      if (dd && !dd.contains(ev.target) && ev.target.id !== 'btnUserName') dd.classList.remove('open');
+      if (mobile && !mobile.contains(ev.target) && btn && !btn.contains(ev.target)) closeMobile();
+    });
+    document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') { const dd = document.getElementById('userDropdown'); if (dd) dd.classList.remove('open'); if (mobile) mobile.classList.remove('open'); } });
+  })();
+
+  /* wire logout/profile in dropdowns */
+  (function wireUserDropdownActions(){
+    document.addEventListener('click', (e) => {
+      if (e.target && e.target.id === 'btnLogout') { localStorage.removeItem('token'); localStorage.removeItem('user'); location.reload(); }
+      if (e.target && e.target.id === 'btnProfile') { alert('Open profile page (implement as needed)'); }
+    });
+  })();
+
+  /* re-render on resize to switch between mobile/desktop presentation */
+  window.addEventListener('resize', () => {
+    if (!window._lastTop) return;
+    clearTimeout(window._resizeTimer);
+    window._resizeTimer = setTimeout(() => {
+      try { renderBoard(window._lastTop); } catch(e){ /* ignore */ }
+    }, 140);
+  });
+
+  /* ---------------- START ---------------- */
+  renderNav();
+  // ensure user-dropdown shows user info when logged in
+  (function updateUserDropdownInfo(){
+    const u = getUser();
+    const nameEl = document.getElementById('userDropdownName');
+    const emailEl = document.getElementById('userDropdownEmail');
+    if (u) {
+      if (nameEl) nameEl.innerText = u.fullName || u.username || 'Me';
+      if (emailEl) emailEl.innerText = u.email || u.phone || '';
+      // wire btnProfile/Logout just in case
+      const p = document.getElementById('btnProfile');
+      const lo = document.getElementById('btnLogout');
+      if (lo) lo.onclick = ()=> { localStorage.removeItem('token'); localStorage.removeItem('user'); location.reload(); };
+      if (p) p.onclick = ()=> alert('Open profile page (implement as needed)');
+    }
+  })();
+
+  load();
+</script>
+
+</body>
+</html>

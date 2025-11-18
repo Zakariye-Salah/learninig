@@ -1,0 +1,724 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Help Center</title>
+  <meta name="robots" content="noindex" />
+  <style>
+    :root{
+      --accent:#0b5cff; --bg:#f6f7fb; --card:#fff; --muted:#6b7280; --glass:rgba(255,255,255,0.7);
+      --nav-hover-bg: rgba(11,92,255,0.06);
+    }
+    /* --- toggle helpers --- */
+.grid.full-thread { grid-template-columns: 1fr !important; }
+.hidden-left { display:none !important; }
+#threadHeader .back-btn { background:transparent;border:0;color:var(--accent);cursor:pointer;font-weight:700;padding:6px 8px;border-radius:8px }
+#threadHeader .back-btn:active{ transform: translateY(1px); }
+
+    *{box-sizing:border-box}
+    body{font-family:system-ui,Segoe UI,Arial;background:var(--bg);margin:0;color:#111}
+    .wrap{max-width:1100px;margin:16px auto;padding:12px}
+    .card{background:var(--card);border-radius:12px;padding:12px;box-shadow:0 10px 30px rgba(16,24,40,0.06)}
+    .grid{display:grid;grid-template-columns:320px 1fr;gap:12px}
+    .list{height:72vh;overflow:auto}
+    .thread{height:72vh;display:flex;flex-direction:column}
+    .conv-item{padding:10px;border-bottom:1px solid #f0f0f0;cursor:pointer}
+    .conv-item.unread{background:linear-gradient(90deg, rgba(11,92,255,0.06), transparent)}
+    .messages{flex:1;overflow:auto;padding:12px}
+    .msg{margin-bottom:10px;max-width:75%;padding:10px;border-radius:10px;line-height:1.35}
+    .msg.user{margin-left:auto;background:#e6f0ff}
+    .msg.admin{margin-right:auto;background:#f3f4f6}
+    .meta{font-size:12px;color:var(--muted);margin-bottom:6px}
+    .composer{display:flex;gap:8px;padding:10px;border-top:1px solid #eee;align-items:flex-end}
+    textarea{flex:1;min-height:56px;padding:8px;border-radius:8px;border:1px solid #e6e6e6;resize:vertical}
+    button{background:var(--accent);color:#fff;border:none;padding:8px 12px;border-radius:8px;cursor:pointer}
+    .btn-ghost{background:transparent;border:1px solid #e6e6e6;color:#333;padding:8px;border-radius:8px}
+    .muted{color:var(--muted)}
+    .toolbar{display:flex;gap:8px;align-items:center}
+    .small{font-size:13px;padding:6px 8px}
+    .empty{padding:18px;color:var(--muted)}
+    .header-title{display:flex;align-items:center;gap:12px}
+    .badge{background:#ef4444;color:#fff;padding:2px 8px;border-radius:12px;font-size:12px}
+
+    header{display:flex;align-items:center;gap:12px;max-width:1100px;margin:0 auto 12px;padding:12px 0}
+
+/* MAIN NAV: show on desktop as a horizontal nav, hide on mobile */
+#mainNav {
+  display:flex;
+  gap:10px;
+  margin-left:16px;
+  align-items:center;
+}
+/* style links inside #mainNav to match header */
+#mainNav a {
+  color:#111;
+  text-decoration:none;
+  padding:6px 10px;
+  border-radius:8px;
+  font-weight:600;
+  transition: color .12s ease, background .12s ease, transform .12s ease;
+}
+#mainNav a:hover { color:var(--accent); background: var(--nav-hover-bg); transform: translateY(-2px); }
+
+/* right area */
+.sh-right { margin-left:auto; display:flex; align-items:center; gap:8px; }
+
+/* buttons */
+.icon-btn { background:transparent; border:0; padding:8px; border-radius:8px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; transition: transform .12s ease; }
+.small-btn { background:#fff; border:1px solid #e6e6e6; padding:6px 8px; border-radius:8px; cursor:pointer; font-size:13px; color:#111; }
+.badge { display:inline-flex; align-items:center; justify-content:center; min-width:18px; height:18px; padding:0 6px; border-radius:999px; background:#ef4444; color:#fff; font-size:11px }
+
+    /* mobile-specific styles for hamburger & mobile panel */
+    .brand { display:flex; align-items:center; gap:8px; font-weight:700; font-size:16px; color:#111; margin-right:8px; }
+    .brand .logo { font-size:20px; }
+
+    .sh-right { margin-left:auto; display:flex; align-items:center; gap:8px; }
+
+    .icon-btn { background:transparent; border:0; padding:8px; border-radius:8px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; transition: transform .12s ease, background .12s ease; }
+    .icon-btn:active { transform: translateY(1px); }
+
+    .hamburger { display:none; width:44px; height:44px; align-items:center; justify-content:center; border-radius:8px; }
+
+    .mobile-panel {
+      position:fixed; top:64px; right:12px; width:320px; max-width:92vw;
+      background:linear-gradient(180deg, rgba(255,255,255,0.98), var(--card));
+      border-radius:14px; box-shadow:0 24px 60px rgba(2,6,23,0.14);
+      transform-origin:top right; transform: translateY(-12px) scale(.98);
+      opacity:0; pointer-events:none; transition: transform .26s cubic-bezier(.2,.9,.28,1), opacity .22s ease;
+      z-index:120;
+    }
+    .mobile-panel.open { transform: translateY(0) scale(1); opacity:1; pointer-events:auto; }
+    .mobile-panel .inner { padding:14px; display:flex; flex-direction:column; gap:10px; }
+    .mobile-panel .brand-row { display:flex;align-items:center;gap:10px;padding:8px 6px;border-bottom:1px solid #f1f5f9;margin-bottom:6px }
+    .mobile-panel a { display:block; text-align:left; padding:12px 14px; border-radius:10px; color:#111; font-size:15px; text-decoration:none; transition: transform .14s ease, background .12s ease; }
+    .mobile-panel a:hover { background: var(--nav-hover-bg); transform: translateX(6px); color: var(--accent); }
+
+    /* show hamburger on small screens only and hide on desktop */
+    @media (max-width:900px) {
+      #mainNav { display: none; } /* ensure main nav hidden on small screens as well */
+      .hamburger { display:inline-flex; }
+    }
+    @media (min-width:901px) {
+      .mobile-panel { display:none; }
+      .hamburger { display:none !important; }
+    }
+
+    /* accessibility focus */
+    .mobile-panel a:focus, .settings-item:focus { outline: 3px solid rgba(11,92,255,0.12); outline-offset:4px; border-radius:8px; }
+
+    /* small-screen grid adjustments */
+    @media(max-width:900px){
+      .grid{grid-template-columns:1fr}
+      .list{height:34vh}
+      .thread{height:48vh}
+      .conv-item{font-size:14px}
+    }
+  </style>
+</head>
+<body>
+  <header style="max-width:1100px;margin:0 auto;padding:10px 12px;display:flex;align-items:center;gap:12px">
+    <!-- BRAND (always visible) -->
+    <div class="brand" aria-hidden="false">
+      <span class="logo">📚</span>
+      <span>LearningHub</span>
+    </div>
+
+    <style>
+      :root{
+        --accent:#0b5cff;
+        --bg:#f6f7fb;
+        --card:#ffffff;
+        --muted:#6b7280;
+        --glass: rgba(255,255,255,0.9);
+        --nav-hover-bg: rgba(11,92,255,0.06);
+      }
+  
+      /* header layout */
+      #site-header { background:var(--card); border-bottom:1px solid #eef2f6; position:relative; z-index:60; }
+      .sh-top { max-width:1100px; margin:0 auto; display:flex; align-items:center; gap:12px; padding:10px 16px; }
+      .sh-brand { font-weight:700; display:flex; gap:8px; align-items:center; color:#111; font-size:15px }
+      .sh-brand .logo { font-size:18px }
+  
+      /* desktop nav */
+      .sh-nav { display:flex; gap:6px; align-items:center; margin-left:12px; }
+      .sh-nav a {
+        color:#111;
+        text-decoration:none;
+        padding:8px 12px;
+        border-radius:10px;
+        font-size:14px;
+        position:relative;
+        transition: transform .18s ease, color .12s ease;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .sh-nav a::after {
+        content: "";
+        position: absolute;
+        left: 12px;
+        right: 12px;
+        bottom: 6px;
+        height: 2px;
+        background: linear-gradient(90deg,var(--accent),#4aa3ff);
+        transform-origin: left center;
+        transform: scaleX(0);
+        transition: transform .18s ease;
+        border-radius:2px;
+        opacity:0.95;
+      }
+      .sh-nav a:hover { color: var(--accent); transform: translateY(-2px); }
+      .sh-nav a:hover::after { transform: scaleX(1); }
+  
+      .sh-right { margin-left:auto; display:flex; align-items:center; gap:8px; }
+  
+      /* buttons */
+      .icon-btn { background:transparent; border:0; padding:8px; border-radius:8px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; transition: transform .12s ease, background .12s ease; }
+      .icon-btn:active { transform: translateY(1px); }
+      .small-btn { background:#fff; border:1px solid #e6e6e6; padding:6px 8px; border-radius:8px; cursor:pointer; font-size:13px; color:#111; transition: transform .12s ease, box-shadow .12s ease; }
+      .small-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(11,92,255,0.06); }
+      .badge { display:inline-flex; align-items:center; justify-content:center; min-width:18px; height:18px; padding:0 6px; border-radius:999px; background:#ef4444; color:#fff; font-size:11px }
+  
+      /* mobile panel (improved) */
+      .hamburger { display:none; width:44px; height:44px; align-items:center; justify-content:center; border-radius:8px; }
+      .mobile-panel {
+        position:fixed; top:64px; right:12px; width:320px; max-width:92vw;
+        background:linear-gradient(180deg, rgba(255,255,255,0.98), var(--card));
+        border-radius:14px; box-shadow:0 24px 60px rgba(2,6,23,0.14);
+        transform-origin:top right;
+        transform: translateY(-10px) scale(.98);
+        opacity:0; pointer-events:none;
+        transition: transform .26s cubic-bezier(.2,.9,.28,1), opacity .22s ease;
+        z-index:120;
+      }
+      .mobile-panel.open { transform: translateY(0) scale(1); opacity:1; pointer-events:auto; }
+      .mobile-panel .inner { padding:14px; display:flex; flex-direction:column; gap:10px; }
+      .mobile-panel .brand-row { display:flex;align-items:center;gap:10px;padding:8px 6px;border-bottom:1px solid #f1f5f9;margin-bottom:6px }
+      .mobile-panel a {
+        display:block;
+        text-align:left; padding:12px 14px; border-radius:10px; background:transparent; border:0; color:#111; cursor:pointer; font-size:15px;
+        transition: transform .14s ease, background .12s ease;
+        text-decoration:none;
+      }
+      .mobile-panel a:hover { background: var(--nav-hover-bg); transform: translateX(6px); color: var(--accent); }
+  
+      .mobile-panel .section-title { font-weight:700; color:#111; padding:6px 6px; font-size:13px; opacity:.9; }
+  
+      /* settings dropdown */
+      .settings-dropdown {
+        position:absolute; top:54px; right:16px; width:320px; max-width:92vw;
+        background:var(--card); border-radius:10px; box-shadow:0 20px 60px rgba(2,6,23,0.15);
+        transform-origin:top right; transform:translateY(-8px) scale(.98);
+        opacity:0; pointer-events:none; transition: transform .18s cubic-bezier(.2,.9,.28,1), opacity .14s ease; z-index:130;
+      }
+      .settings-dropdown.open { transform:translateY(0) scale(1); opacity:1; pointer-events:auto; }
+      .settings-dropdown .inner { padding:10px; display:flex; flex-direction:column; gap:8px; }
+      .settings-item { display:flex; align-items:center; gap:10px; padding:10px; border-radius:10px; cursor:pointer; color:#111; border:0; background:transparent; text-align:left; font-size:14px; transition: background .12s ease; }
+      .settings-item:hover { background:#f6f9ff; color:var(--accent); }
+      .settings-item .icon { width:36px; height:36px; display:inline-flex; align-items:center; justify-content:center; border-radius:8px; background:#fbfdff; border:1px solid #eef6ff; }
+  
+      .divider { height:1px; background:#f0f3f7; margin:6px 0; border-radius:2px; }
+  
+      /* responsive behavior */
+      @media (max-width:900px) {
+        .sh-nav { display:none; }           /* hide desktop nav on mobile */
+        .hamburger { display:inline-flex; } /* show hamburger */
+        /* show settings gear on mobile */
+        #btnSettings { display:inline-flex !important; }
+        /* hide wide-screen text buttons on mobile */
+        #btn-login, #btn-register, #btn-logout, #btn-balance, #btn-convert, #btn-check-withdrawals, #btn-edit-profile,
+        #btn-add-folder, #btn-recycle { display:none !important; }
+        .sh-top { padding-right:12px; }
+      }
+  
+      /* hide gear on desktop only */
+      @media (min-width:901px) {
+        .mobile-panel { display:none; }
+        .settings-dropdown { right:18px; }
+        #btnSettings { display:none !important; } /* hide on desktop */
+      }
+  
+      /* accessibility / focus */
+      .sh-nav a:focus, .mobile-panel a:focus, .settings-item:focus { outline: 3px solid rgba(11,92,255,0.12); outline-offset:4px; border-radius:10px; }
+  
+    </style>
+    <!-- the original desktop nav kept in DOM for compatibility (hidden on desktop per request) -->
+    <nav id="mainNav" aria-label="Main navigation">
+      <a href="index.html">Lessons</a>
+      <a href="leaderboard.html">Leaderboard</a>
+      <a href="history.html">History</a>
+      <a href="story.html">Stories</a>
+
+      <a href="games.html">Games</a>
+      <a href="helpCenter.html">Helper</a>
+    </nav>
+
+    <!-- right side: user info & hamburger (hamburger visible only on small screens) -->
+    <div class="sh-right" role="region" aria-label="User controls" style="margin-left:auto">
+      <div id="userInfo" style="margin-right:6px"></div>
+
+      <!-- bell (kept for compatibility, hidden by default) -->
+      <button id="btnBell" class="icon-btn" aria-haspopup="true" aria-expanded="false" title="Notifications" style="position:relative; display:none">
+        <span style="font-size:18px">🔔</span>
+        <span id="help_unread_badge" class="badge" style="display:none; position:absolute; top:-6px; right:-6px">0</span>
+      </button>
+
+      <!-- hamburger (mobile only) -->
+      <button id="btnHamburger" class="icon-btn hamburger" aria-expanded="false" aria-label="Menu" title="Menu" style="margin-left:6px">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none"><path d="M3 6h18M3 12h18M3 18h18" stroke="#111" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- MOBILE PANEL: brand + navigation links only -->
+  <div id="mobileMenu" class="mobile-panel" aria-hidden="true" role="dialog" aria-label="Mobile navigation">
+    <div class="inner">
+      <div class="brand-row">
+        <span style="font-size:20px">📚</span>
+        <div style="font-weight:700">LearningHub</div>
+      </div>
+      <nav id="mobileNav" aria-label="Mobile links"></nav>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div class="header-title">
+          <h3 style="margin:0">Help Center</h3>
+          <div id="userInfoHeader" style="margin-left:8px"></div>
+        </div>
+        <div id="rightControls" class="toolbar"></div>
+      </div>
+
+      <div class="grid">
+        <div class="card list" id="conversationsList" aria-live="polite">
+          <!-- list -->
+        </div>
+
+        <div class="card thread" id="threadArea">
+          <div id="threadHeader" style="padding:8px;border-bottom:1px solid #eee"></div>
+          <div class="messages" id="messages" role="log" aria-live="polite"></div>
+          <div class="composer" id="composer">
+            <textarea id="msgText" placeholder="Write a message..." aria-label="Message"></textarea>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <button id="sendBtn" class="small">Send</button>
+              <button id="loginBtn" class="btn-ghost small" style="display:none">Login</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* Help Center front-end
+   - set API_BASE to your backend (default localhost:4000)
+   - endpoints used:
+     GET  /api/help/my
+     POST /api/help/messages
+     GET  /api/help/conversations
+     GET  /api/help/conversations/:id
+     POST /api/help/conversations/:id/reply
+     POST /api/help/conversations/:id/mark-read
+*/
+
+/* ---------- KEEP YOUR ORIGINAL HELP CENTER LOGIC BELOW UNCHANGED ---------- */
+
+
+const API_BASE = (typeof globalThis !== 'undefined' && globalThis.API_BASE) ? globalThis.API_BASE : 'http://localhost:4000';
+
+// --- helpers ---
+function safeJSONParse(text){ try { return text ? JSON.parse(text) : null; } catch(e){ return null; } }
+async function fetchJson(path, opts = {}) {
+  try {
+    const url = path.startsWith('http') ? path : API_BASE + path;
+    const res = await fetch(url, opts);
+    const text = await res.text();
+    const data = safeJSONParse(text);
+    if (!res.ok) return { ok:false, status: res.status, error: (data && (data.error||data.message)) ? (data.error||data.message) : res.statusText, data };
+    return { ok:true, data };
+  } catch (err) {
+    return { ok:false, error: err.message || 'Network error' };
+  }
+}
+
+// Token / user helpers — uses existing app if available, otherwise localStorage
+function getToken(){
+  try { if (window.Auth && window.Auth.getToken) return window.Auth.getToken(); } catch(e){}
+  return localStorage.getItem('token');
+}
+function setToken(t){
+  try { if (window.Auth && window.Auth.setToken) return window.Auth.setToken(t); } catch(e){}
+  if (t) localStorage.setItem('token', t); else localStorage.removeItem('token');
+}
+function getUser(){
+  try { if (window.Auth && window.Auth.getUser) return window.Auth.getUser(); } catch(e){}
+  const s = localStorage.getItem('user'); return s ? JSON.parse(s) : null;
+}
+function setUser(u){
+  try { if (window.Auth && window.Auth.setUser) return window.Auth.setUser(u); } catch(e){}
+  if (u) localStorage.setItem('user', JSON.stringify(u)); else localStorage.removeItem('user');
+}
+function authHeaders(json = true){
+  const t = getToken();
+  const h = {};
+  if (t) h['Authorization'] = 'Bearer ' + t;
+  if (json) h['Content-Type'] = 'application/json';
+  return h;
+}
+function isAdmin(){ const u = getUser(); return u && u.role === 'admin'; }
+function escapeHtml(s){ if (s === 0) return '0'; if (!s) return ''; return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+// --- UI refs ---
+const conversationsList = document.getElementById('conversationsList');
+const messagesEl = document.getElementById('messages');
+const threadHeader = document.getElementById('threadHeader');
+const sendBtn = document.getElementById('sendBtn');
+const msgText = document.getElementById('msgText');
+const rightControls = document.getElementById('rightControls');
+const loginBtn = document.getElementById('loginBtn');
+const userInfo = document.getElementById('userInfo');
+const userInfoHeader = document.getElementById('userInfoHeader');
+
+/* ---------- view toggle helpers (list <-> single thread) ---------- */
+function isMobileView(){ return window.innerWidth <= 900; }
+
+function showListView(){
+  // show left list and normal grid
+  try {
+    conversationsList.style.display = '';
+    const g = document.querySelector('.grid');
+    if (g) g.classList.remove('full-thread');
+    // remove any back button
+    const back = threadHeader.querySelector('.back-btn');
+    if (back) back.remove();
+  } catch(e){ /* ignore */ }
+}
+
+function showThreadOnly(addBack = false){
+  // hide left list and expand thread
+  try {
+    conversationsList.style.display = 'none';
+    const g = document.querySelector('.grid');
+    if (g) g.classList.add('full-thread');
+    // optionally add a back button for admins on mobile
+    if (addBack) {
+      if (!threadHeader.querySelector('.back-btn')) {
+        const btn = document.createElement('button');
+        btn.className = 'back-btn';
+        btn.type = 'button';
+        btn.innerText = '← Back to list';
+        btn.onclick = () => { showListView(); };
+        // insert before existing header content
+        threadHeader.prepend(btn);
+      }
+    }
+  } catch(e) { /* ignore */ }
+}
+
+/* Keep UI consistent on resize */
+window.addEventListener('resize', () => {
+  // if normal user, always keep single-thread layout
+  if (!isAdmin()) {
+    showThreadOnly(false);
+    return;
+  }
+  // admin: if desktop width -> show list; if mobile -> keep whichever they currently have
+  if (isMobileView()) {
+    // when switching to mobile, keep current layout (do nothing)
+    return;
+  } else {
+    // restore list on bigger screens for admins
+    showListView();
+  }
+});
+
+
+// state
+let selectedConvId = null;
+let adminPollingInterval = null;
+
+// --- UI rendering ---
+function showUserBadge(){
+  const u = getUser();
+  if (!u) {
+    userInfo.innerHTML = '';
+    userInfoHeader.innerHTML = '';
+    loginBtn.style.display = '';
+    return;
+  }
+  userInfo.innerHTML = `<small class="muted">${escapeHtml(u.fullName || u.username || '')}</small>`;
+  userInfoHeader.innerHTML = `<small class="muted">Hello, ${escapeHtml(u.fullName || u.username || 'User')}</small>`;
+  loginBtn.style.display = 'none';
+}
+
+function showEmptyList(msg){
+  conversationsList.innerHTML = `<div class="empty">${escapeHtml(msg)}</div>`;
+}
+
+function renderMessages(msgs){
+  if (!Array.isArray(msgs) || msgs.length === 0) {
+    messagesEl.innerHTML = `<div class="empty">No messages yet.</div>`; return;
+  }
+  messagesEl.innerHTML = msgs.map(m => {
+    const cls = m.sender === 'user' ? 'msg user' : 'msg admin';
+    const who = (m.sender === 'user') ? (m.userName || 'User') : (m.adminName || 'Admin');
+    return `<div class="${cls}">
+              <div class="meta">${escapeHtml(who)} • ${new Date(m.createdAt).toLocaleString()}</div>
+              <div>${escapeHtml(m.text)}</div>
+            </div>`;
+  }).join('');
+  setTimeout(()=> messagesEl.scrollTop = messagesEl.scrollHeight, 40);
+}
+
+// --- user flows ---
+async function loadForUser(){
+  conversationsList.innerHTML = `<div class="empty">Loading...</div>`;
+  const r = await fetchJson('/api/help/my', { headers: authHeaders(), method: 'GET' });
+  if (!r.ok) {
+    showEmptyList('Failed to load messages: ' + (r.error || ''));
+    threadHeader.innerHTML = '';
+    messagesEl.innerHTML = '';
+    return;
+  }
+  const conv = r.data.conversation || null;
+  if (!conv) {
+    showEmptyList('You have not sent any messages yet. Use the box to start a conversation with admin.');
+    threadHeader.innerHTML = `<strong>Your conversation</strong>`;
+    messagesEl.innerHTML = `<div class="empty">No messages</div>`;
+    selectedConvId = null;
+    return;
+  }
+  // show summary on left and conversation on right
+  selectedConvId = conv._id;
+  conversationsList.innerHTML = `<div style="padding:12px"><strong>${escapeHtml(conv.userName || conv.userUsername || 'You')}</strong><div class="muted">Opened: ${new Date(conv.createdAt).toLocaleString()}</div></div>`;
+  threadHeader.innerHTML = `<div><strong>Conversation with Admin</strong><div class="muted">Last: ${escapeHtml(conv.lastMessage || '')}</div></div>`;
+  renderMessages(conv.messages || []);
+}
+
+async function sendUserMessage(){
+  if (!getToken()) return promptLoginAndRetry(sendUserMessage);
+  const txt = msgText.value.trim();
+  if (!txt) return alert('Please type a message.');
+  sendBtn.disabled = true;
+  const r = await fetchJson('/api/help/messages', { method:'POST', headers: authHeaders(true), body: JSON.stringify({ text: txt }) });
+  sendBtn.disabled = false;
+  if (!r.ok) return alert('Send failed: ' + (r.error || ''));
+  msgText.value = '';
+  await loadForUser();
+}
+
+// --- admin flows ---
+async function loadAdminList(){
+  conversationsList.innerHTML = `<div class="empty">Loading...</div>`;
+  const r = await fetchJson('/api/help/conversations', { headers: authHeaders(), method: 'GET' });
+  if (!r.ok) { showEmptyList('Failed to load: ' + (r.error||'')); return; }
+  const convs = (r.data.conversations || []).sort((a,b) => (new Date(b.updatedAt||b.createdAt)).getTime() - (new Date(a.updatedAt||a.createdAt)).getTime());
+  if (!convs.length) return showEmptyList('No conversations yet.');
+  conversationsList.innerHTML = '';
+  convs.forEach(c => {
+    const unread = c.unreadForAdmin ? ' unread' : '';
+    const node = document.createElement('div');
+    node.className = 'conv-item' + unread;
+    node.dataset.id = c._id;
+    node.innerHTML = `<div style="font-weight:700">${escapeHtml(c.userName || c.userUsername || 'User')} ${c.unreadForAdmin ? '<span class="badge">new</span>' : ''}</div>
+                      <div class="muted" style="font-size:13px">${escapeHtml(c.lastMessage||'')} • ${new Date(c.updatedAt||c.createdAt).toLocaleString()}</div>`;
+    node.onclick = ()=> openAdminConversation(c._id);
+    conversationsList.appendChild(node);
+  });
+}
+
+async function openAdminConversation(id){
+  selectedConvId = id;
+  threadHeader.innerHTML = `<div class="muted">Loading…</div>`;
+  const r = await fetchJson('/api/help/conversations/' + encodeURIComponent(id), { headers: authHeaders(), method:'GET' });
+  if (!r.ok) { threadHeader.innerHTML = `<div class="muted">Failed to load: ${escapeHtml(r.error||'')}</div>`; messagesEl.innerHTML=''; return; }
+  const conv = r.data.conversation;
+  const user = r.data.user || {};
+  threadHeader.innerHTML = `<div><strong>${escapeHtml(user.fullName || user.username || conv.userName || 'User')}</strong>
+                            <div class="muted">User id: ${escapeHtml(String(conv.userId||''))} • Last: ${new Date(conv.updatedAt||conv.createdAt).toLocaleString()}</div></div>`;
+  renderMessages(conv.messages || []);
+  // if admin on mobile, hide left list and add a back button
+  if (isMobileView()) {
+    showThreadOnly(true);
+  }
+}
+
+async function sendAdminReply(){
+  if (!getToken()) return promptLoginAndRetry(sendAdminReply);
+  const txt = msgText.value.trim();
+  if (!txt) return alert('Please type a message.');
+  if (!selectedConvId) return alert('Select a conversation first.');
+  sendBtn.disabled = true;
+  const r = await fetchJson(`/api/help/conversations/${encodeURIComponent(selectedConvId)}/reply`, { method:'POST', headers: authHeaders(true), body: JSON.stringify({ text: txt }) });
+  sendBtn.disabled = false;
+  if (!r.ok) return alert('Send failed: ' + (r.error || ''));
+  msgText.value = '';
+  await openAdminConversation(selectedConvId);
+  await loadAdminList();
+}
+
+async function markRead(){
+  if (!selectedConvId) return alert('Select a conversation first.');
+  const r = await fetchJson(`/api/help/conversations/${encodeURIComponent(selectedConvId)}/mark-read`, { method:'POST', headers: authHeaders() });
+  if (!r.ok) return alert('Failed: ' + (r.error || ''));
+  alert('Marked read');
+  await loadAdminList();
+}
+
+// --- login helpers (local fallback prompt) ---
+async function promptLoginAndRetry(cb){
+  // if your app has existing login, prefer that
+  if (window.openLogin) { await window.openLogin(); return cb(); }
+  const username = prompt('Username/email:');
+  if (!username) return;
+  const password = prompt('Password:');
+  if (!password) return;
+  // call backend login
+  const r = await fetchJson('/api/auth/login', { method:'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username, password }) });
+  if (!r.ok) return alert('Login failed: ' + (r.error || ''));
+  // backend returns { token, user }
+  const token = r.data && r.data.token;
+  const user = r.data && r.data.user;
+  setToken(token); setUser(user);
+  showUserBadge();
+  // adjust UI role
+  setupControls();
+  return cb();
+}
+
+// --- setup controls and boot ---
+function setupControls(){
+  rightControls.innerHTML = '';
+  const u = getUser();
+  // login/logout button
+  if (!u) {
+    const b = document.createElement('button'); b.className='btn-ghost small'; b.innerText='Login'; b.onclick = ()=> promptLoginAndRetry(()=>{ setupControls(); initView(); });
+    rightControls.appendChild(b);
+    loginBtn.style.display = ''; // composer login shown
+  } else {
+    const logout = document.createElement('button'); logout.className='btn-ghost small'; logout.innerText='Logout'; logout.onclick = ()=> { setToken(null); setUser(null); showUserBadge(); setupControls(); initView(); };
+    rightControls.appendChild(logout);
+    loginBtn.style.display = 'none';
+  }
+
+  // admin-specific controls
+  if (isAdmin()) {
+    const refresh = document.createElement('button'); refresh.className='small'; refresh.innerText='Refresh list'; refresh.onclick = ()=> loadAdminList();
+    const markBtn = document.createElement('button'); markBtn.className='btn-ghost small'; markBtn.innerText='Mark read'; markBtn.style.marginLeft='8px'; markBtn.onclick = markRead;
+    rightControls.appendChild(refresh); rightControls.appendChild(markBtn);
+  }
+  showUserBadge();
+}
+
+// initial view depending on role
+async function initView(){
+  messagesEl.innerHTML = '';
+  threadHeader.innerHTML = '';
+  selectedConvId = null;
+  if (adminPollingInterval) { clearInterval(adminPollingInterval); adminPollingInterval = null; }
+
+  if (isAdmin()) {
+    await loadAdminList();
+    threadHeader.innerHTML = '<div class="muted">Select a conversation to view messages</div>';
+    // enable polling for admin to get new conversations every 15s
+    adminPollingInterval = setInterval(loadAdminList, 15000);
+    sendBtn.onclick = sendAdminReply;
+    // on desktop ensure list visible; mobile will show list by default (no change)
+    if (!isMobileView()) showListView();
+  } else {
+    await loadForUser();
+    // for normal users we hide the left list and show only their conversation (no left list)
+    showThreadOnly(false);
+    sendBtn.onclick = sendUserMessage;
+  }
+}
+
+// wire loginBtn in composer to the same prompt fallback
+loginBtn.onclick = async ()=> {
+  await promptLoginAndRetry(()=>{ setupControls(); initView(); });
+};
+
+// initial boot
+setupControls();
+initView();
+
+// expose for debug
+window.HelpCenter = { reload: initView, listReload: () => isAdmin() ? loadAdminList() : loadForUser() };
+
+/* ---------- END of original help center logic ---------- */
+
+/* ---------- MOBILE NAV WIRING (keeps desktop UI unchanged) ---------- */
+(function(){
+  const $ = id => document.getElementById(id);
+  const btn = $('btnHamburger'), mobile = $('mobileMenu'), mobileNav = $('mobileNav'), mainNav = $('mainNav');
+
+  // copy mainNav links into mobileNav so authoring stays in one place (if mainNav changes)
+  function populateMobileNav(){
+    if (!mobileNav) return;
+    mobileNav.innerHTML = '';
+    // if mainNav exists, clone its links; otherwise, create links inline
+    if (mainNav && mainNav.children.length) {
+      Array.from(mainNav.children).forEach(ch => {
+        if (ch.tagName && ch.tagName.toLowerCase() === 'a') {
+          const a = document.createElement('a');
+          a.href = ch.href || ch.getAttribute('href') || '#';
+          a.innerText = ch.innerText || ch.textContent || '';
+          a.className = 'mobile-nav-link';
+          mobileNav.appendChild(a);
+        }
+      });
+    } else {
+      // fallback links (same as your nav)
+      const links = [
+        { href:'index.html', label:'Lessons' },
+        { href:'leaderboard.html', label:'Leaderboard' },
+        { href:'games.html', label:'Games' },
+        { href:'helpCenter.html', label:'Helper' },
+        { href:'history.html', label:'History' },
+        { href:'admin_users.html', label:'Users' }
+      ];
+      links.forEach(l => {
+        const a = document.createElement('a'); a.href = l.href; a.className = 'mobile-nav-link'; a.innerText = l.label;
+        mobileNav.appendChild(a);
+      });
+    }
+  }
+
+  function openMobile(){ if (!mobile) return; mobile.classList.add('open'); if (btn) btn.setAttribute('aria-expanded','true'); mobile.setAttribute('aria-hidden','false'); }
+  function closeMobile(){ if (!mobile) return; mobile.classList.remove('open'); if (btn) btn.setAttribute('aria-expanded','false'); mobile.setAttribute('aria-hidden','true'); }
+  function toggleMobile(){ if (!mobile) return; mobile.classList.contains('open') ? closeMobile() : openMobile(); }
+
+  if (btn && mobile) {
+    btn.addEventListener('click', (e) => { e.stopPropagation(); populateMobileNav(); toggleMobile(); });
+    // Close when a mobile nav link clicked
+    mobile.addEventListener('click', (ev) => {
+      const a = ev.target.closest('a');
+      if (a && a.classList.contains('mobile-nav-link')) {
+        // allow navigation then close panel
+        closeMobile();
+      }
+    });
+  }
+
+  // click outside closes
+  document.addEventListener('click', (ev) => {
+    if (mobile && !mobile.contains(ev.target) && btn && !btn.contains(ev.target)) closeMobile();
+  });
+
+  // escape to close
+  document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') closeMobile(); });
+
+  // keyboard friendly
+  if (mobileNav) {
+    mobileNav.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && e.target && e.target.matches('a')) e.target.click();
+    });
+  }
+
+  // initial populate (useful for some mobile testing)
+  populateMobileNav();
+})();
+</script>
+</body>
+</html>

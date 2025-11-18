@@ -1,0 +1,937 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Games — Selection Spinner</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/modern-css-reset/dist/reset.min.css">
+<style>
+  :root{
+    --accent:#0b5cff;
+    --bg:#f6f7fb;
+    --card:#fff;
+    --muted:#6b7280;
+    --glass: rgba(255,255,255,0.9);
+    --shadow: 0 18px 40px rgba(2,6,23,0.12);
+    --glass-2: linear-gradient(180deg, rgba(255,255,255,0.98), var(--card));
+  }
+
+  /* Page basics */
+  body{font-family:system-ui,Arial, Helvetica, sans-serif;background:var(--bg);padding:18px;color:#111; -webkit-font-smoothing:antialiased;}
+  .page{max-width:1100px;margin:0 auto}
+  a { color: inherit; text-decoration: none; }
+  button { font-family: inherit; }
+
+  /* Header (modern card-like) */
+  header.site-header {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 10px 14px;
+    display:flex;
+    gap:12px;
+    align-items:center;
+    box-shadow: 0 6px 20px rgba(2,6,23,0.04);
+    position: relative;
+    z-index: 80;
+    margin-bottom: 14px;
+  }
+  .brand { display:flex; align-items:center; gap:10px; font-weight:700; font-size:16px; color:#101828; }
+  .brand .logo { font-size:20px; display:inline-block; transform: translateY(-1px); }
+
+  /* Desktop nav */
+  #mainNav { display:flex; gap:12px; margin-left:12px; align-items:center; }
+  #mainNav > a, .nav-item {
+    padding:8px 12px; border-radius:10px; position:relative; font-weight:600; color:#0f172a;
+    transition: all .16s ease;
+    display:inline-flex; align-items:center; gap:8px;
+  }
+  #mainNav > a:hover, .nav-item:hover { transform: translateY(-2px); color: var(--accent); }
+  #mainNav > a.active { color:var(--accent); font-weight:700; box-shadow: 0 8px 30px rgba(11,92,255,0.06); }
+
+  /* Games dropdown (desktop) */
+  .nav-dropdown { position:relative; display:inline-block; }
+  .drop-btn {
+    background: transparent;
+    border: 0;
+    padding:8px 12px;
+    border-radius:10px;
+    cursor:pointer;
+    font-weight:700;
+    display:inline-flex; align-items:center; gap:8px;
+    transition: transform .12s ease, color .12s ease;
+  }
+  .drop-btn .caret { transition: transform .18s ease; font-size:12px; color: #334155; }
+  .dropdown-panel {
+    position:absolute;
+    left:0;
+    top: calc(100% + 8px);
+    min-width:220px;
+    background: var(--glass-2);
+    border-radius:10px;
+    padding:8px;
+    box-shadow: var(--shadow);
+    border: 1px solid rgba(6,12,30,0.04);
+    transform-origin: top center;
+    transform: translateY(-8px) scale(.98);
+    opacity:0;
+    pointer-events:none;
+    transition: transform .24s cubic-bezier(.2,.9,.28,1), opacity .18s ease;
+    z-index:120;
+  }
+  .nav-dropdown.open .dropdown-panel { transform: translateY(0) scale(1); opacity:1; pointer-events:auto; }
+  .dropdown-panel a { display:block; padding:10px 12px; border-radius:8px; font-weight:600; color:#0f172a; }
+  .dropdown-panel a:hover { background: rgba(11,92,255,0.06); color:var(--accent); transform: translateX(6px); }
+
+  /* subtle separator for dropdown groups */
+  .dropdown-divider { height:1px; background:#eef3ff; margin:6px 0; border-radius:2px; }
+
+  /* Mobile hamburger (shown on small screens) */
+  .sh-right { margin-left:auto; display:flex; align-items:center; gap:8px; }
+  .icon-btn { background:transparent; border:0; padding:8px; border-radius:8px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; transition: transform .12s ease, background .12s ease; }
+  .hamburger { display:none; width:46px; height:46px; align-items:center; justify-content:center; border-radius:10px; background: transparent; border: 1px solid transparent; transition: box-shadow .12s ease, transform .12s ease; }
+  .hamburger:active { transform: translateY(1px); }
+
+  /* Mobile panel (sliding from right) */
+  .mobile-panel {
+    position: fixed;
+    top: 68px;
+    right: 12px;
+    width: 320px;
+    max-width: 92vw;
+    background: var(--glass-2);
+    border-radius:14px;
+    box-shadow: 0 28px 80px rgba(2,6,23,0.2);
+    transform-origin: top right;
+    transform: translateY(-10px) scale(.98) translateX(24px);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform .28s cubic-bezier(.2,.9,.28,1), opacity .22s ease;
+    z-index: 140;
+  }
+  .mobile-panel.open { transform: translateY(0) scale(1) translateX(0); opacity:1; pointer-events:auto; }
+  .mobile-panel .inner { padding:14px; display:flex; flex-direction:column; gap:8px; }
+  .mobile-panel .brand-row { display:flex;align-items:center;gap:10px;padding:8px 6px;border-bottom:1px solid #f1f5f9;margin-bottom:6px; }
+  .mobile-panel nav a { display:block; padding:12px; border-radius:10px; font-weight:700; }
+  .mobile-panel nav a:hover { background: rgba(11,92,255,0.06); color:var(--accent); transform: translateX(6px); }
+
+  /* Mobile collapsible submenu style */
+  .mobile-submenu { display:flex; flex-direction:column; gap:6px; margin-top:6px; padding-left:6px; }
+  .mobile-submenu a { font-weight:600; padding:8px 10px; border-radius:8px; color:#111; }
+  .mobile-collapse { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:10px 8px; border-radius:8px; cursor:pointer; font-weight:700; }
+  .mobile-collapse .chev { transition: transform .18s ease; }
+
+  /* small-screen rules */
+  @media (max-width:900px) {
+    #mainNav { display:none; }
+    .hamburger { display:inline-flex; }
+  }
+
+  /* pointer & small polish */
+  .clickable { cursor: pointer; }
+  .btn-ghost { background:transparent;border:1px solid #e6e6e6;padding:8px 10px;border-radius:8px; cursor:pointer; }
+  .small { font-size:13px;color:var(--muted) }
+
+  /* Focus states for keyboard users */
+  .drop-btn:focus, .dropdown-panel a:focus, .mobile-panel nav a:focus, .mobile-collapse:focus { outline: 3px solid rgba(11,92,255,0.12); outline-offset:4px; border-radius:8px; }
+
+  /* keep other original styles (spinner area etc.) - abbreviated here, rest of your original CSS follows */
+  /* (rest of CSS for game UI preserved from original; truncated here for brevity) */
+  /* ... existing game CSS below (kept exactly as you had it) ... */
+  .grid{display:grid;grid-template-columns:1fr 420px;gap:16px}
+  .col{padding:8px}
+  label{display:block;font-weight:600;margin-top:8px}
+  input[type="text"], select, input[type="number"], textarea{width:100%;padding:8px;border-radius:8px;border:1px solid #e6e6e6;margin-top:6px;box-sizing:border-box}
+  .row{display:flex;gap:8px;align-items:center}
+  .players-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+  .player-chip{padding:8px 10px;border-radius:999px;background:#f3f4f6;border:1px solid #eee;display:inline-flex;align-items:center;gap:8px}
+  .player-chip.eliminated{opacity:0.45;text-decoration:line-through;background:#fff0f0;border-color:#ffd6d6}
+  .player-chip.selected{box-shadow:0 8px 24px rgba(11,92,255,0.12);transform:scale(1.06);border-color:var(--accent)}
+  .small{font-size:13px;color:var(--muted)}
+  .controls{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+  .history{margin-top:12px;max-height:220px;overflow:auto;border-radius:8px;padding:8px;border:1px solid #eee;background:linear-gradient(180deg,#fff,#fbfeff)}
+  .history-row{padding:8px;border-bottom:1px dashed #f0f4ff}
+  .muted{color:var(--muted)}
+  .center{display:flex;align-items:center;justify-content:center}
+  .spinner-box{background:#fbfdff;border-radius:10px;padding:12px;border:1px solid #eef6ff;display:flex;flex-direction:column;gap:12px;align-items:center}
+  .wheel-container{width:300px;height:300px;display:flex;align-items:center;justify-content:center;position:relative}
+  .pointer{ position:absolute; bottom:270px; left:50%; transform:translateX(-50%) rotate(0deg); width:0; height:0; border-left:14px solid transparent; border-right:14px solid transparent; border-top:22px solid var(--accent); z-index:5; transform-origin:center -22px; }
+  @keyframes wobble { 0% { transform: translateX(-50%) rotate(0deg); } 20% { transform: translateX(-50%) rotate(-8deg); } 45% { transform: translateX(-50%) rotate(5deg); } 65% { transform: translateX(-50%) rotate(-3deg); } 85% { transform: translateX(-50%) rotate(2deg); } 100% { transform: translateX(-50%) rotate(0deg); } }
+  .pointer.wobble { animation: wobble 1200ms ease-in-out; }
+  svg.pie{width:100%;height:100%;transform-origin:center center;transition:transform 1.6s cubic-bezier(.12,.9,.12,1)}
+  .sector-label{font-size:12px;fill:#0b2540}
+  @media(max-width:900px){ .grid{grid-template-columns:1fr} .wheel-container{width:240px;height:240px} }
+
+</style>
+</head>
+<body>
+  <!-- HEADER -->
+  <header class="site-header" aria-label="Top header">
+    <div class="brand" aria-hidden="false">
+      <span class="logo">🎯</span>
+      <span>LearningHub</span>
+    </div>
+
+    <!-- Desktop nav -->
+    <nav id="mainNav" aria-label="Main navigation"></nav>
+
+    <!-- right side: user & hamburger -->
+    <div class="sh-right" role="region" aria-label="User controls" style="margin-left:auto">
+      <div id="headerUser" class="small muted"></div>
+      <button id="btnHamburger" class="icon-btn hamburger" aria-expanded="false" aria-label="Menu" title="Menu">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none"><path d="M3 6h18M3 12h18M3 18h18" stroke="#111" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Mobile panel -->
+  <div id="mobileMenu" class="mobile-panel" aria-hidden="true" role="dialog" aria-label="Mobile navigation">
+    <div class="inner">
+      <div class="brand-row">
+        <span style="font-size:20px">🎯</span>
+        <div style="font-weight:700">LearningHub</div>
+      </div>
+
+      <nav id="mobileNav" aria-label="Mobile links"></nav>
+
+      <div class="divider" style="margin:8px 0"></div>
+
+      <!-- collapsible Games group inside mobile panel -->
+      <div>
+        <div class="mobile-collapse clickable" id="mobileGamesToggle" tabindex="0" aria-expanded="false">
+          <div>Games</div>
+          <div class="chev">▾</div>
+        </div>
+        <div id="mobileGamesSub" class="mobile-submenu" style="display:none">
+          <a href="games.html#selection" role="menuitem">Selection Spinner</a>
+          <a href="games/rps.html" role="menuitem">Rock · Paper · Scissors</a>
+          <a href="games/tictactoe.html" role="menuitem">Tic-Tac-Toe</a>
+          <a href="games/memory.html" role="menuitem">Memory Match</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- PAGE CONTENT: keep your modal / page exactly as before -->
+  <div class="page page-wrap">
+    <div class="modal" id="gameModal" role="region" aria-label="Selection match">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
+        <div>
+          <h3 style="margin:0">Create Selection Match</h3>
+          <div class="small muted">Spinner selects a player each round; chosen mode determines effect.</div>
+        </div>
+        <div>
+          <button id="closeModal" class="btn-ghost" title="Hide panel">Hide</button>
+        </div>
+      </div>
+
+      <div class="grid" style="margin-top:12px">
+        <!-- LEFT: form -->
+        <div class="col" id="formCol">
+          <label>Number of players</label>
+          <input id="numPlayers" type="number" min="2" value="4" />
+
+          <label>Player names (space/comma separated). Use "bot" in name to mark bot or add boolean.</label>
+          <input id="playerNames" placeholder="Ali Bob Carol Bot-1" />
+
+          <label>Mode</label>
+          <select id="mode">
+            <option value="eliminate">Eliminate on Select</option>
+            <option value="lose_and_stay">Lose-but-Stays (lives)</option>
+            <option value="skip">Skip Turn</option>
+            <option value="custom">Custom (set lives)</option>
+          </select>
+
+          <label>Lives (for lose/stay or custom)</label>
+          <input id="lives" type="number" min="1" value="2" />
+
+          <label class="row" style="align-items:center;margin-top:8px">
+            <input id="autoContinue" type="checkbox" style="margin-right:8px" /> Auto-continue
+          </label>
+
+          <label class="row" style="align-items:center;margin-top:6px">
+            <input id="botAutoSpin" type="checkbox" style="margin-right:8px" checked /> Allow bots to auto-spin when picked
+          </label>
+
+          <label class="small muted">Animation duration (ms)</label>
+          <input id="animationMs" type="number" min="400" value="1400" />
+
+          <div class="controls" style="margin-top:10px">
+            <button id="createBtn">Create Match</button>
+            <button id="joinDemo" class="btn-ghost">Load Demo Match</button>
+          </div>
+
+          <div style="margin-top:12px" class="muted small">After creating a match the spinner and controls appear to the right in this page.</div>
+        </div>
+
+        <!-- RIGHT: spinner + buttons + history -->
+        <div class="col" id="playCol">
+          <div id="spinnerArea" class="spinner-box" aria-live="polite">
+            <div id="userPoints" class="points" style="display:none">Points: 0</div>
+
+            <div class="wheel-container" style="width:100%;max-width:360px">
+              <div id="wheel" class="center" aria-hidden="true"></div>
+              <div class="pointer" id="pointer" aria-hidden="true"></div>
+            </div>
+
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+              <button id="spinBtn" disabled>Spin</button>
+              <button id="continueBtn" class="btn-ghost" disabled>Continue</button>
+              <button id="finishBtn" class="btn-ghost" disabled>Finish</button>
+            </div>
+
+            <div id="lastOutcome" class="muted small" style="margin-top:8px">No match loaded</div>
+            <div style="width:100%;margin-top:6px"><div class="muted">Result</div><div id="resultBox" style="font-weight:700;margin-top:6px"></div></div>
+
+            <div style="width:100%;margin-top:10px">
+              <div class="muted">Players</div>
+              <div id="players" class="players-list"></div>
+            </div>
+
+            <div style="width:100%;margin-top:10px">
+              <div class="muted">Match History</div>
+              <div id="history" class="history"></div>
+            </div>
+          </div>
+        </div>
+
+      </div> <!-- end grid -->
+    </div>
+  </div>
+
+  <div id="historyModalRoot" style="display:none"></div>
+
+<script>
+/* ---------------- NAV + MOBILE PANEL LOGIC ----------------
+   - builds desktop and mobile nav based on role (same as your existing logic)
+   - desktop: adds a Games dropdown (keyboard accessible)
+   - mobile: sliding panel with collapsible Games submenu
+*/
+
+/* small helpers - reuse your existing getUserLocal from the page */
+function getUserLocal(){ const s = localStorage.getItem('user'); return s ? JSON.parse(s) : null; }
+function isAdmin(u){ return u && (u.role === 'admin' || u.isAdmin); }
+
+function buildNavByRole(){
+  const user = getUserLocal();
+  const mainNav = document.getElementById('mainNav');
+  const mobileNav = document.getElementById('mobileNav');
+  if (mainNav) mainNav.innerHTML = '';
+  if (mobileNav) mobileNav.innerHTML = '';
+
+  function makeA(href, label){ const a = document.createElement('a'); a.href = href; a.innerText = label; a.className='nav-link'; return a; }
+
+  let links = [];
+  if (!user) {
+    links = [
+      { href:'index.html', label:'Lessons' },
+      { href:'leaderboard.html', label:'Leaderboard' },
+      { href:'history.html', label:'History' },
+      { href:'story.html', label:'Stories' }
+    ];
+  } else if (isAdmin(user)) {
+    links = [
+      { href:'index.html', label:'Lessons' },
+      { href:'leaderboard.html', label:'Leaderboard' },
+      { href:'games.html', label:'Games' },
+      { href:'story.html', label:'Stories' },
+      { href:'admin_dashboard.html', label:'Dashboard' },
+      { href:'admin_users.html', label:'Users' },
+      { href:'helpCenter.html', label:'Helper' },
+      { href:'history.html', label:'History' }
+    ];
+  } else {
+    links = [
+      { href:'index.html', label:'Lessons' },
+      { href:'leaderboard.html', label:'Leaderboard' },
+      { href:'story.html', label:'Stories' },
+      { href:'games.html', label:'Games' },
+      { href:'history.html', label:'History' },
+      { href:'helpCenter.html', label:'Helper' }
+    ];
+  }
+
+  // Build desktop nav: insert simple links and a dropdown for Games
+  if (mainNav) {
+    links.forEach(l => {
+      if (l.label === 'Games') {
+        // create dropdown node
+        const wrap = document.createElement('div');
+        wrap.className = 'nav-dropdown';
+        wrap.innerHTML = `
+          <button class="drop-btn" aria-haspopup="true" aria-expanded="false" type="button">
+            Games <span class="caret">▾</span>
+          </button>
+          <div class="dropdown-panel" role="menu" aria-hidden="true">
+            <a href="games.html#selection" role="menuitem" tabindex="-1">Selection Spinner</a>
+            <a href="games/rps.html" role="menuitem" tabindex="-1">Rock · Paper · Scissors</a>
+            <a href="games/tictactoe.html" role="menuitem" tabindex="-1">Tic-Tac-Toe</a>
+            <div class="dropdown-divider" aria-hidden="true"></div>
+            <a href="games/memory.html" role="menuitem" tabindex="-1">Memory Match</a>
+          </div>
+        `;
+        mainNav.appendChild(wrap);
+      } else {
+        const a = makeA(l.href, l.label);
+        // active highlight
+        if (location.pathname.endsWith('games.html') && l.label === 'Games') { a.classList.add('active'); }
+        mainNav.appendChild(a);
+      }
+    });
+  }
+
+  // Build mobile nav - main links
+  if (mobileNav) {
+    links.forEach(l => {
+      // skip games here because games submenu is separate
+      if (l.label === 'Games') return;
+      const a = document.createElement('a');
+      a.href = l.href;
+      a.innerText = l.label;
+      a.className = 'mobile-nav-link';
+      mobileNav.appendChild(a);
+    });
+  }
+
+  // hook dropdown events (desktop)
+  const dropdown = document.querySelector('.nav-dropdown');
+  if (dropdown) {
+    const btn = dropdown.querySelector('.drop-btn');
+    const panel = dropdown.querySelector('.dropdown-panel');
+    const items = Array.from(panel.querySelectorAll('a[role="menuitem"]'));
+
+    function open() {
+      dropdown.classList.add('open');
+      btn.setAttribute('aria-expanded','true');
+      panel.setAttribute('aria-hidden','false');
+    }
+    function close() {
+      dropdown.classList.remove('open');
+      btn.setAttribute('aria-expanded','false');
+      panel.setAttribute('aria-hidden','true');
+    }
+    function toggle() { dropdown.classList.contains('open') ? close() : open(); }
+
+    btn.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); toggle(); });
+    btn.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); items[0] && items[0].focus(); }
+      if (e.key === 'ArrowUp') { e.preventDefault(); open(); items[items.length-1] && items[items.length-1].focus(); }
+    });
+
+    panel.addEventListener('keydown', (e) => {
+      const idx = items.indexOf(document.activeElement);
+      if (e.key === 'Escape') { close(); btn.focus(); }
+      if (e.key === 'ArrowDown') { e.preventDefault(); items[(idx+1)%items.length].focus(); }
+      if (e.key === 'ArrowUp') { e.preventDefault(); items[(idx-1+items.length)%items.length].focus(); }
+    });
+
+    // close on outside click
+    document.addEventListener('click', (ev) => { if (!dropdown.contains(ev.target)) close(); });
+    document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') close(); });
+
+    // if a menu item clicked, close
+    items.forEach(it => it.addEventListener('click', () => close()));
+  }
+
+  // hook mobile games submenu toggle
+  const mobileGamesToggle = document.getElementById('mobileGamesToggle');
+  const mobileGamesSub = document.getElementById('mobileGamesSub');
+  if (mobileGamesToggle && mobileGamesSub) {
+    function toggleMobileGames(){
+      const open = mobileGamesSub.style.display !== 'none';
+      if (open) {
+        mobileGamesSub.style.display = 'none';
+        mobileGamesToggle.setAttribute('aria-expanded','false');
+        mobileGamesToggle.querySelector('.chev').style.transform = '';
+      } else {
+        mobileGamesSub.style.display = 'flex';
+        mobileGamesToggle.setAttribute('aria-expanded','true');
+        mobileGamesToggle.querySelector('.chev').style.transform = 'rotate(-180deg)';
+      }
+    }
+    mobileGamesToggle.addEventListener('click', toggleMobileGames);
+    mobileGamesToggle.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleMobileGames(); } });
+  }
+}
+
+/* RENDER header user (login/logout) - reuse simple prompt fallback */
+function renderHeaderUser(){
+  const el = document.getElementById('headerUser');
+  const u = getUserLocal();
+  if (!el) return;
+  if (!u) {
+    el.innerHTML = '<button id="hdrLogin" class="btn-ghost small">Login</button>';
+    const btn = document.getElementById('hdrLogin');
+    if (btn) btn.onclick = async () => {
+      const username = prompt('username'); const password = prompt('password');
+      if (!username || !password) return;
+      try {
+        const res = await fetch('http://localhost:4000/api/auth/login', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username, password }) });
+        const text = await res.text(); const data = text ? JSON.parse(text) : null;
+        if (!res.ok) return alert('Login failed: ' + (data && (data.error||data.message) ? (data.error||data.message) : res.statusText));
+        localStorage.setItem('token', data.token); localStorage.setItem('user', JSON.stringify(data.user));
+        buildNavByRole(); renderHeaderUser();
+      } catch (e) { alert('Login error: ' + e.message); }
+    };
+  } else {
+    el.innerHTML = `<span style="font-weight:600">${escapeHtml(u.fullName || u.username || 'User')}</span> <button id="hdrLogout" class="btn-ghost small" style="margin-left:8px">Logout</button>`;
+    const lo = document.getElementById('hdrLogout');
+    if (lo) lo.onclick = ()=> { localStorage.removeItem('token'); localStorage.removeItem('user'); buildNavByRole(); renderHeaderUser(); };
+  }
+}
+
+/* MOBILE PANEL open/close wiring */
+(function mobilePanelWiring(){
+  const btn = document.getElementById('btnHamburger');
+  const mobile = document.getElementById('mobileMenu');
+  if (!btn || !mobile) return;
+
+  function openMobile(){ mobile.classList.add('open'); btn.setAttribute('aria-expanded','true'); mobile.setAttribute('aria-hidden','false'); }
+  function closeMobile(){ mobile.classList.remove('open'); btn.setAttribute('aria-expanded','false'); mobile.setAttribute('aria-hidden','true'); }
+  function toggleMobile(){ mobile.classList.contains('open') ? closeMobile() : openMobile(); }
+
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    buildNavByRole(); // refresh links before open
+    toggleMobile();
+  });
+
+  mobile.addEventListener('click', (ev) => {
+    const a = ev.target.closest('a');
+    if (a && a.classList.contains('mobile-nav-link')) { closeMobile(); }
+  });
+
+  // close on outside click & escape
+  document.addEventListener('click', (ev) => { if (mobile && !mobile.contains(ev.target) && btn && !btn.contains(ev.target)) closeMobile(); });
+  document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') closeMobile(); });
+})();
+
+/* small escape-hatch helper used in login area */
+function escapeHtml(s){ if (!s && s !== 0) return ''; return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+/* Initial build */
+buildNavByRole();
+renderHeaderUser();
+
+/* expose helpers if needed elsewhere */
+window._Nav = { buildNav: buildNavByRole, renderHeaderUser };
+
+</script>
+
+<!-- ========== your full game logic continues below unchanged ========== -->
+<script>
+/* === CONFIG - backend origin === */
+const API_BASE = 'http://localhost:4000';
+
+/* === helpers === */
+function getToken(){ return localStorage.getItem('token'); }
+async function api(path, opts={}) {
+  const headers = opts.headers || {};
+  if (!headers['Content-Type'] && opts.body) headers['Content-Type'] = 'application/json';
+  const token = getToken();
+  if (token) headers['Authorization'] = 'Bearer ' + token;
+  opts.headers = headers;
+  const res = await fetch(API_BASE + path, opts);
+  const text = await res.text();
+  let json = null;
+  try { json = text ? JSON.parse(text) : null; } catch(e){ json = null; }
+  if (!res.ok) throw new Error((json && (json.error||json.message)) || res.statusText || 'Request failed');
+  return json;
+}
+function escapeHtml(s){ if (!s && s!==0) return ''; return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+/* === audio (Web Audio) === */
+const audioCtx = (typeof AudioContext !== 'undefined') ? new AudioContext() : null;
+function playTone(freq, type='sine', duration=0.08, when=0, gain=0.12){
+  if (!audioCtx) return;
+  const o = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  o.type = type;
+  o.frequency.setValueAtTime(freq, audioCtx.currentTime + when);
+  g.gain.setValueAtTime(gain, audioCtx.currentTime + when);
+  o.connect(g); g.connect(audioCtx.destination);
+  o.start(audioCtx.currentTime + when);
+  o.stop(audioCtx.currentTime + when + duration);
+}
+function playSpinStart(){ playTone(420, 'sawtooth', 0.08, 0, 0.08); }
+function playSpinTick(){ playTone(820, 'square', 0.03, 0, 0.06); }
+function playSpinStop(){ playTone(520, 'sine', 0.14, 0, 0.12); }
+function playEliminated(){ playTone(240, 'sine', 0.22, 0, 0.14); playTone(160, 'sine', 0.24, 0.06, 0.08); }
+
+/* === UI refs === */
+const createBtn = document.getElementById('createBtn');
+const numPlayersEl = document.getElementById('numPlayers');
+const playerNamesEl = document.getElementById('playerNames');
+const modeEl = document.getElementById('mode');
+const livesEl = document.getElementById('lives');
+const autoContinueEl = document.getElementById('autoContinue');
+const botAutoSpinEl = document.getElementById('botAutoSpin');
+const animationMsEl = document.getElementById('animationMs');
+const spinBtn = document.getElementById('spinBtn');
+const continueBtn = document.getElementById('continueBtn');
+const finishBtn = document.getElementById('finishBtn');
+const wheelContainer = document.getElementById('wheel');
+const pointer = document.getElementById('pointer');
+const playersDiv = document.getElementById('players');
+const historyDiv = document.getElementById('history');
+const lastOutcome = document.getElementById('lastOutcome');
+const resultBox = document.getElementById('resultBox');
+const joinDemo = document.getElementById('joinDemo');
+const openHistoryBtn = document.getElementById('openHistoryBtn');
+const closeModal = document.getElementById('closeModal');
+const historyModalRoot = document.getElementById('historyModalRoot');
+
+let currentMatch = null;
+let spinning = false;
+let lastSvg = null;
+
+/* === SVG wheel helpers (unchanged) === */
+function polarToCartesian(cx, cy, r, angleDeg){
+  const a = (angleDeg - 90) * Math.PI / 180.0;
+  return { x: cx + (r * Math.cos(a)), y: cy + (r * Math.sin(a)) };
+}
+function describeArc(cx, cy, r, startAngle, endAngle){
+  const start = polarToCartesian(cx, cy, r, endAngle);
+  const end = polarToCartesian(cx, cy, r, startAngle);
+  const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+  return `M ${cx} ${cy} L ${start.x} ${start.y} A ${r} ${r} 0 ${largeArcFlag} 0 ${end.x} ${end.y} Z`;
+}
+function drawWheelSVG(players){
+  wheelContainer.innerHTML = '';
+  if (!players || !players.length) return null;
+  const n = players.length;
+  const sectorAngle = 360 / n;
+  const cx = 0, cy = 0, r = 140;
+  const svgNS = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(svgNS, 'svg');
+  svg.setAttribute('class','pie');
+  svg.setAttribute('viewBox', '-160 -160 320 320');
+  svg.setAttribute('preserveAspectRatio','xMidYMid meet');
+
+  const colors = ['#9ad0ff','#ffd29f','#ffe39f','#b6f0c4','#d2b0ff','#ffd6e0','#cfe8ff','#e6f7ff'];
+
+  for (let i=0;i<n;i++){
+    const start = i * sectorAngle;
+    const end = start + sectorAngle;
+    const path = document.createElementNS(svgNS, 'path');
+    path.setAttribute('d', describeArc(cx, cy, r, start, end));
+    path.setAttribute('fill', colors[i % colors.length]);
+    path.setAttribute('stroke', '#ffffff');
+    path.setAttribute('stroke-width', '1');
+    svg.appendChild(path);
+
+    const mid = start + sectorAngle/2;
+    const pos = polarToCartesian(cx, cy, r * 0.62, mid);
+    const text = document.createElementNS(svgNS, 'text');
+    text.setAttribute('x', pos.x);
+    text.setAttribute('y', pos.y + 4);
+    text.setAttribute('text-anchor','middle');
+    text.setAttribute('class','sector-label');
+    text.textContent = players[i].name.length > 12 ? players[i].name.slice(0,12) + '…' : players[i].name;
+    svg.appendChild(text);
+  }
+
+  const inner = document.createElementNS(svgNS,'circle');
+  inner.setAttribute('r', '46');
+  inner.setAttribute('cx', '0');
+  inner.setAttribute('cy', '0');
+  inner.setAttribute('fill','#ffffff');
+  inner.setAttribute('stroke','#eef6ff');
+  svg.appendChild(inner);
+
+  const centerText = document.createElementNS(svgNS,'text');
+  centerText.setAttribute('x','0'); centerText.setAttribute('y','4'); centerText.setAttribute('text-anchor','middle');
+  centerText.setAttribute('style','font-weight:700;fill:#0b2540;font-size:13px');
+  centerText.textContent = 'SPIN';
+  svg.appendChild(centerText);
+
+  wheelContainer.appendChild(svg);
+  return svg;
+}
+
+/* animate wheel to picked index and pointer wobble + sounds */
+function animateWheelToIndex(svg, pickedIndex, durationMs){
+  return new Promise((resolve)=>{
+    const n = svg.querySelectorAll('path').length;
+    if (!n) return resolve();
+    const sectorAngle = 360 / n;
+    const laps = 4 + Math.floor(Math.random()*3);
+    const chosenMid = pickedIndex * sectorAngle + sectorAngle/2;
+    const targetDeg = laps * 360 + (360 - chosenMid);
+
+    try { if (audioCtx) audioCtx.resume(); } catch(e){}
+    playSpinStart();
+    const totalTicks = Math.max(6, Math.floor(durationMs / 80));
+    let tickElapsed = 0;
+    const tickInterval = Math.max(40, Math.floor(durationMs / totalTicks));
+    const tickTimer = setInterval(()=>{ playSpinTick(); tickElapsed++; if (tickElapsed>totalTicks) clearInterval(tickTimer); }, tickInterval);
+
+    svg.style.transition = `transform ${durationMs}ms cubic-bezier(.12,.9,.12,1)`;
+    requestAnimationFrame(()=> { svg.style.transform = `rotate(${targetDeg}deg)`; });
+
+    const onEnd = () => {
+      svg.removeEventListener('transitionend', onEnd);
+      clearInterval(tickTimer);
+      playSpinStop();
+      const final = targetDeg % 360;
+      svg.style.transition = '';
+      svg.style.transform = `rotate(${final}deg)`;
+      pointer.classList.remove('wobble');
+      void pointer.offsetWidth;
+      pointer.classList.add('wobble');
+      setTimeout(()=> pointer.classList.remove('wobble'), 1400);
+      resolve();
+    };
+    svg.addEventListener('transitionend', onEnd);
+    setTimeout(()=> { try { svg.removeEventListener('transitionend', onEnd); } catch(e){}; resolve(); }, durationMs + 400);
+  });
+}
+
+
+/* === UI renderers === */
+function renderPlayers(list){
+  playersDiv.innerHTML = '';
+  list.forEach(p=>{
+    const c = document.createElement('div');
+    c.className = 'player-chip' + (p.status && p.status!=='active' ? ' eliminated' : '');
+    c.id = 'player_' + p.playerId;
+    c.innerHTML = `<strong>${escapeHtml(p.name)}</strong><div class="muted" style="font-size:12px">${p.isBot ? 'bot' : ''}${p.lives !== undefined ? ' · lives:' + p.lives : ''}</div>`;
+    playersDiv.appendChild(c);
+  });
+  lastSvg = drawWheelSVG(list);
+  return lastSvg;
+}
+function renderHistory(h){
+  historyDiv.innerHTML = '';
+  (h || []).slice().reverse().forEach(row=>{
+    const el = document.createElement('div');
+    el.className = 'history-row';
+    el.innerHTML = `<div style="font-weight:700">${row.round}. ${escapeHtml(row.pickedName || row.pickedPlayerId)}</div>
+      <div class="muted-sm">${escapeHtml(row.effect || '')} ${row.remainingLives !== undefined ? ' · lives:' + row.remainingLives : ''} · ${new Date(row.timestamp).toLocaleString()}</div>`;
+    historyDiv.appendChild(el);
+  });
+}
+function renderResult(res){
+  if (!res) { resultBox.innerText = ''; return; }
+  if (res.winnerPlayerId) {
+    const ranks = (res.ranks||[]).map(r=> `${r.rank}. ${r.playerName || r.playerId}` ).join(' · ');
+    resultBox.innerText = 'Winner: ' + (res.winnerPlayerIdName || res.winnerPlayerId) + ' · Ranks: ' + ranks;
+  } else {
+    resultBox.innerText = 'No result yet';
+  }
+}
+function updateButtons(){
+  if (!currentMatch) return;
+  const finished = !!currentMatch.result && !!currentMatch.result.winnerPlayerId;
+  spinBtn.disabled = finished || spinning;
+  continueBtn.disabled = finished || spinning;
+  finishBtn.disabled = finished;
+}
+
+/* === create match === */
+createBtn.onclick = async () => {
+  createBtn.disabled = true;
+  try {
+    const num = Math.max(2, Number(numPlayersEl.value || 2));
+    const rawNames = (playerNamesEl.value || '').split(/[,|\n|\s]+/).map(s=>s.trim()).filter(Boolean);
+    const players = [];
+    for (let i=0;i<num;i++){
+      const name = rawNames[i] || `Player ${i+1}`;
+      const isBot = /bot/i.test(name);
+      players.push({ name, isBot });
+    }
+    const body = {
+      players,
+      mode: modeEl.value,
+      settings: {
+        lives: Number(livesEl.value || 1),
+        autoContinue: !!autoContinueEl.checked,
+        animationMs: Number(animationMsEl.value || 1400),
+        botChallengeChance: 0.18,
+        botAutoSpin: !!botAutoSpinEl.checked
+      }
+    };
+    const r = await api('/api/games/selection/create', { method:'POST', body: JSON.stringify(body) });
+    currentMatch = r.match;
+    afterLoadMatch();
+  } catch (err) {
+    alert('Create failed: ' + err.message);
+  } finally {
+    createBtn.disabled = false;
+  }
+};
+
+joinDemo.onclick = () => {
+  numPlayersEl.value = 5;
+  playerNamesEl.value = 'Ali Bob Carol Bot-1 Bot-2';
+  modeEl.value = 'eliminate';
+  livesEl.value = 1;
+  createBtn.click();
+};
+
+function afterLoadMatch(){
+  if (!currentMatch) return;
+  // enable action buttons and render inside page
+  renderPlayers(currentMatch.players);
+  renderHistory(currentMatch.history);
+  renderResult(currentMatch.result);
+  updateButtons();
+}
+
+/* === spin action === */
+spinBtn.onclick = async () => {
+  if (!currentMatch) return alert('Create or load a match first');
+  if (spinning) return;
+  try {
+    spinning = true;
+    spinBtn.disabled = true;
+    lastOutcome.innerText = 'Spinning...';
+    if (audioCtx) try { audioCtx.resume(); } catch(e){}
+    playSpinStart();
+
+    const res = await api(`/api/games/selection/${encodeURIComponent(currentMatch._id)}/spin`, { method: 'POST' });
+    const pickedIndex = res.pickedIndex;
+    const svg = lastSvg || drawWheelSVG(res.match.players);
+    const duration = Number(animationMsEl.value || (res.match.settings && res.match.settings.animationMs) || 1400);
+    await animateWheelToIndex(svg, pickedIndex, duration + 200);
+
+    currentMatch = res.match;
+    renderPlayers(currentMatch.players);
+    renderHistory(currentMatch.history);
+    lastOutcome.innerText = `Picked: ${res.pickedName || res.pickedPlayerId} — ${res.effect}`;
+    if (res.effect && res.effect.indexOf('eliminat') !== -1) playEliminated();
+    renderResult(currentMatch.result);
+    updateButtons();
+
+    // bot auto-spin if configured
+    const pickedPlayer = currentMatch.players.find(p => p.playerId === res.pickedPlayerId);
+    if (pickedPlayer && pickedPlayer.isBot && currentMatch.settings && currentMatch.settings.botAutoSpin && (!currentMatch.result || !currentMatch.result.winnerPlayerId)) {
+      setTimeout(()=> { if (!spinning) spinBtn.click(); }, 700);
+    } else if (currentMatch.settings && currentMatch.settings.autoContinue && (!currentMatch.result || !currentMatch.result.winnerPlayerId)) {
+      setTimeout(()=> { if (!spinning) spinBtn.click(); }, 450);
+    }
+  } catch (err) {
+    alert('Spin failed: ' + err.message);
+  } finally {
+    spinning = false;
+    updateButtons();
+  }
+};
+
+/* continue & finish */
+continueBtn.onclick = async () => {
+  if (!currentMatch) return;
+  try {
+    continueBtn.disabled = true;
+    const r = await api(`/api/games/selection/${encodeURIComponent(currentMatch._id)}/continue`, { method: 'POST' });
+    currentMatch = r.match;
+    afterLoadMatch();
+  } catch (err) { alert('Continue failed: ' + err.message); } finally { continueBtn.disabled = false; }
+};
+
+finishBtn.onclick = async () => {
+  if (!currentMatch) return;
+  try {
+    if (!confirm('Finalize result now?')) return;
+    finishBtn.disabled = true;
+    const r = await api(`/api/games/selection/${encodeURIComponent(currentMatch._id)}/finish`, { method: 'POST' });
+    currentMatch = r.match;
+    afterLoadMatch();
+    alert('Match finalized');
+  } catch (err) { alert('Finish failed: ' + err.message); } finally { finishBtn.disabled = false; }
+};
+
+/* === All Matches history modal === */
+openHistoryBtn.onclick = async () => {
+  try {
+    openHistoryBtn.disabled = true;
+    const r = await api('/api/games/results');
+    showHistoryModal(r.results || []);
+  } catch (err) {
+    alert('Failed to load matches: ' + err.message);
+  } finally {
+    openHistoryBtn.disabled = false;
+  }
+};
+
+function showHistoryModal(matches){
+  historyModalRoot.innerHTML = `
+    <div class="modal-backdrop" id="historyBackdrop" style="position:fixed;inset:0;background:rgba(8,10,20,0.45);display:flex;align-items:center;justify-content:center;z-index:600">
+      <div class="modal" role="dialog" aria-modal="true" style="max-width:920px;width:95%;max-height:90vh;overflow:auto">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <h3 style="margin:0">All Matches</h3>
+          <div><button id="closeHist" class="btn-ghost">Close</button></div>
+        </div>
+        <div style="margin-top:8px">${matches.length} matches</div>
+        <div id="matchList" style="margin-top:10px"></div>
+      </div>
+    </div>
+  `;
+  historyModalRoot.style.display = '';
+  const list = document.getElementById('matchList');
+  if (!matches.length) list.innerHTML = '<div class="muted-sm">No matches</div>';
+  matches.forEach(m => {
+    const div = document.createElement('div');
+    div.className = 'match-row';
+    const created = new Date(m.createdAt).toLocaleString();
+    div.innerHTML = `<div><div style="font-weight:700">${escapeHtml(m.mode)} (${m.players.length} players)</div><div class="muted-sm">${created}</div></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn-ghost loadMatchBtn" data-id="${m._id}">Open</button>
+        <button class="btn-ghost viewBtn" data-id="${m._id}">History</button>
+      </div>`;
+    list.appendChild(div);
+  });
+  document.getElementById('closeHist').onclick = ()=> { historyModalRoot.innerHTML=''; historyModalRoot.style.display='none'; };
+
+  list.querySelectorAll('.loadMatchBtn').forEach(b => b.onclick = async (ev) => {
+    const id = ev.currentTarget.dataset.id;
+    try {
+      const r = await api('/api/games/results/' + encodeURIComponent(id));
+      currentMatch = r.match;
+      afterLoadMatch();
+      historyModalRoot.innerHTML=''; historyModalRoot.style.display='none';
+    } catch (e) { alert('Load failed: ' + e.message); }
+  });
+
+  list.querySelectorAll('.viewBtn').forEach(b => b.onclick = async (ev) => {
+    const id = ev.currentTarget.dataset.id;
+    try {
+      const r = await api('/api/games/results/' + encodeURIComponent(id));
+      const m = r.match;
+      const details = (m.history || []).slice().reverse().map(h => `<div style="padding:8px;border-bottom:1px solid #f0f3f7"><strong>Round ${h.round}</strong> — ${escapeHtml(h.pickedName||h.pickedPlayerId)} · ${escapeHtml(h.effect)} · ${new Date(h.timestamp).toLocaleString()}</div>`).join('');
+      const detailHtml = `
+        <div class="modal-backdrop" id="detailBackdrop" style="position:fixed;inset:0;background:rgba(8,10,20,0.45);display:flex;align-items:center;justify-content:center;z-index:700">
+          <div class="modal" role="dialog" aria-modal="true" style="max-width:720px;width:95%;max-height:80vh;overflow:auto">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <h3 style="margin:0">Match ${escapeHtml(m._id)}</h3>
+              <div><button id="closeDetail" class="btn-ghost">Close</button></div>
+            </div>
+            <div style="margin-top:8px">Mode: ${escapeHtml(m.mode)} · Players: ${m.players.length}</div>
+            <div style="margin-top:10px">${details || '<div class="muted-sm">No history</div>'}</div>
+          </div>
+        </div>`;
+      historyModalRoot.insertAdjacentHTML('beforeend', detailHtml);
+      document.getElementById('closeDetail').onclick = ()=> document.getElementById('detailBackdrop').remove();
+    } catch (e) { alert('Load failed: ' + e.message); }
+  });
+}
+
+/* close panel (previously modal) */
+closeModal.onclick = () => {
+  document.getElementById('gameModal').style.display = 'none';
+};
+
+/* init: optionally load match by URL */
+(async function initFromUrl(){
+  const qs = new URLSearchParams(location.search);
+  if (qs.get('match')) {
+    try {
+      const r = await api('/api/games/results/' + encodeURIComponent(qs.get('match')));
+      currentMatch = r.match;
+      afterLoadMatch();
+    } catch(e){ console.warn('load by id failed', e); }
+  }
+})();
+</script>
+</body>
+</html>

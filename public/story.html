@@ -1,0 +1,1669 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Stories — LearningHub</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap">
+<style>
+  :root{
+    --accent:#0b5cff;
+    --bg:#f6f7fb;
+    --card:#fff;
+    --muted:#6b7280;
+    --text:#111;
+    --danger:#ef4444;
+    --glass: rgba(255,255,255,0.7);
+    --shadow: 0 18px 40px rgba(2,6,23,0.08);
+  }
+  [data-theme="dark"]{
+    --bg:#0b1220;
+    --card:#071126;
+    --muted:#9aa7bf;
+    --text:#e6eef8;
+    --glass: rgba(255,255,255,0.02);
+  }
+  *{box-sizing:border-box}
+  body{font-family:Inter,system-ui,Arial;background:var(--bg);color:var(--text);margin:0;padding:12px}
+  .wrap{max-width:1100px;margin:12px auto;padding:12px}
+
+  header.site{
+    display:flex;align-items:center;gap:12px;padding:12px;border-radius:12px;
+    background:linear-gradient(180deg,var(--card),var(--glass));box-shadow:var(--shadow);
+    position:relative; z-index:1000;
+  }
+
+  
+/* Buttons */
+.btn { border: 0; padding: 8px 12px; border-radius: 10px; font-weight: 600; cursor: pointer; transition: transform .06s ease, box-shadow .06s ease; box-shadow: 0 1px 0 rgba(0,0,0,0.04); }
+.btn:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(8,12,24,0.06); }
+.btn.small, .small { padding: 6px 10px; font-size: 13px; border-radius: 8px; }
+
+/* Variants */
+.btn-ghost, .btn.btn-ghost, .btn.ghost { background: transparent; border: 1px solid rgba(0,0,0,0.06); color: var(--text); }
+.btn.btn-ghost:hover { background: rgba(0,0,0,0.03); }
+.btn[style*="background:var(--accent)"] { background: var(--accent); color: #fff; }
+.btn[style*="background:var(--danger)"] { background: var(--danger); color: #fff; }
+
+/* Modal */
+.modal-backdrop { position: fixed; inset: 0; background: rgba(12,16,24,0.45); display:flex; align-items:center; justify-content:center; z-index: 10000; padding: 18px; }
+.modal { width: 720px; max-width: calc(100% - 40px); background: var(--card-bg, #fff); border-radius: 14px; padding: 18px; box-shadow: 0 10px 30px rgba(8,12,24,0.12); overflow:auto; max-height: 85vh; }
+
+/* Story header fixed style */
+.story-header.fixed { position: fixed; left: 50%; transform: translateX(-50%); width: min(920px, calc(100% - 48px)); z-index: 1100; background: var(--card-bg, #fff); border-radius: 10px; box-shadow: 0 8px 20px rgba(8,12,24,0.08); padding: 12px; }
+
+/* Story badges */
+.story-badge { background: var(--accent); color: #fff; padding: 3px 8px; border-radius: 999px; font-weight:700; font-size:11px; margin-left:8px; }
+
+/* Small responsive tweaks */
+@media (max-width: 900px) {
+  .modal { width: 100%; height: 100%; border-radius: 0; max-height: none; }
+  .story-header.fixed { left: 8px; transform: none; width: calc(100% - 16px); }
+}
+
+  .brand{display:flex;gap:8px;align-items:center;font-weight:700}
+  h1{margin:0;font-size:18px}
+  #headerNavPlaceholder { display:flex; align-items:center; margin-left:auto; gap:12px; }
+
+  .controls-bar{
+    display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px;padding:12px;border-radius:12px;
+    background:linear-gradient(180deg,var(--card),var(--glass));border:1px solid rgba(12,20,40,0.03)
+  }
+  .controls-left{display:flex;gap:8px;align-items:center;flex:1;min-width:220px}
+  .controls-right{display:flex;gap:8px;align-items:center;margin-left:auto}
+
+  .search{flex:1;max-width:520px;display:flex;gap:8px;align-items:center}
+  input[type="search"]{width:100%;padding:8px;border-radius:8px;border:1px solid rgba(0,0,0,0.08);background:transparent;color:var(--text)}
+  select{padding:8px;border-radius:8px;border:1px solid rgba(0,0,0,0.08);background:transparent;color:var(--text)}
+
+  .btn{background:var(--accent);color:#fff;border:none;padding:8px 12px;border-radius:8px;cursor:pointer;font-weight:600}
+  .btn.ghost{background:transparent;border:1px solid rgba(0,0,0,0.06);color:var(--text);font-weight:600}
+  .small{padding:6px 8px;font-size:13px;border-radius:8px}
+
+  @media(max-width:900px){
+    .controls-bar{flex-direction:column;align-items:stretch}
+    .controls-left{width:100%}
+    .controls-right{width:100%;justify-content:flex-end}
+    .nav-logout { display: none !important; }
+    #siteNav { display: none !important; }
+  }
+
+  .folders{
+    background:var(--card);padding:12px;border-radius:12px;border:1px solid rgba(12,20,40,0.04);
+    max-width:560px;margin:12px auto;
+    box-shadow: 0 6px 20px rgba(2,6,23,0.03);
+  }
+  .folder-item{display:flex;justify-content:space-between;align-items:center;padding:10px;border-radius:10px;gap:8px}
+  .folder-item:hover{background:var(--glass)}
+  .folder-left{display:flex;gap:10px;align-items:center}
+  .folder-name{font-weight:700}
+  .folder-meta{font-size:13px;color:var(--muted)}
+  .folder-actions{display:flex;gap:6px}
+
+  .stories{
+    background:var(--card);padding:12px;border-radius:12px;border:1px solid rgba(12,20,40,0.04);
+    max-width:920px;margin:12px auto;
+    box-shadow: 0 6px 24px rgba(2,6,23,0.04);
+  }
+  .story-item{
+    display:grid;
+    grid-template-columns: 1fr auto;
+    gap:12px;
+    align-items:start;
+    padding:14px;
+    margin-bottom:12px;
+    border-radius:12px;
+    background:linear-gradient(180deg,rgba(255,255,255,0.95),var(--card));
+    border:1px solid rgba(12,20,40,0.04);
+    transition: transform .14s ease, box-shadow .14s ease;
+  }
+  .story-item:hover{ transform: translateY(-4px); box-shadow: 0 12px 30px rgba(2,6,23,0.06); }
+  .story-main { display:flex; flex-direction:column; gap:6px; min-width:0; }
+  .story-title-row{ display:flex; gap:8px; align-items:center; justify-content:space-between; }
+  .story-title{ font-weight:700; font-size:16px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+  .story-badge { font-size:12px; padding:4px 6px; border-radius:999px; font-weight:700; color:#fff; background:var(--danger); margin-left:6px; }
+  .story-preview{font-size:14px;color:var(--muted); white-space:pre-wrap; overflow:hidden; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2}
+  .story-meta{ font-size:13px; color:var(--muted); margin-top:6px; display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+
+  .story-actions{ display:flex; flex-direction:column; gap:8px; align-items:flex-end; justify-content:flex-start; }
+  .small-ghost { background:transparent; border:1px solid rgba(0,0,0,0.06); padding:6px 8px; border-radius:8px; cursor:pointer; }
+
+  /* full page story view */
+  .story-view {
+    background:var(--card);
+    border-radius:12px;
+    padding:0;
+    border:1px solid rgba(12,20,40,0.04);
+    max-width:920px;
+    margin:12px auto;
+    display:flex;
+    flex-direction:column;
+    min-height:70vh;
+    overflow:hidden;
+    position:relative;
+  }
+
+  /* header (initially static). will become fixed when user scrolls past it */
+  .story-header {
+    display:flex; flex-direction:column; gap:8px;
+    padding:12px 16px; background:linear-gradient(180deg,var(--card),var(--glass)); z-index:300; border-bottom:1px solid rgba(0,0,0,0.04);
+    box-shadow: 0 6px 18px rgba(2,6,23,0.03);
+    transition: all 180ms ease;
+  }
+  .story-header .row { display:flex; align-items:center; gap:12px; width:100%; }
+  .story-header .metaDate { font-size:13px; color:var(--muted); }
+  .story-header .title { font-weight:700; font-size:18px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:66vw; }
+
+  .story-header.fixed {
+    position:fixed;
+    left:50%;
+    transform:translateX(-50%);
+    z-index:1200;
+    box-shadow: 0 12px 40px rgba(2,6,23,0.08);
+    border-radius:10px;
+    width: calc(100% - 48px);
+    max-width:920px;
+  }
+
+  .story-body { padding:22px; overflow:auto; flex:1; line-height:1.6; color:var(--text); }
+  /* content preview - limit to ~20 lines, scrollable if longer */
+  .story-content {
+    white-space:pre-wrap;
+    overflow:auto;
+    max-height: 32em; /* ~ 20 lines if line-height ~1.6 */
+    padding-right:6px;
+  }
+  .story-content.full { max-height: none; }
+
+  .story-footer { border-top:1px solid rgba(0,0,0,0.04); padding:12px; background:linear-gradient(180deg,var(--glass),transparent); }
+
+  /* comments */
+  .comments { margin-top:12px; }
+  .comments-list-scroll { max-height:380px; overflow:auto; padding-right:6px; }
+  .comment{padding:10px;border-radius:10px;border:1px solid rgba(0,0,0,0.03);margin-bottom:10px;background:linear-gradient(180deg,transparent,transparent)}
+  .comment .head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .comment .author{font-weight:700}
+  .comment.admin{background: linear-gradient(90deg, rgba(11,92,255,0.04), rgba(11,92,255,0.02));border-color: rgba(11,92,255,0.08)}
+  .reply-toggle { font-size:13px; padding:6px 8px; border-radius:8px; background:transparent; border:1px solid rgba(0,0,0,0.04); cursor:pointer; }
+
+  .emoji-pop { position: absolute; background:var(--card); border-radius:8px; padding:8px; box-shadow: var(--shadow); display:flex; gap:6px; border:1px solid rgba(0,0,0,0.04); z-index:300; }
+  .emoji-pop button { background:transparent;border:0;padding:6px;border-radius:6px;cursor:pointer;font-size:18px; }
+
+  @media (max-width:900px) {
+    .story-header .title { max-width:44vw; }
+  }
+
+  .muted{color:var(--muted)}
+  .flex{display:flex;gap:8px;align-items:center}
+  .right{margin-left:auto}
+  .icon-btn{background:transparent;border:0;padding:6px;border-radius:8px;cursor:pointer}
+
+  #navDropdown { position:absolute; top:52px; right:12px; background:var(--card); border-radius:8px; padding:8px; box-shadow:0 12px 40px rgba(16,24,40,0.08); display:none; z-index:120; min-width:160px; }
+  #navDropdown a { display:block; padding:8px 10px; color:var(--text); text-decoration:none; border-radius:6px; }
+  #navDropdown a:hover { background:var(--glass); }
+</style>
+</head>
+<body>
+  <div class="wrap" id="root">
+    <header class="site" role="banner">
+      <div class="brand">
+        <span style="font-size:20px">📚</span>
+        <div style="margin-left:6px"><h1>Stories</h1></div>
+      </div>
+      <div id="headerNavPlaceholder"></div>
+    </header>
+
+    <div class="controls-bar" role="toolbar" aria-label="Controls">
+      <div class="controls-left">
+        <div class="search">
+          <input id="q" type="search" placeholder="Search folders & stories (Som/Eng)..." />
+          <select id="lang" title="Language"><option value="all">All</option><option value="eng">ENG</option><option value="som">SOM</option></select>
+        </div>
+      </div>
+
+      <div class="controls-right">
+        <button id="darkToggle" class="small btn ghost">Dark</button>
+        <button id="addFolderBtn" class="small btn" style="display:none">+ Folder</button>
+        <button id="addStoryBtn" class="small btn" style="display:none">+ Story</button>
+      </div>
+    </div>
+
+    <div id="navDropdown" role="menu" aria-hidden="true"></div>
+
+    <div class="layout" role="main">
+      <aside class="folders" id="folderCol" aria-label="Folders">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <strong>Folders</strong>
+          <button id="recycleBtn" class="small" style="display:none">Recycle</button>
+        </div>
+        <div id="foldersList"></div>
+      </aside>
+
+      <section class="stories" id="storiesCol" aria-label="Stories area" style="display:none">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <div id="currentFolderTitle"><strong>Folder</strong></div>
+          <div class="muted" id="folderCount"></div>
+          <div class="right">
+            <button id="backToFolders" class="small">← Back</button>
+          </div>
+        </div>
+
+        <div id="storiesList"></div>
+      </section>
+    </div>
+  </div>
+
+<script>
+/* ---------- Config & networking ---------- */
+const DEV_BACKEND_HOST = (location.hostname === 'localhost' || location.hostname === '127.0.0.1') ? `${location.protocol}//${location.hostname}:4000` : '';
+const API_BASE = (window.__API_HOST__ || DEV_BACKEND_HOST) ? `${(window.__API_HOST__ || DEV_BACKEND_HOST)}/api/stories` : '/api/stories';
+
+const REACTIONS = ['like','love','haha','wow','angry','sad'];
+const REACTION_ICONS = { like:'👍', love:'❤️', haha:'😂', wow:'😍', angry:'😡', sad:'😥' };
+
+/* ---------- Helpers ---------- */
+function getToken(){ return localStorage.getItem('token'); }
+function getUser(){ const s = localStorage.getItem('user'); return s ? JSON.parse(s) : null; }
+
+async function fetchJson(url, opts = {}) {
+  try {
+    let full;
+    if (/^https?:\/\//i.test(url)) full = url;
+    else if (url.startsWith(API_BASE)) full = url;
+    else if (url.startsWith('/')) full = API_BASE + url;
+    else full = API_BASE + '/' + url;
+
+    const headers = Object.assign({}, opts.headers || {});
+    const token = getToken();
+    if (token && !headers.Authorization) headers.Authorization = 'Bearer ' + token;
+    const merged = Object.assign({}, opts, { headers });
+
+    const res = await fetch(full, merged);
+    const text = await res.text();
+    let data = null;
+    try { data = text ? JSON.parse(text) : null; } catch(e){ data = null; }
+    if (!res.ok) return { ok:false, error: (data && (data.error||data.message)) ? (data.error||data.message) : res.statusText, data };
+    return { ok:true, data };
+  } catch (err) {
+    return { ok:false, error: err.message || 'Network error' };
+  }
+}
+
+/* ---------- Nav + auth UI ---------- */
+function renderNav(){
+  const placeholder = document.getElementById('headerNavPlaceholder');
+  placeholder.innerHTML = '';
+
+  const nav = document.createElement('div');
+  nav.id = 'siteNav';
+  nav.style.display = 'flex';
+  nav.style.gap = '10px';
+  nav.style.alignItems = 'center';
+
+  const links = [
+    { href:'index.html', label:'Lessons' },
+    { href:'leaderboard.html', label:'Leaderboard' },
+    { href:'story.html', label:'Stories' },
+    { href:'history.html', label:'History' },
+    { href:'games.html', label:'Games' },
+    { href:'helpCenter.html', label:'Help' }
+  ];
+
+  const user = getUser();
+  if (user && user.role === 'admin') {
+    links.push({ href:'admin_dashboard.html', label:'Dashboard' });
+    links.push({ href:'admin_users.html', label:'Users' });
+  }
+
+  links.forEach(l => {
+    const a = document.createElement('a');
+    a.href = l.href;
+    a.innerText = l.label;
+    a.style.textDecoration = 'none';
+    a.style.color = 'var(--text)';
+    a.style.fontWeight = '600';
+    a.style.padding = '6px';
+    a.style.borderRadius = '8px';
+    a.addEventListener('mouseenter', ()=> a.style.background = 'var(--glass)');
+    a.addEventListener('mouseleave', ()=> a.style.background = 'transparent');
+    nav.appendChild(a);
+  });
+
+  const authWrap = document.createElement('div');
+  authWrap.id = 'navAuth';
+  authWrap.style.display = 'flex';
+  authWrap.style.gap = '8px';
+  authWrap.style.alignItems = 'center';
+  authWrap.style.marginLeft = '12px';
+
+  if (user) {
+    const name = document.createElement('span');
+    name.id = 'currentUserName';
+    name.className = 'nav-username';
+    name.innerText = user.fullName || user.username || 'Me';
+    name.style.fontWeight = '700';
+    authWrap.appendChild(name);
+
+    const logout = document.createElement('button');
+    logout.className = 'small nav-logout';
+    logout.innerText = 'Logout';
+    logout.addEventListener('click', ()=> { localStorage.removeItem('token'); localStorage.removeItem('user'); location.reload(); });
+    authWrap.appendChild(logout);
+  } else {
+    const login = document.createElement('button');
+    login.className = 'small';
+    login.innerText = 'Login';
+    login.addEventListener('click', async () => {
+      const username = prompt('username'); const password = prompt('password');
+      if (!username || !password) return;
+      const authBase = (API_BASE.replace(/\/api\/stories$/, '') || '') + '/api/auth/login';
+      const r = await fetchJson(authBase, {
+        method:'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ username, password })
+      });
+      if (!r.ok) return alert('Login failed: ' + (r.error||''));
+      localStorage.setItem('token', r.data.token);
+      localStorage.setItem('user', JSON.stringify(r.data.user));
+      renderNav();
+      location.reload();
+    });
+    authWrap.appendChild(login);
+  }
+
+  const hamburger = document.createElement('button');
+  hamburger.id = 'storiesHamburger';
+  hamburger.className = 'icon-btn';
+  hamburger.innerHTML = '☰';
+  hamburger.title = 'Menu';
+  hamburger.style.marginLeft = '8px';
+  hamburger.addEventListener('click', () => {
+    const dd = document.getElementById('navDropdown');
+    dd.style.display = (dd.style.display === 'block') ? 'none' : 'block';
+    dd.setAttribute('aria-hidden', dd.style.display === 'none' ? 'true' : 'false');
+  });
+
+  const dd = document.getElementById('navDropdown');
+  dd.innerHTML = '';
+  links.forEach(l => {
+    const a = document.createElement('a');
+    a.href = l.href;
+    a.innerText = l.label;
+    dd.appendChild(a);
+  });
+  dd.appendChild(document.createElement('hr'));
+  if (user) {
+    const span = document.createElement('div'); span.style.padding='6px'; span.innerText = (user.fullName || user.username || 'Me');
+    dd.appendChild(span);
+    const lo = document.createElement('a'); lo.href='#'; lo.innerText='Logout';
+    lo.addEventListener('click',(e)=>{ e.preventDefault(); localStorage.removeItem('token'); localStorage.removeItem('user'); location.reload(); });
+    dd.appendChild(lo);
+  } else {
+    const li = document.createElement('a'); li.href='#'; li.innerText='Login';
+    li.addEventListener('click', async (e)=>{ e.preventDefault(); const username = prompt('username'); const password = prompt('password'); if (!username||!password) return; const authBase = (API_BASE.replace(/\/api\/stories$/, '') || '') + '/api/auth/login'; const r = await fetchJson(authBase, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ username, password }) }); if (!r.ok) return alert('Login failed'); localStorage.setItem('token', r.data.token); localStorage.setItem('user', JSON.stringify(r.data.user)); location.reload(); });
+    dd.appendChild(li);
+  }
+
+  placeholder.appendChild(nav);
+  placeholder.appendChild(authWrap);
+  placeholder.appendChild(hamburger);
+
+  function checkMobile(){ if (window.innerWidth <= 900) { hamburger.style.display='inline-flex'; nav.style.display='none'; } else { hamburger.style.display='none'; nav.style.display='flex'; dd.style.display='none'; } }
+  window.addEventListener('resize', checkMobile);
+  checkMobile();
+}
+
+/* ---------- UI state ---------- */
+let folders = [];
+let stories = [];
+let currentFolder = null;
+let langFilter = localStorage.getItem('stories_lang') || 'all';
+let searchQ = '';
+let isAdmin = false;
+
+let stickyHandler = null;
+let resizeHandler = null;
+
+/* ---------- Initial setup ---------- */
+document.addEventListener('DOMContentLoaded', async () => {
+  renderNav();
+
+  const langEl = document.getElementById('lang');
+  if (langEl) langEl.value = langFilter;
+
+  const theme = localStorage.getItem('theme') || 'light';
+  if (theme === 'dark') document.documentElement.setAttribute('data-theme','dark');
+  document.getElementById('darkToggle').innerText = (theme === 'dark') ? 'Light' : 'Dark';
+
+  document.getElementById('darkToggle').addEventListener('click', () => {
+    const cur = document.documentElement.getAttribute('data-theme') || 'light';
+    const next = cur === 'dark' ? 'light' : 'dark';
+    if (next === 'dark') document.documentElement.setAttribute('data-theme','dark'); else document.documentElement.removeAttribute('data-theme');
+    localStorage.setItem('theme', next);
+    document.getElementById('darkToggle').innerText = next === 'dark' ? 'Light' : 'Dark';
+  });
+
+  document.getElementById('q').addEventListener('input', (e) => { searchQ = e.target.value.trim().toLowerCase(); renderUI(); });
+  document.getElementById('lang').addEventListener('change', (e) => {
+  langFilter = e.target.value;
+  localStorage.setItem('stories_lang', langFilter);
+  // reload so all localized pieces re-initialize consistently
+  location.reload();
+});
+
+  const user = getUser();
+  isAdmin = !!(user && (user.role === 'admin' || user.isAdmin));
+  if (isAdmin) {
+    document.getElementById('addFolderBtn').style.display = '';
+    document.getElementById('addStoryBtn').style.display = '';
+    document.getElementById('recycleBtn').style.display = '';
+  }
+
+  document.getElementById('addFolderBtn').addEventListener('click', openAddFolder);
+  document.getElementById('addStoryBtn').addEventListener('click', () => openAddStory(currentFolder));
+  document.getElementById('recycleBtn').addEventListener('click', openRecycleBin);
+  document.getElementById('backToFolders').addEventListener('click', () => { currentFolder=null; showFolders(); });
+
+  await loadFolders();
+  await loadStories();
+  showFolders();
+  renderUI();
+});
+
+/* ---------- Load from API ---------- */
+async function loadFolders(){
+  try {
+    const path = '/folders';
+    const res = await fetchJson(path);
+    if (!res.ok) { folders = []; renderFolders(); return; }
+    folders = Array.isArray(res.data && res.data.folders) ? res.data.folders : (Array.isArray(res.data) ? res.data : []);
+    renderFolders();
+  } catch (err) { folders = []; renderFolders(); }
+}
+
+async function loadStories(){
+  try {
+    const path = '/stories';
+    const res = await fetchJson(path);
+    if (!res.ok) { stories = []; renderUI(); return; }
+    stories = Array.isArray(res.data && res.data.stories) ? res.data.stories : (Array.isArray(res.data) ? res.data : []);
+    renderUI();
+  } catch (err) { stories = []; renderUI(); }
+}
+
+async function loadStoriesInFolder(folderId){
+  try {
+    const path = `/folders/${encodeURIComponent(folderId)}/stories`;
+    const r = await fetchJson(path);
+    if (!r.ok) { stories = []; renderUI(); return; }
+    const fetched = Array.isArray(r.data && r.data.stories) ? r.data.stories : (Array.isArray(r.data) ? r.data : []);
+    // apply client-side permission filter: only published for non-admin
+    stories = fetched.filter(s => !s.isDeleted && (isAdmin || !!s.published));
+    renderUI();
+  } catch (err) { stories = []; renderUI(); }
+}
+
+/* ---------- Render Folders ---------- */
+function renderFolders(){
+  const el = document.getElementById('foldersList');
+  el.innerHTML = '';
+  if (!folders.length) { el.innerHTML = '<div class="muted">No folders yet</div>'; return; }
+  folders.forEach(f => {
+    if (f.isDeleted) return;
+    const row = document.createElement('div'); row.className = 'folder-item';
+    const left = document.createElement('div'); left.className = 'folder-left';
+    const name = document.createElement('div'); name.innerHTML = `<div class="folder-name">${escape(f.nameEng)} ${f.nameSom ? ' / ' + escape(f.nameSom) : ''}</div><div class="folder-meta">${(countStoriesInFolder(f._id))} stories</div>`;
+    left.appendChild(name);
+    row.appendChild(left);
+
+    const actions = document.createElement('div'); actions.className = 'folder-actions';
+    const openBtn = document.createElement('button'); openBtn.className='small btn ghost'; openBtn.innerText = 'Open';
+    openBtn.addEventListener('click', ()=> openFolder(f));
+    actions.appendChild(openBtn);
+
+    if (isAdmin){
+      const edit = document.createElement('button'); edit.className='small'; edit.innerText='Edit';
+      edit.addEventListener('click', ()=> openEditFolder(f));
+      actions.appendChild(edit);
+      const del = document.createElement('button'); del.className='small'; del.innerText='Delete';
+      del.addEventListener('click', ()=> archiveFolder(f._id));
+      actions.appendChild(del);
+    }
+
+    row.appendChild(actions);
+    el.appendChild(row);
+  });
+}
+
+/* ---------- Helpers & UI logic ---------- */
+function escape(s){ if (!s && s!==0) return ''; return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+function countStoriesInFolder(folderId){
+  // Only count published stories for normal users.
+  // Admins see full counts (including pending).
+  return stories.filter(s => 
+    !s.isDeleted &&
+    String(s.folderId) === String(folderId) &&
+    (isAdmin || !!s.published)
+  ).length;
+}
+
+function formatTopReaction(story){
+  if (!story || !story.reactionCounts) return { icon:'❤️', total:0, key:'love' };
+  const keys = Object.keys(story.reactionCounts || {});
+  if (!keys.length) return { icon:'❤️', total:0, key:'love' };
+  let best = keys[0], total = 0;
+  keys.forEach(k => { total += Number(story.reactionCounts[k]||0); if ((story.reactionCounts[k]||0) > (story.reactionCounts[best]||0)) best = k; });
+  return { icon: REACTION_ICONS[best] || '❤️', total, key: best };
+}
+function formatCommentTopReaction(comment){
+  if (!comment || !comment.reactionCounts) return { icon:'❤️', total:0, key:'love' };
+  const keys = Object.keys(comment.reactionCounts || {});
+  if (!keys.length) return { icon:'❤️', total:0, key:'love' };
+  let best = keys[0], total = 0;
+  keys.forEach(k => { total += Number(comment.reactionCounts[k]||0); if ((comment.reactionCounts[k]||0) > (comment.reactionCounts[best]||0)) best = k; });
+  return { icon: REACTION_ICONS[best] || '❤️', total, key: best };
+}
+function isUnreadForUser(story){
+  const user = getUser();
+  if (!user) return false;
+  if (!story.readBy || !Array.isArray(story.readBy)) return true;
+  return !story.readBy.includes(String(user._id));
+}
+
+/* ---------- UI: show/hide panes ---------- */
+function showFolders(){
+  document.getElementById('folderCol').style.display = '';
+  document.getElementById('storiesCol').style.display = 'none';
+  currentFolder = null;
+  renderUI();
+}
+function openFolder(folder){
+  currentFolder = folder;
+  document.getElementById('folderCol').style.display = 'none';
+  document.getElementById('storiesCol').style.display = '';
+  loadStoriesInFolder(folder._id);
+}
+
+/* ---------- Render stories list (modernized) ---------- */
+function renderUI(){
+  renderFolders();
+  const list = document.getElementById('storiesList');
+  if (!list) return;
+  list.innerHTML = '';
+
+  if (!currentFolder) return;
+
+  let show = stories.slice();
+  // only show published stories to non-admin users
+  show = show.filter(s => !s.isDeleted && (isAdmin || !!s.published));
+
+  if (langFilter === 'eng') show = show.filter(s => (s.titleEng || s.contentEng));
+  if (langFilter === 'som') show = show.filter(s => (s.titleSom || s.contentSom));
+
+  if (searchQ) {
+    show = show.filter(s => {
+      const t = ((s.titleEng||'') + ' ' + (s.titleSom||'') + ' ' + (s.contentEng||'') + ' ' + (s.contentSom||'')).toLowerCase();
+      return t.includes(searchQ.toLowerCase());
+    });
+  }
+
+
+  show.sort((a,b) => {
+    const aTotal = Object.values(a.reactionCounts||{}).reduce((x,y)=>x+(+y||0),0);
+    const bTotal = Object.values(b.reactionCounts||{}).reduce((x,y)=>x+(+y||0),0);
+    return bTotal - aTotal || new Date(b.createdAt) - new Date(a.createdAt);
+  });
+
+  const folderTitle = document.getElementById('currentFolderTitle');
+  const countEl = document.getElementById('folderCount');
+  if (currentFolder) { folderTitle.innerHTML = `<strong>${escape(currentFolder.nameEng)} ${currentFolder.nameSom ? '/ ' + escape(currentFolder.nameSom) : ''}</strong>`; countEl.innerText = ` ${show.length} stories`; }
+
+  if (!show.length) { list.innerHTML = '<div class="muted">No stories</div>'; return; }
+
+  show.forEach(s => {
+    const node = document.createElement('div'); node.className = 'story-item';
+    const main = document.createElement('div'); main.className = 'story-main';
+    const titleRow = document.createElement('div'); titleRow.className = 'story-title-row';
+
+    const titleEl = document.createElement('div'); titleEl.className = 'story-title';
+    const displayTitle = (langFilter === 'som' ? (s.titleSom||s.titleEng) : (s.titleEng||s.titleSom)) || 'Untitled';
+    titleEl.innerText = displayTitle;
+    titleRow.appendChild(titleEl);
+
+    if (isUnreadForUser(s)) {
+      const badge = document.createElement('span'); badge.className = 'story-badge';
+      badge.innerText = 'NEW';
+      badge.dataset.storyId = s._id;
+      titleRow.appendChild(badge);
+    }
+
+    main.appendChild(titleRow);
+
+    const preview = document.createElement('div'); preview.className = 'story-preview';
+    preview.innerText = (langFilter === 'som' ? (s.contentSom||s.contentEng) : (s.contentEng||s.contentSom)) || '';
+    main.appendChild(preview);
+
+    const meta = document.createElement('div'); meta.className = 'story-meta';
+    meta.innerHTML = `<div>${new Date(s.createdAt).toLocaleString()}</div><div class="muted">Folder: ${currentFolder.nameEng || '—'}</div>`;
+    main.appendChild(meta);
+
+    node.appendChild(main);
+
+    const actions = document.createElement('div'); actions.className = 'story-actions';
+    const top = formatTopReaction(s);
+    const rp = document.createElement('button'); rp.className='small-ghost'; rp.innerText = `${top.total} ${top.icon}`; rp.style.cursor='pointer';
+    rp.addEventListener('click', (ev)=> openReactionPicker(ev, `/stories/${encodeURIComponent(s._id)}/reactions`, async ()=> { await loadStoriesInFolder(currentFolder._id); renderUI(); }));
+    actions.appendChild(rp);
+
+    const openBtn = document.createElement('button'); openBtn.className='small btn ghost'; openBtn.innerText='See more';
+    openBtn.addEventListener('click', ()=> openStory(s._id));
+    actions.appendChild(openBtn);
+
+    if (isAdmin){
+      const edit = document.createElement('button'); edit.className='small'; edit.innerText='Edit';
+      edit.addEventListener('click', ()=> openEditStory(s));
+      actions.appendChild(edit);
+      const del = document.createElement('button'); del.className='small'; del.innerText='Delete';
+      del.addEventListener('click', ()=> archiveStory(s._id));
+      actions.appendChild(del);
+    }
+
+    node.appendChild(actions);
+    list.appendChild(node);
+  });
+}
+
+/* ---------- Modals & Folder/Story CRUD (kept) ---------- */
+function createModal(html){
+  const back = document.createElement('div'); back.className='modal-backdrop';
+  const box = document.createElement('div'); box.className='modal';
+  box.innerHTML = html; back.appendChild(box); document.body.appendChild(back);
+  back.addEventListener('click', (e)=> { if (e.target === back) back.remove(); });
+  return { back, box, close: ()=> back.remove() };
+}
+function openAddFolder(){
+  const html = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <h3 style="margin:0">Add Folder</h3><button id="close" class="small">Close</button>
+    </div>
+    <label>English name<input id="fEng" style="width:100%;padding:8px;border-radius:8px;margin-top:6px" /></label>
+    <label>Somali name<input id="fSom" style="width:100%;padding:8px;border-radius:8px;margin-top:6px" /></label>
+    <div style="text-align:right;margin-top:8px"><button id="save" class="btn">Create</button></div>
+  `;
+  const modal = createModal(html);
+  modal.box.querySelector('#close').addEventListener('click', modal.close);
+  modal.box.querySelector('#save').addEventListener('click', async () => {
+    const nameEng = modal.box.querySelector('#fEng').value.trim();
+    const nameSom = modal.box.querySelector('#fSom').value.trim();
+    if (!nameEng) return alert('English name is required');
+    const r = await fetchJson('/folders', { method:'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ nameEng, nameSom })});
+    if (!r.ok) return alert('Create failed: ' + (r.error||''));
+    modal.close(); await loadFolders();
+  });
+}
+function openEditFolder(folder){
+  const html = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <h3 style="margin:0">Edit Folder</h3><button id="close" class="small">Close</button>
+    </div>
+    <label>English name<input id="fEng" style="width:100%;padding:8px;border-radius:8px;margin-top:6px" value="${escape(folder.nameEng)}" /></label>
+    <label>Somali name<input id="fSom" style="width:100%;padding:8px;border-radius:8px;margin-top:6px" value="${escape(folder.nameSom||'')}" /></label>
+    <div style="text-align:right;margin-top:8px"><button id="save" class="btn">Save</button></div>
+  `;
+  const modal = createModal(html);
+  modal.box.querySelector('#close').addEventListener('click', modal.close);
+  modal.box.querySelector('#save').addEventListener('click', async () => {
+    const nameEng = modal.box.querySelector('#fEng').value.trim();
+    const nameSom = modal.box.querySelector('#fSom').value.trim();
+    if (!nameEng) return alert('English name is required');
+    const r = await fetchJson(`/folders/${folder._id}`, { method:'PUT', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ nameEng, nameSom })});
+    if (!r.ok) return alert('Save failed: ' + (r.error||''));
+    modal.close(); await loadFolders();
+  });
+}
+async function archiveFolder(folderId){
+  if (!confirm('Move folder to recycle bin?')) return;
+  const r = await fetchJson(`/folders/${encodeURIComponent(folderId)}`, { method:'DELETE' });
+  if (!r.ok) return alert('Delete failed: ' + (r.error||''));
+  await loadFolders();
+  showFolders();
+}
+async function openRecycleBin(){
+  const r = await fetchJson('/recycle');
+  if (!r.ok) return alert('Recycle failed: ' + (r.error||''));
+  const { folders: flds, stories: sts } = r.data;
+  const html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><h3>Recycle bin</h3><button id="close" class="small">Close</button></div>
+    <div style="max-height:60vh;overflow:auto">
+      <div><strong>Folders</strong>${flds.length ? '' : '<div class="muted"> No deleted folders</div>'}</div>
+      ${flds.map(f=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px;border-bottom:1px solid #f2f4f7"><div>${escape(f.nameEng)}</div><div><button data-id="${f._id}" data-action="restore" class="small">Restore</button> <button data-id="${f._id}" data-action="perma" class="small">Delete permanently</button></div></div>`).join('')}
+      <div style="margin-top:8px"><strong>Stories</strong>${sts.length ? '' : '<div class="muted"> No deleted stories</div>'}</div>
+      ${sts.map(s=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px;border-bottom:1px solid #f2f4f7"><div>${escape(s.titleEng||s.titleSom||'Untitled')}</div><div><button data-id="${s._id}" data-action="restore-story" class="small">Restore</button> <button data-id="${s._id}" data-action="perma-story" class="small">Delete permanently</button></div></div>`).join('')}
+    </div>`;
+  const modal = createModal(html);
+  modal.box.querySelector('#close').addEventListener('click', modal.close);
+
+  modal.box.querySelectorAll('button[data-action]').forEach(btn => btn.addEventListener('click', async (e) => {
+    const id = e.target.dataset.id; const action = e.target.dataset.action;
+    if (action === 'restore') { await fetchJson(`/folders/${encodeURIComponent(id)}/restore`, { method:'POST' }); }
+    else if (action === 'perma') { if (!confirm('Delete permanently?')) return; await fetchJson(`/folders/${encodeURIComponent(id)}/permanent`, { method:'DELETE' }); }
+    else if (action === 'restore-story') { await fetchJson(`/stories/${encodeURIComponent(id)}/restore`, { method:'POST' }); }
+    else if (action === 'perma-story') { if (!confirm('Delete permanently?')) return; await fetchJson(`/stories/${encodeURIComponent(id)}/permanent`, { method:'DELETE' }); }
+    await loadFolders(); await loadStories(); modal.close();
+  }));
+}
+
+/* ---------- Story add/edit ---------- */
+function openEditStory(story){
+  const html = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <h3 style="margin:0">Edit Story</h3><button id="close" class="small">Close</button>
+    </div>
+    <label>Title (English)<input id="tEng" style="width:100%;padding:8px;border-radius:8px;margin-top:6px" value="${escape(story.titleEng||'')}" /></label>
+    <label>Title (Somali)<input id="tSom" style="width:100%;padding:8px;border-radius:8px;margin-top:6px" value="${escape(story.titleSom||'')}" /></label>
+    <label>Content (English)<textarea id="cEng" style="width:100%;height:120px;padding:8px;border-radius:8px;margin-top:6px">${escape(story.contentEng||'')}</textarea></label>
+    <label>Content (Somali)<textarea id="cSom" style="width:100%;height:120px;padding:8px;border-radius:8px;margin-top:6px">${escape(story.contentSom||'')}</textarea></label>
+    <div style="text-align:right;margin-top:8px"><button id="save" class="btn">Save</button></div>
+  `;
+  const modal = createModal(html);
+  modal.box.querySelector('#close').addEventListener('click', modal.close);
+  modal.box.querySelector('#save').addEventListener('click', async ()=>{
+    const titleEng = modal.box.querySelector('#tEng').value.trim();
+    const titleSom = modal.box.querySelector('#tSom').value.trim();
+    const contentEng = modal.box.querySelector('#cEng').value.trim();
+    const contentSom = modal.box.querySelector('#cSom').value.trim();
+    const r = await fetchJson(`/stories/${encodeURIComponent(story._id)}`, { method:'PUT', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ titleEng, titleSom, contentEng, contentSom }) });
+    if (!r.ok) return alert('Save failed: ' + (r.error||''));
+    modal.close(); await loadStoriesInFolder(currentFolder._id); renderUI();
+  });
+}
+async function archiveStory(storyId){
+  if (!confirm('Move story to recycle bin?')) return;
+  const r = await fetchJson(`/stories/${encodeURIComponent(storyId)}`, { method:'DELETE' });
+  if (!r.ok) return alert('Delete failed: ' + (r.error||''));
+  await loadStoriesInFolder(currentFolder._id); renderUI();
+}
+
+
+/* ---------- Frontend: My Story + Checking Story UI ---------- */
+
+// Add My Story and Checking Story buttons into controls bar (call once on renderNav or DOMContentLoaded)
+// Add My Story and Checking Story buttons into controls bar (call once on renderNav or DOMContentLoaded)
+function injectMyStoryButtons() {
+  // prefer a controls container if present, otherwise fall back to nav or auth area
+  const candidates = [
+    document.querySelector('.controls-right'),
+    document.querySelector('#siteNav'),
+    document.querySelector('#navAuth'),
+    document.getElementById('headerNavPlaceholder')
+  ].filter(Boolean);
+  const right = candidates[0];
+  if (!right) return;
+
+  // remove duplicates
+  ['myStoryBtn','checkStoriesBtn','myStoriesBtn'].forEach(id => {
+    const old = document.getElementById(id); if (old) old.remove();
+  });
+
+  const user = getUser();
+  if (user) {
+    // My Story (Submit)
+    const myStoryBtn = document.createElement('button'); myStoryBtn.id = 'myStoryBtn';
+    myStoryBtn.className = 'btn btn-ghost small';
+    myStoryBtn.innerText = '+ My Story';
+    myStoryBtn.addEventListener('click', () => openMyStoryModal());
+    right.appendChild(myStoryBtn);
+
+    // My Submissions (view your own submissions)
+    const myStoriesBtn = document.createElement('button'); myStoriesBtn.id = 'myStoriesBtn';
+    myStoriesBtn.className = 'btn btn-ghost small';
+    myStoriesBtn.innerText = 'My Submissions';
+    myStoriesBtn.addEventListener('click', () => openMyStoriesList());
+    right.appendChild(myStoriesBtn);
+  }
+
+  // Admin - Checking Story
+  if (isAdmin) {
+    const checkBtn = document.createElement('button'); checkBtn.id = 'checkStoriesBtn';
+    checkBtn.className = 'btn small';
+    checkBtn.innerText = 'Checking Story';
+    checkBtn.addEventListener('click', () => openCheckingStories());
+    right.appendChild(checkBtn);
+  }
+}
+
+// call after renderNav / on DOMContentLoaded
+document.addEventListener('DOMContentLoaded', () => {
+  // small delay to ensure controls-right exists
+  setTimeout(injectMyStoryButtons, 120);
+});
+
+/* ---------- Modal: submit My Story (user) ---------- */
+function openMyStoryModal() {
+  const user = getUser();
+  if (!user || !getToken()) { return alert('You must be logged in to submit a story'); }
+
+  // build folder select options from loaded folders
+  const folderOptions = (folders || []).filter(f => !f.isDeleted).map(f => `<option value="${f._id}">${escape(f.nameEng)} ${f.nameSom ? ' / ' + escape(f.nameSom) : ''}</option>`).join('');
+  const html = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <h3 style="margin:0">Submit Story (will be sent for verification)</h3><button id="close" class="small">Close</button>
+    </div>
+    <label>Title (English)<input id="my_tEng" style="width:100%;padding:8px;border-radius:8px;margin-top:6px" /></label>
+    <label>Title (Somali)<input id="my_tSom" style="width:100%;padding:8px;border-radius:8px;margin-top:6px" /></label>
+    <label>Folder (optional)
+      <div style="display:flex;gap:8px;margin-top:6px">
+        <select id="my_folder" style="flex:1;padding:8px;border-radius:8px">${folderOptions}<option value="">-- none --</option></select>
+        <button id="addNewFolderInline" class="small btn ghost">+ Folder</button>
+      </div>
+    </label>
+    <label>Content (English) <small class="muted">Preserve new lines</small><textarea id="my_cEng" style="width:100%;height:120px;padding:8px;border-radius:8px;margin-top:6px"></textarea></label>
+    <label>Content (Somali) <small class="muted">Preserve new lines</small><textarea id="my_cSom" style="width:100%;height:120px;padding:8px;border-radius:8px;margin-top:6px"></textarea></label>
+    <div style="text-align:right;margin-top:8px"><button id="publishMy" class="btn">Publish (Request Verify)</button></div>
+  `;
+  const modal = createModal(html);
+  modal.box.querySelector('#close').addEventListener('click', modal.close);
+
+  // inline folder creation
+  modal.box.querySelector('#addNewFolderInline').addEventListener('click', async (e) => {
+    const nameEng = prompt('Folder English name');
+    if (!nameEng) return;
+    const nameSom = prompt('Folder Somali name (optional)');
+    const res = await fetchJson('/folders', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ nameEng, nameSom }) });
+    if (!res.ok) return alert('Folder create failed: ' + (res.error||''));
+    await loadFolders(); // reload folders
+    // refresh select
+    const sel = modal.box.querySelector('#my_folder');
+    sel.innerHTML = (folders || []).filter(f=>!f.isDeleted).map(f => `<option value="${f._id}">${escape(f.nameEng)} ${f.nameSom ? ' / ' + escape(f.nameSom) : ''}</option>`).join('') + '<option value="">-- none --</option>';
+    alert('Folder created');
+  });
+
+  modal.box.querySelector('#publishMy').addEventListener('click', async () => {
+    const titleEng = modal.box.querySelector('#my_tEng').value.trim();
+    const titleSom = modal.box.querySelector('#my_tSom').value.trim();
+    const folderId = modal.box.querySelector('#my_folder').value || null;
+    const contentEng = modal.box.querySelector('#my_cEng').value.trim();
+    const contentSom = modal.box.querySelector('#my_cSom').value.trim();
+    if (!titleEng && !titleSom) return alert('Provide at least one title');
+    if (!contentEng && !contentSom) return alert('Provide at least one content');
+
+    const r = await fetchJson('/user/stories', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ folderId, titleEng, titleSom, contentEng, contentSom }) });
+    if (!r.ok) return alert('Submit failed: ' + (r.error||''));
+    modal.close();
+    alert('Submitted — admin will verify. You can track in My Submissions.');
+  });
+}
+
+/* ---------- View own submissions (user) ---------- */
+async function openMyStoriesList() {
+  if (!getToken()) return alert('Login required');
+  const r = await fetchJson('/user/stories');
+  if (!r.ok) return alert('Failed to load your stories: ' + (r.error||''));
+  const sts = r.data.stories || [];
+  const rows = sts.map(s => {
+    const status = s.pendingApproval ? 'Pending' : (s.published ? 'Published' : 'Unpublished');
+    return `<div style="padding:8px;border-bottom:1px solid #f2f4f7;display:flex;justify-content:space-between;align-items:center">
+      <div style="flex:1">
+        <div style="font-weight:700">${escape(s.titleEng||s.titleSom||'Untitled')}</div>
+        <div class="muted" style="font-size:13px">${status} • ${new Date(s.createdAt).toLocaleString()} ${s.authorName?(' • by ' + escape(s.authorName)) : ''}</div>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button data-id="${s._id}" class="small btn ghost view-user-story">View</button>
+        <button data-id="${s._id}" class="small btn ghost edit-user-story">Edit</button>
+        <button data-id="${s._id}" class="small btn" style="background:var(--danger);color:#fff">Request Delete</button>
+      </div>
+    </div>`; }).join('');
+
+  const html = `<div style="max-height:60vh;overflow:auto">${rows || '<div class="muted">No submissions</div>'}</div><div style="text-align:right;margin-top:8px"><button id="closeX" class="small">Close</button></div>`;
+  const modal = createModal(html);
+  modal.box.querySelector('#closeX').addEventListener('click', modal.close);
+
+  // wire buttons
+  modal.box.querySelectorAll('.view-user-story').forEach(btn => btn.addEventListener('click', async (e) => {
+    const id = e.currentTarget.dataset.id;
+    modal.close();
+    openStory(id); // reuse existing openStory view (admins may need to approve afterwards)
+  }));
+  modal.box.querySelectorAll('.edit-user-story').forEach(btn => btn.addEventListener('click', async (e) => {
+    const id = e.currentTarget.dataset.id;
+    modal.close();
+    // load story and open edit modal for user (similar to openEditStory but send to /user/stories/:id)
+    const resp = await fetchJson(`/stories/${encodeURIComponent(id)}`);
+    if (!resp.ok) return alert('Failed to load story: ' + (resp.error||''));
+    const s = resp.data.story;
+    openUserEditStory(s);
+  }));
+  modal.box.querySelectorAll('button[style*="background:var(--danger)"]').forEach(btn => btn.addEventListener('click', async (e) => {
+    const id = e.currentTarget.dataset.id;
+    if (!confirm('Request admin to delete this story?')) return;
+    const resp = await fetchJson(`/user/stories/${encodeURIComponent(id)}/request-delete`, { method:'POST' });
+    if (!resp.ok) return alert('Request failed: ' + (resp.error||''));
+    alert('Delete request sent to admin');
+    modal.close();
+  }));
+}
+
+// helper: open edit modal for user-submitted story (s: story object)
+function openUserEditStory(s) {
+  const folderOptions = (folders || []).filter(f => !f.isDeleted).map(f => `<option value="${f._id}" ${String(f._id) === String(s.folderId) ? 'selected' : ''}>${escape(f.nameEng)} ${f.nameSom ? ' / ' + escape(f.nameSom) : ''}</option>`).join('');
+  const html = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <h3 style="margin:0">Edit Your Story (will require re-verification)</h3><button id="close" class="small">Close</button>
+    </div>
+    <label>Title (English)<input id="u_tEng" style="width:100%;padding:8px;border-radius:8px;margin-top:6px" value="${escape(s.titleEng||'')}" /></label>
+    <label>Title (Somali)<input id="u_tSom" style="width:100%;padding:8px;border-radius:8px;margin-top:6px" value="${escape(s.titleSom||'')}" /></label>
+    <label>Folder (optional)
+      <div style="display:flex;gap:8px;margin-top:6px">
+        <select id="u_folder" style="flex:1;padding:8px;border-radius:8px">${folderOptions}<option value="">-- none --</option></select>
+        <button id="addNewFolderInline2" class="small btn ghost">+ Folder</button>
+      </div>
+    </label>
+    <label>Content (English) <small class="muted">Preserve new lines</small><textarea id="u_cEng" style="width:100%;height:120px;padding:8px;border-radius:8px;margin-top:6px">${escape(s.contentEng||'')}</textarea></label>
+    <label>Content (Somali) <small class="muted">Preserve new lines</small><textarea id="u_cSom" style="width:100%;height:120px;padding:8px;border-radius:8px;margin-top:6px">${escape(s.contentSom||'')}</textarea></label>
+    <div style="text-align:right;margin-top:8px"><button id="saveUserEdit" class="btn">Save (Request Verify)</button></div>
+  `;
+  const modal = createModal(html);
+  modal.box.querySelector('#close').addEventListener('click', modal.close);
+
+  modal.box.querySelector('#addNewFolderInline2').addEventListener('click', async () => {
+    const nameEng = prompt('Folder English name'); if (!nameEng) return;
+    const nameSom = prompt('Folder Somali name (optional)');
+    const res = await fetchJson('/folders', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ nameEng, nameSom }) });
+    if (!res.ok) return alert('Folder create failed: ' + (res.error||''));
+    await loadFolders();
+    const sel = modal.box.querySelector('#u_folder');
+    sel.innerHTML = (folders || []).filter(f=>!f.isDeleted).map(f => `<option value="${f._id}">${escape(f.nameEng)} ${f.nameSom ? ' / ' + escape(f.nameSom) : ''}</option>`).join('') + '<option value="">-- none --</option>';
+    alert('Folder created');
+  });
+
+  modal.box.querySelector('#saveUserEdit').addEventListener('click', async () => {
+    const titleEng = modal.box.querySelector('#u_tEng').value.trim();
+    const titleSom = modal.box.querySelector('#u_tSom').value.trim();
+    const folderId = modal.box.querySelector('#u_folder').value || null;
+    const contentEng = modal.box.querySelector('#u_cEng').value.trim();
+    const contentSom = modal.box.querySelector('#u_cSom').value.trim();
+    if (!titleEng && !titleSom) return alert('Provide at least one title');
+    if (!contentEng && !contentSom) return alert('Provide at least one content');
+
+    const resp = await fetchJson(`/user/stories/${encodeURIComponent(s._id)}`, { method:'PUT', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ folderId, titleEng, titleSom, contentEng, contentSom }) });
+    if (!resp.ok) return alert('Save failed: ' + (resp.error||''));
+    modal.close();
+    alert('Saved. Story marked pending for admin verification.');
+  });
+}
+
+/* ----
+/* ---------- Reaction popover (unified for stories & comments) ---------- */
+function openReactionPicker(ev, postPath, callback=null){
+  document.querySelectorAll('.emoji-pop').forEach(n => n.remove());
+  const pop = document.createElement('div');
+  pop.className = 'emoji-pop';
+  pop.style.position = 'absolute';
+  pop.style.visibility = 'hidden'; // hide while measuring
+
+  REACTIONS.forEach(rk => {
+    const btn = document.createElement('button'); btn.innerHTML = REACTION_ICONS[rk] || rk;
+    btn.title = rk;
+    btn.addEventListener('click', async () => {
+      if (!getToken()) { alert('Login required'); pop.remove(); return; }
+      const resp = await fetchJson(postPath, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ reaction: rk }) });
+      if (!resp.ok) { alert('React failed: ' + (resp.error||'')); return; }
+      pop.remove();
+      if (callback) await callback();
+      else { await loadStories(); renderUI(); }
+    });
+    pop.appendChild(btn);
+  });
+
+  document.body.appendChild(pop);
+
+  // position above the triggering element, centered
+  const rect = ev.currentTarget.getBoundingClientRect();
+  // measure pop after appended
+  const popRect = pop.getBoundingClientRect();
+  const left = rect.left + window.scrollX + (rect.width / 2) - (popRect.width / 2);
+  const topAbove = rect.top + window.scrollY - popRect.height - 8; // place above with 8px gap
+  const topBelow = rect.bottom + window.scrollY + 8; // fallback below
+
+  pop.style.left = Math.max(8, Math.round(left)) + 'px';
+  // if not enough space above, place below
+  if (topAbove < window.scrollY + 8) pop.style.top = Math.round(topBelow) + 'px';
+  else pop.style.top = Math.round(topAbove) + 'px';
+
+  pop.style.visibility = 'visible';
+
+  // auto-close when clicking outside
+  setTimeout(()=> {
+    const closeFn = (e) => { if (!pop.contains(e.target)) pop.remove(); };
+    document.addEventListener('click', closeFn, { once:true });
+  }, 30);
+}
+
+/* ---------- Helper: notify author (best-effort) ---------- */
+async function notifyAuthor(userId, message, extra = {}) {
+  if (!userId) return false;
+  try {
+    // try likely endpoints in order (ignore failures)
+    const tryList = [
+      { url: `/users/${encodeURIComponent(userId)}/notify`, body: { message, ...extra } },
+      { url: `/notifications`, body: { userId, message, ...extra } }
+    ];
+    for (const t of tryList) {
+      const r = await fetchJson(t.url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(t.body) });
+      if (r.ok) return true;
+    }
+  } catch (err) {
+    console.warn('notifyAuthor error', err);
+  }
+  console.warn('notifyAuthor: no supported endpoint found for user', userId);
+  return false;
+}
+
+/* ---------- Story add/edit (admin story becomes pending by default) ---------- */
+function openAddStory(folder){
+  if (!folder) return alert('Select a folder first');
+  const html = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <h3 style="margin:0">Add Story</h3><button id="close" class="small">Close</button>
+    </div>
+    <label>Title (English)<input id="tEng" style="width:100%;padding:8px;border-radius:8px;margin-top:6px" /></label>
+    <label>Title (Somali)<input id="tSom" style="width:100%;padding:8px;border-radius:8px;margin-top:6px" /></label>
+    <label>Content (English) <small class="muted">Preserve new lines</small><textarea id="cEng" style="width:100%;height:120px;padding:8px;border-radius:8px;margin-top:6px"></textarea></label>
+    <label>Content (Somali) <small class="muted">Preserve new lines</small><textarea id="cSom" style="width:100%;height:120px;padding:8px;border-radius:8px;margin-top:6px"></textarea></label>
+    <div style="text-align:right;margin-top:8px"><button id="save" class="btn">Create</button></div>
+  `;
+  const modal = createModal(html);
+  modal.box.querySelector('#close').addEventListener('click', modal.close);
+  modal.box.querySelector('#save').addEventListener('click', async ()=>{
+    const titleEng = modal.box.querySelector('#tEng').value.trim();
+    const titleSom = modal.box.querySelector('#tSom').value.trim();
+    const contentEng = modal.box.querySelector('#cEng').value.trim();
+    const contentSom = modal.box.querySelector('#cSom').value.trim();
+    if (!titleEng && !titleSom) return alert('Enter at least one title');
+    if (!contentEng && !contentSom) return alert('Enter at least one content');
+
+    // If admin created, make it pending so other users don't see it until approved
+    const user = getUser();
+    const body = { titleEng, titleSom, contentEng, contentSom };
+    if (user && (user.role === 'admin' || user.isAdmin)) {
+      body.pendingApproval = true;
+      body.published = false;
+      // include author info so server can record it
+      body.authorId = String(user._id || '');
+      body.authorName = user.fullName || user.username || '';
+    }
+
+    const r = await fetchJson(`/folders/${encodeURIComponent(folder._id)}/stories`, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(body) });
+    if (!r.ok) return alert('Create failed: ' + (r.error||''));
+    modal.close();
+    await loadStoriesInFolder(folder._id);
+    renderUI();
+
+    // if admin created and server accepted, try to notify (optional)
+    if (r.data && r.data.story && r.data.story.authorId) {
+      await notifyAuthor(r.data.story.authorId, `Your story "${(titleEng||titleSom||'Untitled')}" was submitted (pending approval).`);
+    }
+  });
+}
+
+/* ---------- Admin: Checking Stories (keeps wired listeners) ---------- */
+async function openCheckingStories() {
+  if (!isAdmin) return alert('Admin only');
+
+  const r = await fetchJson('/stories/pending');
+  if (!r.ok) return alert('Failed to load pending stories: ' + (r.error||''));
+  const pending = r.data.stories || [];
+
+  // create modal early so closures can call modal.close()
+  const modal = createModal('<div id="checkingStoriesRoot"></div>');
+
+  const container = document.createElement('div');
+  container.style.maxHeight = '60vh';
+  container.style.overflow = 'auto';
+  container.style.paddingRight = '6px';
+
+  if (!pending.length) {
+    container.innerHTML = '<div class="muted">No pending items</div>';
+  } else {
+    pending.forEach(s => {
+      const row = document.createElement('div');
+      row.style.padding = '8px';
+      row.style.borderBottom = '1px solid #f2f4f7';
+      row.style.display = 'flex';
+      row.style.alignItems = 'center';
+      row.style.gap = '8px';
+
+      const left = document.createElement('div');
+      left.style.flex = '1';
+      const why = s.pendingApproval ? 'New/Edited (needs approval)' : (s.pendingDelete ? 'Delete requested' : 'Pending');
+      left.innerHTML = `<div style="font-weight:700">${escape(s.titleEng||s.titleSom||'Untitled')}</div>
+                        <div class="muted" style="font-size:13px">By: ${escape(s.authorName||s.createdBy||'—')} • ${why} • ${new Date(s.createdAt).toLocaleString()}</div>`;
+
+      const actions = document.createElement('div');
+      actions.style.display = 'flex';
+      actions.style.gap = '6px';
+
+      // View
+      const viewBtn = document.createElement('button');
+      viewBtn.className = 'small btn ghost admin-view';
+      viewBtn.dataset.id = s._id;
+      viewBtn.innerText = 'View';
+      viewBtn.addEventListener('click', () => { modal.close(); openStory(s._id); });
+      actions.appendChild(viewBtn);
+
+      if (s.pendingDelete) {
+        const confirmDel = document.createElement('button');
+        confirmDel.className = 'small btn admin-confirm-delete';
+        confirmDel.dataset.id = s._id;
+        confirmDel.style.background = 'var(--danger)';
+        confirmDel.style.color = '#fff';
+        confirmDel.innerText = 'Confirm Delete';
+        confirmDel.addEventListener('click', async () => {
+          if (!confirm('Permanently delete this story? This cannot be undone.')) return;
+          const resp = await fetchJson(`/stories/${encodeURIComponent(s._id)}/confirm-delete`, { method:'POST' });
+          if (!resp.ok) return alert('Delete failed: ' + (resp.error||''));
+          alert('Story deleted');
+          // notify author best-effort
+          if (s.authorId) await notifyAuthor(s.authorId, `Your story "${s.titleEng||s.titleSom||'Untitled'}" was permanently deleted by admin.`);
+          await loadFolders(); await loadStories();
+          modal.close();
+          openCheckingStories();
+        });
+        actions.appendChild(confirmDel);
+      } else {
+        const approve = document.createElement('button');
+        approve.className = 'small btn admin-approve';
+        approve.dataset.id = s._id;
+        approve.style.background = 'var(--accent)';
+        approve.style.color = '#fff';
+        approve.innerText = 'Approve';
+        approve.addEventListener('click', async () => {
+          if (!confirm('Approve and publish this story?')) return;
+          const resp = await fetchJson(`/stories/${encodeURIComponent(s._id)}/approve`, { method:'POST' });
+          if (!resp.ok) return alert('Approve failed: ' + (resp.error||''));
+          alert('Approved and published');
+          // notify author
+          if (s.authorId) await notifyAuthor(s.authorId, `Your story "${s.titleEng||s.titleSom||'Untitled'}" was approved and published.`);
+          await loadFolders(); await loadStories();
+          modal.close();
+          openCheckingStories();
+        });
+
+        const reject = document.createElement('button');
+        reject.className = 'small btn admin-reject';
+        reject.dataset.id = s._id;
+        reject.innerText = 'Reject';
+        reject.addEventListener('click', async () => {
+          if (!confirm('Reject this submission?')) return;
+          const resp = await fetchJson(`/stories/${encodeURIComponent(s._id)}/reject`, { method:'POST' });
+          if (!resp.ok) return alert('Reject failed: ' + (resp.error||''));
+          alert('Rejected');
+          // notify author
+          if (s.authorId) await notifyAuthor(s.authorId, `Your story "${s.titleEng||s.titleSom||'Untitled'}" was rejected by admin.`);
+          await loadFolders(); await loadStories();
+          modal.close();
+          openCheckingStories();
+        });
+
+        actions.appendChild(approve);
+        actions.appendChild(reject);
+      }
+
+      row.appendChild(left);
+      row.appendChild(actions);
+      container.appendChild(row);
+    });
+  }
+
+  const footerWrap = document.createElement('div');
+  footerWrap.style.textAlign = 'right';
+  footerWrap.style.marginTop = '8px';
+  const closeBtn = document.createElement('button');
+  closeBtn.id = 'closeChk';
+  closeBtn.className = 'small';
+  closeBtn.innerText = 'Close';
+  closeBtn.addEventListener('click', () => modal.close());
+  footerWrap.appendChild(closeBtn);
+
+  const placeholder = modal.box.querySelector('#checkingStoriesRoot') || modal.box;
+  placeholder.appendChild(container);
+  placeholder.appendChild(footerWrap);
+}
+
+/* ---------- open full-page story view (show creator full name + status) ---------- */
+async function openStory(storyId){
+  const r = await fetchJson(`/stories/${encodeURIComponent(storyId)}`);
+  if (!r.ok) return alert('Load failed: ' + (r.error||''));
+  const s = r.data.story;
+
+  const user = getUser();
+  const isAuthor = user && String(user._id) === String(s.authorId);
+  if (!s.published && !(isAdmin || isAuthor)) {
+    return alert('This story is not published yet. It is pending admin verification.');
+  }
+
+  // Mark as read (optimistic)
+  (async ()=>{
+    const u = getUser(); if (!u) return;
+    if (!getToken()) {
+      stories = stories.map(x => (String(x._id) === String(storyId)) ? Object.assign({}, x, { readBy: Array.isArray(x.readBy) ? Array.from(new Set([...x.readBy.map(String), String(u._id)])) : [String(u._id)] }) : x );
+      document.querySelectorAll('.story-badge').forEach(b => { if (b.dataset && String(b.dataset.storyId) === String(storyId)) b.remove(); });
+      return;
+    }
+    const resp = await fetchJson(`/stories/${encodeURIComponent(storyId)}/read`, { method:'POST' });
+    if (resp.ok) {
+      stories = stories.map(x => {
+        if (String(x._id) === String(storyId)) {
+          const readBy = Array.isArray(x.readBy) ? Array.from(new Set([...x.readBy.map(String), String(u._id)])) : [String(u._id)];
+          return Object.assign({}, x, { readBy });
+        }
+        return x;
+      });
+    } else {
+      stories = stories.map(x => (String(x._id) === String(storyId)) ? Object.assign({}, x, { readBy: Array.isArray(x.readBy) ? Array.from(new Set([...x.readBy.map(String), String(u._id)])) : [String(u._id)] }) : x );
+    }
+    document.querySelectorAll('.story-badge').forEach(b => { if (b.dataset && String(b.dataset.storyId) === String(storyId)) b.remove(); });
+  })();
+
+  // Remove NEW badges & switch to stories column
+  document.querySelectorAll('.story-badge').forEach(b => b.remove());
+  document.getElementById('folderCol').style.display = 'none';
+  document.getElementById('storiesCol').style.display = '';
+  const container = document.getElementById('storiesCol');
+  container.innerHTML = '';
+
+  const view = document.createElement('div'); view.className = 'story-view';
+
+  /* HEADER */
+  const header = document.createElement('div'); header.className = 'story-header';
+
+  const row1 = document.createElement('div'); row1.className = 'row';
+  const backBtn = document.createElement('button'); backBtn.className = 'small'; backBtn.innerText = '← Back';
+  backBtn.addEventListener('click', () => {
+    cleanupSticky();
+    container.innerHTML = '';
+    // Use openFolder to reliably restore the folder/stories view if we had a currentFolder,
+    // otherwise go back to folders list.
+    if (currentFolder) openFolder(currentFolder);
+    else showFolders();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+  row1.appendChild(backBtn);
+
+  const controls = document.createElement('div'); controls.className = 'controls'; controls.style.marginLeft = 'auto';
+  const top = formatTopReaction(s);
+  const reactBtn = document.createElement('button'); reactBtn.className = 'small btn ghost'; reactBtn.innerText = `${top.total} ${top.icon}`;
+  reactBtn.title = 'React';
+  reactBtn.addEventListener('click', (ev) => openReactionPicker(ev, `/stories/${encodeURIComponent(s._id)}/reactions`, async ()=> {
+    const fresh = await fetchJson(`/stories/${encodeURIComponent(storyId)}`);
+    if (fresh.ok && fresh.data && fresh.data.story) {
+      const t = formatTopReaction(fresh.data.story);
+      reactBtn.innerText = `${t.total} ${t.icon}`;
+    }
+  }));
+  controls.appendChild(reactBtn);
+
+  // Admin action buttons (approve/reject/confirm-delete)
+  if (isAdmin) {
+    if (s.pendingDelete) {
+      const confirmDel = document.createElement('button');
+      confirmDel.className = 'small btn';
+      confirmDel.style.background = 'var(--danger)';
+      confirmDel.style.color = '#fff';
+      confirmDel.innerText = 'Confirm Delete';
+      confirmDel.addEventListener('click', async () => {
+        if (!confirm('Permanently delete this story? This cannot be undone.')) return;
+        const resp = await fetchJson(`/stories/${encodeURIComponent(s._id)}/confirm-delete`, { method:'POST' });
+        if (!resp.ok) return alert('Delete failed: ' + (resp.error||''));
+        alert('Story deleted');
+        if (s.authorId) await notifyAuthor(s.authorId, `Your story "${s.titleEng||s.titleSom||'Untitled'}" was permanently deleted by admin.`);
+        await loadFolders(); await loadStories();
+        cleanupSticky();
+        container.innerHTML = '';
+        if (currentFolder) loadStoriesInFolder(currentFolder._id);
+        else showFolders();
+      });
+      controls.appendChild(confirmDel);
+    } else if (s.pendingApproval) {
+      const approve = document.createElement('button');
+      approve.className = 'small btn';
+      approve.style.background = 'var(--accent)';
+      approve.style.color = '#fff';
+      approve.innerText = 'Approve';
+      approve.addEventListener('click', async () => {
+        if (!confirm('Approve and publish this story?')) return;
+        const resp = await fetchJson(`/stories/${encodeURIComponent(s._id)}/approve`, { method:'POST' });
+        if (!resp.ok) return alert('Approve failed: ' + (resp.error||''));
+        alert('Approved and published');
+        if (s.authorId) await notifyAuthor(s.authorId, `Your story "${s.titleEng||s.titleSom||'Untitled'}" was approved and published.`);
+        await loadFolders(); await loadStories();
+        const fresh = await fetchJson(`/stories/${encodeURIComponent(storyId)}`);
+        if (fresh.ok && fresh.data && fresh.data.story) {
+          cleanupSticky();
+          container.innerHTML = '';
+          openStory(storyId);
+        }
+      });
+      controls.appendChild(approve);
+
+      const reject = document.createElement('button');
+      reject.className = 'small btn ghost';
+      reject.innerText = 'Reject';
+      reject.addEventListener('click', async () => {
+        if (!confirm('Reject this submission?')) return;
+        const resp = await fetchJson(`/stories/${encodeURIComponent(s._id)}/reject`, { method:'POST' });
+        if (!resp.ok) return alert('Reject failed: ' + (resp.error||''));
+        alert('Rejected');
+        if (s.authorId) await notifyAuthor(s.authorId, `Your story "${s.titleEng||s.titleSom||'Untitled'}" was rejected by admin.`);
+        await loadFolders(); await loadStories();
+        cleanupSticky();
+        container.innerHTML = '';
+        if (currentFolder) loadStoriesInFolder(currentFolder._id);
+        else showFolders();
+      });
+      controls.appendChild(reject);
+    }
+  }
+
+  row1.appendChild(controls);
+  header.appendChild(row1);
+
+  // second header row: date + creator (always shown)
+  const row2 = document.createElement('div'); row2.className = 'row';
+  const dateEl = document.createElement('div'); dateEl.className = 'metaDate';
+  const authorDisplay = escape(s.authorName || s.createdBy || '—');
+  dateEl.innerText = `${new Date(s.createdAt).toLocaleString()} • by ${authorDisplay}`;
+  row2.appendChild(dateEl);
+  header.appendChild(row2);
+
+  // Status banner (published / rejected / pending / not published)
+  // IMPORTANT: show the detailed status text only to the story's creator (author)
+  const showStatusToAuthor = isAuthor; // <-- only the creator sees the full status message
+  if (showStatusToAuthor) {
+    const statusRow = document.createElement('div'); statusRow.className = 'row';
+    const statusWrap = document.createElement('div');
+    statusWrap.style.marginTop = '8px';
+    statusWrap.style.padding = '8px';
+    statusWrap.style.borderRadius = '8px';
+    statusWrap.style.fontWeight = '600';
+    let statusText = '';
+    let statusColor = '#f0ad4e'; // default orange (pending)
+    if (s.published) {
+      const d = new Date(s.publishedAt || s.updatedAt || s.createdAt);
+      statusText = `This story was approved and published on ${d.toLocaleString()}.`;
+      statusColor = '#2b8a3e'; // green
+    } else if (s.pendingApproval) {
+      const d = new Date(s.createdAt);
+      statusText = `Pending approval since ${d.toLocaleString()}.`;
+      statusColor = '#f0ad4e'; // orange
+    } else if (s.pendingDelete) {
+      const d = new Date(s.updatedAt || s.createdAt);
+      statusText = `Delete requested on ${d.toLocaleString()}.`;
+      statusColor = '#c94b4b'; // red-ish
+    } else {
+      const d = new Date(s.updatedAt || s.createdAt);
+      if (s.rejected || s.rejectedAt) {
+        const rejDate = new Date(s.rejectedAt || s.updatedAt || s.createdAt);
+        statusText = `This story was rejected on ${rejDate.toLocaleString()} and is not published.`;
+        statusColor = '#c94b4b';
+      } else {
+        statusText = `This story is not published.`;
+        statusColor = '#6c757d';
+      }
+    }
+    statusWrap.innerText = statusText;
+    statusWrap.style.background = 'rgba(0,0,0,0.03)';
+    statusWrap.style.border = `1px solid ${statusColor}`;
+    statusWrap.style.color = statusColor;
+    statusRow.appendChild(statusWrap);
+    header.appendChild(statusRow);
+  }
+
+  // third header row: title
+  const row3 = document.createElement('div'); row3.className = 'row';
+  const title = document.createElement('div'); title.className = 'title';
+  title.innerText = (s.titleEng || s.titleSom || 'Untitled');
+  row3.appendChild(title);
+  header.appendChild(row3);
+
+  /* BODY */
+  const body = document.createElement('div'); body.className = 'story-body';
+  const content = document.createElement('div'); content.className = 'story-content';
+  const displayedContent = ( (langFilter === 'som') ? (s.contentSom || s.contentEng) : (s.contentEng || s.contentSom) ) || '';
+
+  // keep content scrollable
+  content.innerText = displayedContent;
+  content.style.maxHeight = '70vh';
+  content.style.overflowY = 'auto';
+  body.appendChild(content);
+
+  /* FOOTER (comments area) */
+  const footer = document.createElement('div'); footer.className = 'story-footer';
+  footer.innerHTML = `
+    <div id="storyCommentsArea" style="display:none">
+      <div class="comments">
+        <h4 style="margin-top:0">Comments</h4>
+        <div id="commentsListFull" class="comments-list-scroll">Loading...</div>
+        <div style="margin-top:8px" id="commentComposerFull">${getToken() ? `<textarea id="commentTextFull" style="width:100%;height:80px"></textarea><div style="text-align:right;margin-top:6px"><button id="postCommentFull" class="btn">Post</button></div>` : '<div class="muted">Login to post comments</div>'}</div>
+      </div>
+    </div>
+  `;
+
+  /* assemble view and append to DOM */
+  view.appendChild(header);
+  view.appendChild(body);
+  view.appendChild(footer);
+  container.appendChild(view);
+
+  /* COMMENTS BUTTON placed under story content (in footer) */
+  const commentsArea = footer.querySelector('#storyCommentsArea');
+  const commentsToggle = document.createElement('div');
+  commentsToggle.style.display = 'flex';
+  commentsToggle.style.justifyContent = 'flex-start';
+  commentsToggle.style.marginBottom = '8px';
+
+  const commentsBtnUnder = document.createElement('button');
+  commentsBtnUnder.className = 'small btn ghost';
+  const initialCommentsCount = (r.data.comments && r.data.comments.length) ? r.data.comments.length : 0;
+  commentsBtnUnder.innerText = `Comments (${initialCommentsCount})`;
+  commentsBtnUnder.addEventListener('click', async () => {
+    if (!commentsArea) return;
+    if (commentsArea.style.display === 'block') {
+      commentsArea.style.display = 'none';
+    } else {
+      commentsArea.style.display = 'block';
+      if (typeof loadCommentsForStory === 'function') await loadCommentsForStory(storyId, document.getElementById('commentsListFull'));
+      setTimeout(()=> { commentsArea.scrollIntoView({ behavior:'smooth', block:'start' }); }, 80);
+    }
+  });
+
+  commentsToggle.appendChild(commentsBtnUnder);
+  if (commentsArea && commentsArea.parentNode) commentsArea.parentNode.insertBefore(commentsToggle, commentsArea);
+
+  /* STICKY header logic */
+  const headerOffsetTop = header.getBoundingClientRect().top + window.scrollY;
+  function onScrollSticky(){
+    const siteHeaderBottom = document.querySelector('header.site').getBoundingClientRect().bottom;
+    if (window.scrollY >= headerOffsetTop - 8) {
+      if (!header.classList.contains('fixed')) {
+        header.classList.add('fixed');
+        header.style.top = Math.round(siteHeaderBottom + 8) + 'px';
+        if (!view.querySelector('.story-header-spacer')) {
+          const sp = document.createElement('div'); sp.className = 'story-header-spacer';
+          sp.style.height = header.getBoundingClientRect().height + 'px';
+          view.insertBefore(sp, body);
+        }
+      }
+    } else {
+      if (header.classList.contains('fixed')) {
+        header.classList.remove('fixed');
+        header.style.top = null;
+        const sp = view.querySelector('.story-header-spacer');
+        if (sp) sp.remove();
+      }
+    }
+  }
+  stickyHandler = onScrollSticky;
+  window.addEventListener('scroll', stickyHandler);
+
+  /* resize handler */
+  resizeHandler = () => {
+    if (!header) return;
+    const siteHeaderBottom = document.querySelector('header.site').getBoundingClientRect().bottom;
+    if (header.classList.contains('fixed')) {
+      header.style.top = Math.round(siteHeaderBottom + 8) + 'px';
+      header.style.width = Math.min(920, Math.round(window.innerWidth - 48)) + 'px';
+    }
+    const sp = view.querySelector('.story-header-spacer');
+    if (sp) sp.style.height = header.getBoundingClientRect().height + 'px';
+  };
+  window.addEventListener('resize', resizeHandler);
+
+  /* post comment wiring */
+  if (getToken()) {
+    const postBtn = document.getElementById('postCommentFull');
+    if (postBtn) {
+      postBtn.addEventListener('click', async () => {
+        const txtEl = document.getElementById('commentTextFull');
+        if (!txtEl) return;
+        const txt = txtEl.value.trim();
+        if (!txt) return;
+        const resp = await fetchJson(`/stories/${encodeURIComponent(storyId)}/comments`, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ content: txt })});
+        if (!resp.ok) return alert('Post failed: ' + (resp.error||''));
+        txtEl.value = '';
+        if (typeof loadCommentsForStory === 'function') await loadCommentsForStory(storyId, document.getElementById('commentsListFull'));
+        const fresh = await fetchJson(`/stories/${encodeURIComponent(storyId)}`);
+        if (fresh.ok && fresh.data && Array.isArray(fresh.data.comments)) {
+          commentsBtnUnder.innerText = `Comments (${fresh.data.comments.length})`;
+        }
+      });
+    }
+  }
+
+  /* update top reaction & comments counts after open */
+  (async ()=> {
+    const fresh = await fetchJson(`/stories/${encodeURIComponent(storyId)}`);
+    if (fresh.ok && fresh.data && fresh.data.story) {
+      const t = formatTopReaction(fresh.data.story);
+      reactBtn.innerText = `${t.total} ${t.icon}`;
+      const cnt = Array.isArray(fresh.data.comments) ? fresh.data.comments.length : 0;
+      commentsBtnUnder.innerText = `Comments (${cnt})`;
+    }
+  })();
+
+  /* cleanup helper (hoisted inside function) */
+  function cleanupSticky(){
+    if (stickyHandler) { window.removeEventListener('scroll', stickyHandler); stickyHandler = null; }
+    if (resizeHandler) { window.removeEventListener('resize', resizeHandler); resizeHandler = null; }
+  }
+}
+
+/* ---------- Comments (full screen) - replies hidden until toggle ---------- */
+async function loadCommentsForStory(storyId, container){
+  container.innerHTML = 'Loading...';
+  const r = await fetchJson(`/stories/${encodeURIComponent(storyId)}/comments`);
+  if (!r.ok) { container.innerHTML = '<div class="muted">Failed to load comments</div>'; return; }
+  const comments = r.data.comments || [];
+  container.innerHTML = '';
+
+  const pinned = comments.filter(c => c.isPinned);
+  const others = comments.filter(c => !c.isPinned);
+  const ordered = pinned.concat(others);
+
+  const displayed = ordered;
+  if (!displayed.length) { container.innerHTML = '<div class="muted">No comments</div>'; return; }
+
+  displayed.forEach(c => {
+    const d = document.createElement('div'); d.className = 'comment' + (c.isAdmin ? ' admin' : '');
+    const head = document.createElement('div'); head.className = 'head';
+    const left = document.createElement('div'); left.innerHTML = `<span class="author">${escape(c.userName || 'User')}</span> <span class="muted" style="font-size:12px; margin-left:8px">${timeAgo(c.createdAt)}</span>`;
+    if (c.isPinned) left.innerHTML += `<span class="pin-badge">📌 PINNED</span>`;
+    head.appendChild(left);
+
+    const right = document.createElement('div'); right.style.display='flex'; right.style.gap='8px'; right.style.alignItems='center';
+    const cmTop = formatCommentTopReaction(c);
+    const reactBtn = document.createElement('button'); reactBtn.className='small btn ghost'; reactBtn.innerText = `${cmTop.total} ${cmTop.icon}`;
+    // use unified reaction picker for comments
+    reactBtn.addEventListener('click', (ev)=> openReactionPicker(ev, `/comments/${encodeURIComponent(c._id)}/reactions`, async ()=> { await loadCommentsForStory(storyId, container); }));
+    right.appendChild(reactBtn);
+
+    const repliesCount = Array.isArray(c.replies) ? c.replies.length : 0;
+    const replyToggle = document.createElement('button');
+    replyToggle.className = 'reply-toggle';
+    replyToggle.innerText = `Replies (${repliesCount})`;
+    replyToggle.addEventListener('click', async () => {
+      const repliesBlock = d.querySelector('.replies');
+      if (!repliesBlock) return;
+      if (repliesBlock.dataset.loaded !== 'true') {
+        repliesBlock.innerHTML = '';
+        if (Array.isArray(c.replies) && c.replies.length) {
+          c.replies.forEach(rp => {
+            const rr = document.createElement('div'); rr.style.padding='8px'; rr.style.borderLeft='3px solid rgba(0,0,0,0.03)'; rr.style.marginBottom='8px';
+            rr.innerHTML = `<div style="font-weight:700">${escape(rp.userName||'User')} <span class="muted" style="font-weight:400;font-size:12px"> ${timeAgo(rp.createdAt)}</span></div><div style="white-space:pre-wrap">${escape(rp.content)}</div>`;
+            repliesBlock.appendChild(rr);
+          });
+        } else {
+          repliesBlock.innerHTML = '<div class="muted">No replies</div>';
+        }
+        if (getToken()){
+          const rpComposer = document.createElement('div'); rpComposer.style.marginTop='8px';
+          rpComposer.innerHTML = `<textarea placeholder="Reply..." style="width:100%;height:60px"></textarea><div style="text-align:right;margin-top:6px"><button class="small">Reply</button></div>`;
+          rpComposer.querySelector('button').addEventListener('click', async ()=> {
+            const txt = rpComposer.querySelector('textarea').value.trim(); if (!txt) return;
+            const resp = await fetchJson(`/comments/${encodeURIComponent(c._id)}/reply`, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ content: txt })});
+            if (!resp.ok) return alert('Reply failed: ' + (resp.error||''));
+            rpComposer.querySelector('textarea').value = '';
+            await loadCommentsForStory(storyId, container);
+          });
+          repliesBlock.appendChild(rpComposer);
+        }
+        repliesBlock.dataset.loaded = 'true';
+      }
+      repliesBlock.style.display = (repliesBlock.style.display === 'block') ? 'none' : 'block';
+    });
+    right.appendChild(replyToggle);
+
+    if (isAdmin){
+      const pin = document.createElement('button'); pin.className='small'; pin.innerText = c.isPinned ? 'Unpin' : 'Pin';
+      pin.addEventListener('click', async ()=> { await fetchJson(`/comments/${encodeURIComponent(c._id)}/pin`, { method:'POST' }); await loadCommentsForStory(storyId, container); });
+      right.appendChild(pin);
+      const del = document.createElement('button'); del.className='small'; del.innerText='Delete';
+      del.addEventListener('click', async ()=> { if (!confirm('Delete comment?')) return; const resp = await fetchJson(`/comments/${encodeURIComponent(c._id)}`, { method:'DELETE' }); if (!resp.ok) return alert('Delete failed'); await loadCommentsForStory(storyId, container); });
+      right.appendChild(del);
+    } else {
+      const u = getUser();
+      if (u && String(u._id) === String(c.userId)) {
+        const del = document.createElement('button'); del.className='small'; del.innerText='Delete';
+        del.addEventListener('click', async ()=> { if (!confirm('Delete comment?')) return; const resp = await fetchJson(`/comments/${encodeURIComponent(c._id)}`, { method:'DELETE' }); if (!resp.ok) return alert('Delete failed'); await loadCommentsForStory(storyId, container); });
+        right.appendChild(del);
+      }
+    }
+
+    head.appendChild(right);
+    d.appendChild(head);
+
+    const text = document.createElement('div'); text.className='text'; text.innerText = c.content; text.style.marginTop='8px';
+    d.appendChild(text);
+
+    const repliesDiv = document.createElement('div'); repliesDiv.className = 'replies'; repliesDiv.style.display = 'none'; repliesDiv.dataset.loaded = 'false';
+    d.appendChild(repliesDiv);
+
+    container.appendChild(d);
+  });
+}
+
+/* ---------- Utilities ---------- */
+function timeAgo(d){
+  if (!d) return '';
+  const ms = Date.now() - new Date(d).getTime();
+  const s = Math.floor(ms/1000);
+  if (s < 60) return s + 's';
+  const m = Math.floor(s/60);
+  if (m < 60) return m + 'm';
+  const h = Math.floor(m/60);
+  if (h < 24) return h + 'h';
+  const days = Math.floor(h/24);
+  return days + 'd';
+}
+</script>
+</body>
+</html>

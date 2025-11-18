@@ -1,0 +1,55 @@
+<script>
+  async function loadTree(){
+  // FAST local fallback: populate window.userFavorites from localStorage so UI shows favorites immediately
+  window.userFavorites = window.userFavorites || [];
+  try {
+    const saved = localStorage.getItem('userFavorites');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) window.userFavorites = parsed.map(String);
+    }
+  } catch (e) {
+    console.warn('Failed to read saved favorites from localStorage', e);
+    window.userFavorites = window.userFavorites || [];
+  }
+
+  // fetch tree (server)
+  const r = await fetchJson('/api/lessons/tree', { headers: authHeaders(), method: 'GET' });
+
+  // then try to refresh favorites from server (this will overwrite local fallback)
+  if (getToken()) {
+    try {
+      // try lessons-scoped users endpoint first
+      let ru = await fetchJson('/api/lessons/users/me', { headers: authHeaders(), method: 'GET' });
+      if (!ru || !ru.ok) {
+        ru = await fetchJson('/api/users/me', { headers: authHeaders(), method: 'GET' });
+      }
+      // normalize shapes
+      const userObj = (ru && ru.data && ru.data.user) ? ru.data.user : (ru && ru.user ? ru.user : (ru && ru.data ? ru.data : null));
+      if (userObj && Array.isArray(userObj.favorites)) {
+        window.userFavorites = userObj.favorites.map(String);
+        localStorage.setItem('userFavorites', JSON.stringify(window.userFavorites));
+      } else {
+        // fallback: call syncFavoritesFromServer which handles many shapes and persists
+        await syncFavoritesFromServer(ru);
+      }
+    } catch (e) {
+      console.warn('Could not load user favorites:', e);
+      // keep localStorage fallback
+      window.userFavorites = window.userFavorites || [];
+    }
+  } else {
+    window.userFavorites = [];
+    localStorage.removeItem('userFavorites');
+  }
+
+  // ... continue with your existing handling of r (tree response)
+  if (!r.ok) {
+    contentArea.innerHTML = '<div class="muted">Failed to load folders: '+(r.error||'')+'</div>';
+    return;
+  }
+  // rest of your existing loadTree logic follows...
+  treeCache = r.data.tree || [];
+  ...
+
+</script>

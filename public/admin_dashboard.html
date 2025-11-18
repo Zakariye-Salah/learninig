@@ -1,0 +1,497 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Admin Dashboard</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/modern-css-reset/dist/reset.min.css">
+<style>
+  :root{
+    --accent: #0b5cff;
+    --bg: #f6f7fb;
+    --card: #fff;
+    --muted: #6b7280;
+    --shadow: 0 8px 30px rgba(0,0,0,0.04);
+  }
+  *{box-sizing:border-box}
+  body{font-family:system-ui,Arial,Helvetica,sans-serif;padding:12px;background:var(--bg);color:#111}
+  header.site-header{display:flex;align-items:center;gap:12px;max-width:1100px;margin:0 auto 12px;padding:10px 12px;border-radius:10px;background:var(--card);border-bottom:1px solid #eef2f6}
+  .brand{display:flex;align-items:center;gap:8px;font-weight:700}
+  .brand .logo{font-size:20px}
+  #mainNav{display:flex;gap:10px;align-items:center;margin-left:16px}
+  #mainNav a{color:#333;text-decoration:none;padding:8px;border-radius:8px;border:1px solid transparent}
+  #mainNav a.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .sh-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+  .icon-btn{background:transparent;border:0;padding:8px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
+  .hamburger{display:none;width:44px;height:44px;align-items:center;justify-content:center;border-radius:8px}
+  .mobile-panel{position:fixed; top:68px; right:12px; width:320px; max-width:92vw; background:linear-gradient(180deg, rgba(255,255,255,0.98), var(--card)); border-radius:14px; box-shadow:0 24px 60px rgba(2,6,23,0.14); transform-origin:top right; transform: translateY(-12px) scale(.98); opacity:0; pointer-events:none; transition: transform .26s cubic-bezier(.2,.9,.28,1), opacity .22s ease; z-index:120; }
+  .mobile-panel.open{transform:translateY(0) scale(1); opacity:1; pointer-events:auto}
+  .mobile-panel .inner{padding:14px;display:flex;flex-direction:column;gap:10px}
+  .mobile-panel .brand-row{display:flex;align-items:center;gap:10px;padding:8px 6px;border-bottom:1px solid #f1f5f9;margin-bottom:6px}
+  .mobile-panel a{display:block;text-align:left;padding:12px 14px;border-radius:10px;color:#111;font-size:15px;text-decoration:none;transition:transform .14s ease,background .12s ease}
+  .mobile-panel a:hover{background:rgba(11,92,255,0.06);transform:translateX(6px);color:var(--accent)}
+  @media(max-width:900px){ #mainNav{display:none} .hamburger{display:inline-flex} }
+  @media(min-width:901px){ .mobile-panel{display:none} .hamburger{display:none !important} }
+
+  .card{background:var(--card);padding:16px;border-radius:10px;max-width:1100px;margin:12px auto;box-shadow:var(--shadow)}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .muted{color:var(--muted);font-size:14px}
+  table{width:100%;border-collapse:collapse}
+  th,td{padding:8px;border-bottom:1px solid #eee;text-align:left}
+  .row{display:flex;gap:12px;align-items:center}
+  .controls{display:flex;gap:8px}
+  .totals{display:flex;gap:12px;flex-wrap:wrap}
+  .total-card{background:#fff;padding:10px;border-radius:8px;box-shadow:0 6px 20px rgba(10,10,10,0.03)}
+  .btn{background:var(--accent);color:#fff;border:none;padding:8px 12px;border-radius:8px;cursor:pointer}
+  .btn-ghost{background:transparent;border:1px solid #e6e6e6;padding:8px 10px;border-radius:8px;cursor:pointer}
+  .select{padding:8px;border-radius:8px;border:1px solid #e6e6e6}
+  .small-muted{font-size:13px;color:var(--muted)}
+  .loading{display:inline-block;padding:6px 8px;border-radius:8px;background:#fff;border:1px solid #eee;color:var(--muted)}
+  .error{color:#b91c1c;background:#fff2f2;padding:8px;border-radius:8px;margin-top:10px;border:1px solid #fca5a5}
+  .chart-box{background:#fff;border-radius:8px;padding:8px;height:280px;box-shadow:0 6px 20px rgba(10,10,10,0.02);display:flex;flex-direction:column}
+  .chart-canvas{flex:1;min-height:160px}
+  @media(max-width:1100px){ .grid{grid-template-columns:repeat(2,1fr)} }
+  @media(max-width:700px){ .grid{grid-template-columns:repeat(1,1fr)} header,.card{margin:8px} nav{flex-wrap:wrap} .chart-box{height:220px} }
+</style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="brand"><span class="logo">📊</span><span>LearningHub</span></div>
+    <nav id="mainNav" aria-label="Main navigation"></nav>
+    <div class="sh-right">
+      <div id="headerUser" class="small muted"></div>
+      <button id="btnHamburger" class="icon-btn hamburger" aria-expanded="false" aria-label="Menu" title="Menu" style="margin-left:6px">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none"><path d="M3 6h18M3 12h18M3 18h18" stroke="#111" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <div id="mobileMenu" class="mobile-panel" aria-hidden="true">
+    <div class="inner">
+      <div class="brand-row"><span style="font-size:20px">📊</span><div style="font-weight:700">LearningHub</div></div>
+      <nav id="mobileNav" aria-label="Mobile links"></nav>
+    </div>
+  </div>
+
+  <div class="card" aria-live="polite">
+    <h2>Admin Dashboard</h2>
+
+    <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+      <div id="totals" class="totals" aria-hidden="false"></div>
+
+      <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
+        <label class="muted" style="margin-right:6px">Period</label>
+        <select id="periodSelect" class="select" title="Choose period">
+          <option value="all" selected>All time (default)</option>
+          <option value="live">Live (last 24h)</option>
+          <option value="daily">Today</option>
+          <option value="weekly">7 days</option>
+          <option value="monthly">This month</option>
+          <option value="yearly">This year</option>
+        </select>
+        <button id="btnRefresh" class="btn">Refresh</button>
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+      <div>
+        <div class="muted">Current Competition</div>
+        <div id="competitionInfo" class="small-muted">Loading...</div>
+      </div>
+
+      <div class="controls" id="compControls"></div>
+    </div>
+
+    <hr style="margin:12px 0">
+
+    <div id="errorBox" style="display:none" class="error"></div>
+
+    <div class="grid" style="margin-top:12px">
+      <div>
+        <h4>Top 10 Users (by points)</h4>
+        <div style="max-height:320px;overflow:auto">
+          <table id="topTable"><thead><tr><th>#</th><th>Name</th><th>Username</th><th>Points</th></tr></thead><tbody></tbody></table>
+        </div>
+      </div>
+
+      <div>
+        <h4>Users</h4>
+        <div class="small-muted" id="usersChartNote">Chart updates with chosen period</div>
+        <div class="chart-box">
+          <div class="chart-canvas"><canvas id="usersChart" class="chart-canvas" aria-label="Users chart"></canvas></div>
+        </div>
+      </div>
+
+      <div>
+        <h4>Folders</h4>
+        <div class="small-muted" id="foldersChartNote">Chart updates with chosen period</div>
+        <div class="chart-box">
+          <div class="chart-canvas"><canvas id="foldersChart" class="chart-canvas" aria-label="Folders chart"></canvas></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+/* NAV header script (role-based links + mobile toggle) */
+(function(){
+  function getUserLocal(){ const s = localStorage.getItem('user'); return s ? JSON.parse(s) : null; }
+  function isAdmin(u){ return u && (u.role === 'admin' || u.isAdmin); }
+  function makeA(href,label){ const a = document.createElement('a'); a.href = href; a.innerText = label; return a; }
+
+  function buildNavByRole(){
+    const u = getUserLocal();
+    const mainNav = document.getElementById('mainNav');
+    const mobileNav = document.getElementById('mobileNav');
+    if (mainNav) mainNav.innerHTML = '';
+    if (mobileNav) mobileNav.innerHTML = '';
+
+    let links = [];
+    if (!u) {
+      links = [{href:'index.html',label:'Lessons'},{href:'leaderboard.html',label:'Leaderboard'},{href:'history.html',label:'History'}];
+    } else if (isAdmin(u)) {
+      links = [
+      {href:'admin_dashboard.html',label:'Dashboard'},
+
+        {href:'index.html',label:'Lessons'},
+        {href:'leaderboard.html',label:'Leaderboard'},
+        {href:'story.html',label:'Stories'},
+
+        {href:'games.html',label:'Games'},
+        {href:'admin_users.html',label:'Users'},
+        {href:'helpCenter.html',label:'Help Center'},
+        {href:'history.html',label:'History'}
+      ];
+    } else {
+      links = [
+        {href:'index.html',label:'Lessons'},
+        {href:'leaderboard.html',label:'Leaderboard'},
+        {href:'games.html',label:'Games'},
+        {href:'history.html',label:'History'},
+        {href:'helpCenter.html',label:'Help Center'}
+      ];
+    }
+
+    if (mainNav) {
+      links.forEach(l => {
+        const a = makeA(l.href, l.label);
+        if (location.pathname.endsWith('admin_dashboard.html') && l.href.includes('admin_dashboard')) { a.style.fontWeight='700'; a.style.color='var(--accent)'; }
+        mainNav.appendChild(a);
+      });
+    }
+    if (mobileNav) {
+      links.forEach(l => { const a = makeA(l.href, l.label); a.className='mobile-nav-link'; mobileNav.appendChild(a); });
+    }
+  }
+
+  function renderHeaderUser(){
+    const el = document.getElementById('headerUser');
+    const u = getUserLocal();
+    buildNavByRole();
+    if (!el) return;
+    if (!u) {
+      el.innerHTML = '<button id="hdrLogin" class="btn-ghost small">Login</button>';
+      const btn = document.getElementById('hdrLogin');
+      if (btn) btn.onclick = async () => {
+        const username = prompt('username'); const password = prompt('password');
+        if (!username || !password) return;
+        try {
+          const res = await fetch('http://localhost:4000/api/auth/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ username, password })});
+          const text = await res.text(); const data = text ? JSON.parse(text) : null;
+          if (!res.ok) return alert('Login failed: ' + (data && (data.error||data.message) ? (data.error||data.message) : res.statusText));
+          localStorage.setItem('token', data.token); localStorage.setItem('user', JSON.stringify(data.user));
+          renderHeaderUser();
+        } catch(e){ alert('Login error: ' + e.message); }
+      };
+    } else {
+      el.innerHTML = `<span style="font-weight:600">${escapeHtml(u.fullName || u.username || 'User')}</span> <button id="hdrLogout" class="btn-ghost small" style="margin-left:8px">Logout</button>`;
+      const lo = document.getElementById('hdrLogout');
+      if (lo) lo.onclick = ()=> { localStorage.removeItem('token'); localStorage.removeItem('user'); renderHeaderUser(); };
+    }
+  }
+
+  const btn = document.getElementById('btnHamburger');
+  const mobile = document.getElementById('mobileMenu');
+  if (btn && mobile) {
+    btn.addEventListener('click', (e) => {
+      buildNavByRole();
+      if (mobile.classList.contains('open')) { mobile.classList.remove('open'); btn.setAttribute('aria-expanded','false'); mobile.setAttribute('aria-hidden','true'); }
+      else { mobile.classList.add('open'); btn.setAttribute('aria-expanded','true'); mobile.setAttribute('aria-hidden','false'); }
+    });
+    mobile.addEventListener('click', (ev) => {
+      const a = ev.target.closest('a');
+      if (a && a.classList.contains('mobile-nav-link')) {
+        mobile.classList.remove('open'); btn.setAttribute('aria-expanded','false'); mobile.setAttribute('aria-hidden','true');
+      }
+    });
+    document.addEventListener('click', (ev) => {
+      if (mobile && !mobile.contains(ev.target) && btn && !btn.contains(ev.target)) {
+        mobile.classList.remove('open'); btn.setAttribute('aria-expanded','false'); mobile.setAttribute('aria-hidden','true');
+      }
+    });
+    document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') { mobile.classList.remove('open'); btn.setAttribute('aria-expanded','false'); mobile.setAttribute('aria-hidden','true'); }});
+  }
+
+  buildNavByRole();
+  renderHeaderUser();
+  window._Nav = { rebuild: buildNavByRole, renderHeaderUser };
+})();
+
+/* ------------------ ORIGINAL admin_dashboard logic (unchanged) ------------------ */
+
+/* ========== CONFIG ========== */
+const API_BASE = 'http://localhost:4000';
+function getToken(){ return localStorage.getItem('token'); }
+
+/* ========== FETCH WRAPPER ========== */
+async function fetchJson(url, opts = {}) {
+  try {
+    const full = url.startsWith('http') ? url : API_BASE + url;
+    const res = await fetch(full, opts);
+    const txt = await res.text();
+    let data = null;
+    try { data = txt ? JSON.parse(txt) : null; } catch(e) { data = null; }
+    if (!res.ok) return { ok: false, error: (data && data.error) ? data.error : res.statusText, status: res.status, data };
+    return { ok: true, data };
+  } catch (err) {
+    return { ok: false, error: err.message || 'Network error' };
+  }
+}
+
+/* ========== UI HELPERS ========== */
+const usersCtx = document.getElementById('usersChart').getContext('2d');
+const foldersCtx = document.getElementById('foldersChart').getContext('2d');
+let usersChart = null;
+let foldersChart = null;
+
+function setError(msg){
+  const el = document.getElementById('errorBox');
+  if (!msg) { el.style.display = 'none'; el.innerText = ''; return; }
+  el.style.display = ''; el.innerText = String(msg);
+}
+
+function escapeHtml(s){ if (s === 0) return '0'; if (!s) return ''; return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+function aggToSeries(arr){
+  if (!Array.isArray(arr) || !arr.length) return { labels: [], data: [] };
+  arr.sort((a,b) => String(a._id).localeCompare(String(b._id)));
+  return { labels: arr.map(x => String(x._id)), data: arr.map(x => Number(x.count || 0)) };
+}
+
+function buildUnionSeries(seriesList){
+  const set = new Set();
+  seriesList.forEach(s => (s.labels || []).forEach(l => set.add(l)));
+  const labels = Array.from(set).sort();
+  const valuesList = seriesList.map(s => {
+    const map = {}; (s.labels||[]).forEach((l,i) => map[l] = s.data[i] || 0);
+    return labels.map(l => map[l] || 0);
+  });
+  return { labels, valuesList };
+}
+
+/* ========== CHART RENDERERS ========== */
+function renderUsersChart(labels, data){
+  if (usersChart) usersChart.destroy();
+  usersChart = new Chart(usersCtx, {
+    type: 'line',
+    data: { labels, datasets: [{ label: 'New users', data, fill: true, tension: 0.2, pointRadius: 3 }] },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: { x: { display: true, ticks: { maxRotation: 45, minRotation: 0 } }, y: { beginAtZero: true, suggestedMax: Math.max(...data, 5) } },
+      responsive: true,
+      maintainAspectRatio: false
+    }
+  });
+}
+function renderFoldersChart(labels, data){
+  if (foldersChart) foldersChart.destroy();
+  foldersChart = new Chart(foldersCtx, {
+    type: 'bar',
+    data: { labels, datasets: [{ label: 'Folders', data, maxBarThickness: 80, barPercentage: 0.6, categoryPercentage: 0.6 }]},
+    options: {
+      plugins: { legend: { display: false } },
+      scales: { x: { ticks: { autoSkip: true, maxRotation: 45 } }, y: { beginAtZero: true, suggestedMax: Math.max(...data, 5) } },
+      responsive: true,
+      maintainAspectRatio: false
+    }
+  });
+}
+
+/* ========== DASHBOARD LOADER ========== */
+async function loadDashboard(){
+  setError('');
+  const totalsEl = document.getElementById('totals');
+  totalsEl.innerHTML = '<div class="loading">Loading...</div>';
+
+  const token = getToken();
+  if (!token) {
+    totalsEl.innerHTML = '';
+    document.getElementById('competitionInfo').innerText = 'Login as admin required.';
+    setError('Admin token missing. Please login as admin.');
+    return;
+  }
+
+  const period = document.getElementById('periodSelect').value || 'all';
+  const url = `/api/admin/dashboard?period=${encodeURIComponent(period)}&authorOnly=1`;
+
+  const r = await fetchJson(url, { headers: { Authorization: 'Bearer ' + token }});
+  if (!r.ok) {
+    totalsEl.innerHTML = '';
+    setError('Failed to load dashboard: ' + (r.error || 'Server error'));
+    return;
+  }
+  const d = r.data;
+
+  totalsEl.innerHTML = '';
+  const tNodes = [
+    { label: 'My folders (period)', value: d.totalFolders ?? 0 },
+    { label: 'My lessons (period)', value: d.totalLessons ?? 0 },
+    { label: 'Users (all)', value: d.totalUsers ?? 0 }
+  ];
+  tNodes.forEach(n => {
+    const el = document.createElement('div');
+    el.className = 'total-card';
+    el.innerHTML = `<div class="muted">${escapeHtml(n.label)}</div><div style="font-weight:700;font-size:20px">${escapeHtml(String(n.value))}</div>`;
+    totalsEl.appendChild(el);
+  });
+
+  const comp = d.currentCompetition;
+  const compInfo = document.getElementById('competitionInfo');
+  const compControls = document.getElementById('compControls');
+  compInfo.innerHTML = '';
+  compControls.innerHTML = '';
+
+  if (!comp) {
+    compInfo.innerHTML = '<div class="muted">No active competition</div>';
+  } else {
+    compInfo.innerHTML = `<div style="font-weight:700">${escapeHtml(comp.name || '')}</div>
+      <div class="muted">${comp.startDate ? new Date(comp.startDate).toLocaleString() : ''} — ${comp.endDate ? new Date(comp.endDate).toLocaleString() : '—'}</div>`;
+    const activateBtn = document.createElement('button');
+    activateBtn.className = 'btn';
+    activateBtn.innerText = comp.isActive ? 'Active' : 'Activate';
+    activateBtn.disabled = !!comp.isActive;
+    activateBtn.onclick = async () => {
+      if (!confirm('Activate this competition?')) return;
+      await toggleCompetition(comp._id, true);
+    };
+
+    const deactivateBtn = document.createElement('button');
+    deactivateBtn.className = 'btn-ghost';
+    deactivateBtn.innerText = 'Deactivate';
+    deactivateBtn.disabled = !comp.isActive;
+    deactivateBtn.onclick = async () => {
+      if (!confirm('Deactivate this competition?')) return;
+      await toggleCompetition(comp._id, false);
+    };
+
+    const archiveBtn = document.createElement('button');
+    archiveBtn.className = 'btn-ghost';
+    archiveBtn.innerText = 'Force Archive Now';
+    archiveBtn.onclick = async () => {
+      if (!confirm('Force archive now?')) return;
+      await forceArchive();
+    };
+
+    compControls.appendChild(activateBtn);
+    compControls.appendChild(deactivateBtn);
+    compControls.appendChild(archiveBtn);
+  }
+
+  const tbody = document.querySelector('#topTable tbody');
+  tbody.innerHTML = '';
+  (d.top10 || []).forEach((u, idx) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${idx+1}</td><td>${escapeHtml(u.fullName || '—')}</td><td>${escapeHtml(u.username || '')}</td><td>${escapeHtml(String(u.points || u.pointsCurrent || 0))}</td>`;
+    tbody.appendChild(tr);
+  });
+
+  const usersAgg = (d.charts && d.charts.usersByDay) ? d.charts.usersByDay : [];
+  const foldersAgg = (d.charts && d.charts.foldersByDay) ? d.charts.foldersByDay : [];
+
+  const normalizeAgg = (arr) => {
+    if (!Array.isArray(arr)) return [];
+    return arr.map(x => {
+      if (x._id && (x.count !== undefined)) return { _id: String(x._id), count: Number(x.count || 0) };
+      return { _id: String(x._id || x.date || ''), count: Number(x.count || x.value || 0) };
+    }).filter(x => x._id);
+  };
+
+  const usersSeries = normalizeAgg(usersAgg);
+  const foldersSeries = normalizeAgg(foldersAgg);
+
+  let usersSeriesFinal = usersSeries;
+  if (!usersSeriesFinal.length && foldersSeries.length) {
+    usersSeriesFinal = foldersSeries.map(x => ({ _id: x._id, count: 0 }));
+  }
+
+  if (!usersSeriesFinal.length && !foldersSeries.length) {
+    const sres = await fetchJson('/api/admin/stats', { headers: { Authorization: 'Bearer ' + token }});
+    if (sres.ok && sres.data) {
+      const candidate = sres.data.charts && sres.data.charts.usersByDay ? sres.data.charts.usersByDay : sres.data.usersByDay;
+      if (Array.isArray(candidate)) usersSeriesFinal = normalizeAgg(candidate);
+    }
+  }
+
+  const us = aggToSeries(usersSeriesFinal);
+  const fs = aggToSeries(foldersSeries);
+
+  const merged = buildUnionSeries([us, fs]);
+  let labels = merged.labels;
+  const usersValues = (merged.valuesList[0] && merged.valuesList[0].length) ? merged.valuesList[0] : (us.data.length ? us.data : []);
+  const foldersValues = (merged.valuesList[1] && merged.valuesList[1].length) ? merged.valuesList[1] : (fs.data.length ? fs.data : []);
+
+  if (!labels.length) {
+    labels = [];
+    const today = new Date();
+    for (let i = 29; i >= 0; i--) {
+      const dt = new Date(today);
+      dt.setDate(dt.getDate() - i);
+      labels.push(dt.toISOString().slice(0,10));
+    }
+    for (let i=0;i<labels.length;i++){ if (!usersValues[i]) usersValues[i]=0; if (!foldersValues[i]) foldersValues[i]=0; }
+  }
+
+  renderUsersChart(labels, usersValues);
+  renderFoldersChart(labels, foldersValues);
+}
+
+/* ========== ACTIONS ========== */
+document.getElementById('btnRefresh').addEventListener('click', async () => {
+  document.getElementById('btnRefresh').disabled = true;
+  await loadDashboard();
+  document.getElementById('btnRefresh').disabled = false;
+});
+
+async function toggleCompetition(id, activate=true){
+  const token = getToken();
+  if (!token) return alert('Admin login required');
+  const path = `/api/admin/competitions/${encodeURIComponent(id)}/${activate ? 'activate' : 'deactivate'}`;
+  const r = await fetchJson(path, { method:'POST', headers: { Authorization: 'Bearer ' + token }});
+  if (!r.ok) return alert(r.error || 'Error toggling competition');
+  alert('Competition updated');
+  await loadDashboard();
+}
+
+async function forceArchive(){
+  const token = getToken();
+  if (!token) return alert('Admin login required');
+  const r = await fetchJson('/api/admin/competitions/archive', { method:'POST', headers: { Authorization: 'Bearer ' + token }});
+  if (!r.ok) return alert(r.error || 'Archive failed');
+  alert('Archive started');
+  await loadDashboard();
+}
+
+/* mark active nav link */
+(function activateNav(){
+  const links = document.querySelectorAll('#mainNav a');
+  links.forEach(a => { if (location.href.indexOf(a.getAttribute('href')) !== -1) a.classList.add('active'); });
+})();
+
+/* init */
+loadDashboard();
+</script>
+</body>
+</html>

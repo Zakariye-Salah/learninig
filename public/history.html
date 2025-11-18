@@ -1,0 +1,445 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Competition History — LearningHub</title>
+<style>
+  :root{
+    --accent:#0b5cff;
+    --bg:#f6f7fb;
+    --card:#fff;
+    --muted:#6b7280;
+    --shadow: 0 10px 30px rgba(16,24,40,0.06);
+    --shadow-2: 0 12px 40px rgba(16,24,40,0.07);
+    --glass: rgba(255,255,255,0.7);
+  }
+  *{box-sizing:border-box}
+  body{font-family:system-ui,Inter,Arial;background:var(--bg);margin:0;padding:12px;color:#111}
+  .wrap{max-width:1100px;margin:18px auto;padding:12px}
+  /* header / nav */
+  header.site-header{display:flex;align-items:center;gap:12px;max-width:1100px;margin:0 auto 12px;padding:10px 12px;border-radius:10px;background:var(--card);border-bottom:1px solid #eef2f6}
+  .brand{display:flex;align-items:center;gap:8px;font-weight:700}
+  .brand .logo{font-size:20px}
+  #mainNav{display:flex;gap:10px;align-items:center;margin-left:16px}
+  #mainNav a{color:#333;text-decoration:none;padding:8px;border-radius:8px;border:1px solid transparent}
+  #mainNav a.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .sh-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+  .icon-btn{background:transparent;border:0;padding:8px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
+  .hamburger{display:none;width:44px;height:44px;align-items:center;justify-content:center;border-radius:8px}
+  .mobile-panel{
+    position:fixed; top:68px; right:12px; width:320px; max-width:92vw;
+    background:linear-gradient(180deg, rgba(255,255,255,0.98), var(--card));
+    border-radius:14px; box-shadow:0 24px 60px rgba(2,6,23,0.14);
+    transform-origin:top right; transform: translateY(-12px) scale(.98);
+    opacity:0; pointer-events:none; transition: transform .26s cubic-bezier(.2,.9,.28,1), opacity .22s ease;
+    z-index:120;
+  }
+  .mobile-panel.open{transform:translateY(0) scale(1); opacity:1; pointer-events:auto}
+  .mobile-panel .inner{padding:14px;display:flex;flex-direction:column;gap:10px}
+  .mobile-panel .brand-row{display:flex;align-items:center;gap:10px;padding:8px 6px;border-bottom:1px solid #f1f5f9;margin-bottom:6px}
+  .mobile-panel a{display:block;text-align:left;padding:12px 14px;border-radius:10px;color:#111;font-size:15px;text-decoration:none;transition:transform .14s ease,background .12s ease}
+  .mobile-panel a:hover{background:rgba(11,92,255,0.06);transform:translateX(6px);color:var(--accent)}
+  .mobile-panel a:focus{outline:3px solid rgba(11,92,255,0.12);outline-offset:4px;border-radius:8px}
+  @media(max-width:900px){ #mainNav{display:none} .hamburger{display:inline-flex} }
+  @media(min-width:901px){ .mobile-panel{display:none} .hamburger{display:none !important} }
+
+  /* page content */
+  .card{background:var(--card);padding:14px;border-radius:12px;box-shadow:var(--shadow-2);border:1px solid rgba(12,20,40,0.04);max-width:1100px;margin:12px auto}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;margin-top:16px}
+  .card h3{margin:0 0 6px 0;font-size:16px}
+  .meta{color:var(--muted);font-size:13px;margin-bottom:10px}
+  .card-footer{display:flex;gap:8px;justify-content:space-between;align-items:center;margin-top:8px}
+  .btn{background:var(--accent);color:#fff;border:none;padding:8px 10px;border-radius:8px;cursor:pointer;font-weight:600}
+  .btn.secondary{background:#fff;color:#111;border:1px solid #e6e6e6}
+  .muted{color:var(--muted)}
+  .modal-backdrop{position:fixed;inset:0;background:rgba(2,6,23,0.45);display:flex;align-items:center;justify-content:center;z-index:9999}
+  .modal{background:var(--card);width:94%;max-width:920px;border-radius:12px;padding:16px;box-shadow:0 30px 80px rgba(2,6,23,0.2);display:grid;grid-template-columns:2fr 1fr;gap:12px}
+  .modal .left,.modal .right{overflow:auto;max-height:68vh}
+  .toplist{list-style:none;padding:0;margin:0}
+  .toplist li{display:flex;justify-content:space-between;padding:8px;border-radius:8px;margin-bottom:6px;background:linear-gradient(180deg,#fff,#fafcff);border:1px solid rgba(11,92,255,0.06)}
+  .comment{padding:8px;border-radius:8px;border:1px solid #f1f3f5;margin-bottom:8px;background:#fff}
+  .close-x{background:#fff;border:1px solid #eee;padding:6px;border-radius:8px;cursor:pointer}
+  @media(max-width:800px){ .modal{grid-template-columns:1fr; max-width:92vw} }
+  .small-muted{font-size:12px;color:var(--muted)}
+  /* print friendly PDF style for the export window */
+  @media print { body { -webkit-print-color-adjust: exact; } }
+</style>
+</head>
+<body>
+    <!-- Header: brand + nav (dynamic) + mobile menu -->
+    <header class="site-header" aria-label="Top header">
+      <div class="brand" aria-hidden="false">
+        <span class="logo">📚</span>
+        <span>LearningHub</span>
+      </div>
+
+      <nav id="mainNav" aria-label="Main navigation"></nav>
+
+      <div class="sh-right" role="region" aria-label="User controls" style="margin-left:auto">
+        <div id="headerUser" class="small muted"></div>
+        <button id="btnHamburger" class="icon-btn hamburger" aria-expanded="false" aria-label="Menu" title="Menu" style="margin-left:6px">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none"><path d="M3 6h18M3 12h18M3 18h18" stroke="#111" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <div id="mobileMenu" class="mobile-panel" aria-hidden="true">
+      <div class="inner">
+        <div class="brand-row">
+          <span style="font-size:20px">📚</span>
+          <div style="font-weight:700">LearningHub</div>
+        </div>
+        <nav id="mobileNav" aria-label="Mobile links"></nav>
+      </div>
+    </div>
+
+  <div class="wrap">
+    <header class="site">
+      <div class="brand"><span style="font-size:20px">📚</span>
+        <div>
+          <h1>Competition History</h1>
+          <div class="muted">View archived competitions, top users and discussion</div>
+        </div>
+      </div>
+      <div style="margin-left:auto" id="hdrUser"></div>
+    </header>
+
+    <div id="list" class="grid" aria-live="polite"></div>
+
+    <!-- modal container inserted dynamically -->
+    <div id="modalRoot"></div>
+  </div>
+
+<script>
+const API_BASE = 'http://localhost:4000';
+
+/* ---------- small utilities ---------- */
+function getCurrentUser() {
+  try { const s = localStorage.getItem('user'); return s ? JSON.parse(s) : null; } catch(e){ return null; }
+}
+function isAdminUser() {
+  const u = getCurrentUser();
+  return !!(u && (u.role === 'admin' || u.isAdmin));
+}
+function getToken() { return localStorage.getItem('token') || null; }
+
+async function fetchJson(url, opts={}) {
+  try {
+    const full = (url.startsWith('http') ? url : API_BASE + url);
+    const res = await fetch(full, opts);
+    const text = await res.text();
+    let data = null;
+    try { data = text ? JSON.parse(text) : null; } catch(e) { data = null; }
+    if (!res.ok) return { ok:false, error: (data && (data.error||data.message)) ? (data.error||data.message) : res.statusText, data };
+    return { ok:true, data };
+  } catch (err) { return { ok:false, error: err.message || 'Network error' }; }
+}
+
+function fmtDate(d){ if(!d) return '—'; const dt = new Date(d); if (isNaN(dt.getTime())) return '—'; return dt.toLocaleString(); }
+function escapeHtml(s){ if (s===0) return '0'; if (!s) return ''; return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+/* NAV header script (shared behavior): role-based links + mobile toggle */
+(function(){
+  function getUserLocal(){ const s = localStorage.getItem('user'); return s ? JSON.parse(s) : null; }
+  function isAdmin(u){ return u && (u.role === 'admin' || u.isAdmin); }
+
+  function makeA(href,label){ const a = document.createElement('a'); a.href = href; a.innerText = label; return a; }
+
+  function buildNavByRole(){
+    const u = getUserLocal();
+    const mainNav = document.getElementById('mainNav');
+    const mobileNav = document.getElementById('mobileNav');
+    if (mainNav) mainNav.innerHTML = '';
+    if (mobileNav) mobileNav.innerHTML = '';
+
+    let links = [];
+    if (!u) {
+      links = [{href:'index.html',label:'Lessons'},{href:'leaderboard.html',label:'Leaderboard'},{href:'history.html',label:'History'},{href:'story.html',label:'Stories'}];
+    } else if (isAdmin(u)) {
+      links = [
+        {href:'index.html',label:'Lessons'},
+        {href:'leaderboard.html',label:'Leaderboard'},
+        {href:'history.html',label:'History'},
+        {href:'story.html',label:'Stories'},
+        {href:'games.html',label:'Games'},
+        {href:'admin_dashboard.html',label:'Dashboard'},
+        {href:'admin_users.html',label:'Users'},
+        {href:'helpCenter.html',label:'Help Center'},
+      ];
+    } else {
+      links = [
+        {href:'index.html',label:'Lessons'},
+        {href:'leaderboard.html',label:'Leaderboard'},
+        {href:'history.html',label:'History'},
+        {href:'games.html',label:'Games'},
+        {href:'helpCenter.html',label:'Help Center'}
+      ];
+    }
+
+    if (mainNav) {
+      links.forEach(l => {
+        const a = makeA(l.href, l.label);
+        if (location.pathname.endsWith('history.html') && l.href.includes('history')) { a.style.fontWeight='700'; a.style.color='var(--accent)'; }
+        mainNav.appendChild(a);
+      });
+    }
+    if (mobileNav) {
+      links.forEach(l => {
+        const a = makeA(l.href, l.label);
+        a.className='mobile-nav-link';
+        mobileNav.appendChild(a);
+      });
+    }
+  }
+
+  function renderHeaderUser(){
+    const el = document.getElementById('headerUser');
+    const u = getUserLocal();
+    buildNavByRole();
+    if (!el) return;
+    if (!u) {
+      el.innerHTML = '<button id="hdrLogin" class="btn-secondary small">Login</button>';
+      const btn = document.getElementById('hdrLogin');
+      if (btn) btn.onclick = async () => {
+        const username = prompt('username'); const password = prompt('password');
+        if (!username || !password) return;
+        try {
+          const res = await fetch(API_BASE + '/api/auth/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ username, password })});
+          const text = await res.text(); const data = text ? JSON.parse(text) : null;
+          if (!res.ok) return alert('Login failed: ' + (data && (data.error||data.message) ? (data.error||data.message) : res.statusText));
+          localStorage.setItem('token', data.token); localStorage.setItem('user', JSON.stringify(data.user));
+          renderHeaderUser();
+        } catch(e){ alert('Login error: ' + e.message); }
+      };
+    } else {
+      el.innerHTML = `<span style="font-weight:600">${escapeHtml(u.fullName || u.username || 'User')}</span> <button id="hdrLogout" class="btn-secondary small" style="margin-left:8px">Logout</button>`;
+      const lo = document.getElementById('hdrLogout');
+      if (lo) lo.onclick = ()=> { localStorage.removeItem('token'); localStorage.removeItem('user'); renderHeaderUser(); };
+    }
+  }
+
+  const btn = document.getElementById('btnHamburger');
+  const mobile = document.getElementById('mobileMenu');
+  if (btn && mobile) {
+    btn.addEventListener('click', (e) => {
+      buildNavByRole();
+      if (mobile.classList.contains('open')) { mobile.classList.remove('open'); btn.setAttribute('aria-expanded','false'); mobile.setAttribute('aria-hidden','true'); }
+      else { mobile.classList.add('open'); btn.setAttribute('aria-expanded','true'); mobile.setAttribute('aria-hidden','false'); }
+    });
+    mobile.addEventListener('click', (ev) => {
+      const a = ev.target.closest('a');
+      if (a && a.classList.contains('mobile-nav-link')) {
+        mobile.classList.remove('open'); btn.setAttribute('aria-expanded','false'); mobile.setAttribute('aria-hidden','true');
+      }
+    });
+    document.addEventListener('click', (ev) => {
+      if (mobile && !mobile.contains(ev.target) && btn && !btn.contains(ev.target)) {
+        mobile.classList.remove('open'); btn.setAttribute('aria-expanded','false'); mobile.setAttribute('aria-hidden','true');
+      }
+    });
+    document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') { mobile.classList.remove('open'); btn.setAttribute('aria-expanded','false'); mobile.setAttribute('aria-hidden','true'); }});
+  }
+
+  buildNavByRole();
+  renderHeaderUser();
+
+  window._Nav = { rebuild: buildNavByRole, renderHeaderUser };
+})();
+
+/* ---------- load list (cards) ---------- */
+async function loadList(){
+  const r = await fetchJson('/api/competitions');
+  const container = document.getElementById('list');
+  if (!r.ok) { container.innerHTML = `<div class="card muted">Failed to load: ${escapeHtml(r.error || '')}</div>`; return; }
+  const comps = r.data.competitions || [];
+  if (!comps.length) { container.innerHTML = `<div class="card muted">No competitions yet.</div>`; return; }
+  container.innerHTML = '';
+  const amIAdmin = isAdminUser();
+
+  comps.forEach(c => {
+    const card = document.createElement('div'); card.className = 'card';
+    const name = c.name || 'Untitled competition';
+    const sd = fmtDate(c.startDate);
+    const ed = c.endDate ? fmtDate(c.endDate) : '—';
+
+    // admin controls: Export PDF + Delete results (admin-only) — keep original Export CSV button for everyone
+    const adminButtons = amIAdmin ? `
+      <button class="btn secondary" data-id="${escapeHtml(c._id||'')}" data-action="delete-results" title="Delete stored results (admin only)">Delete results</button>
+    ` : '';
+
+    card.innerHTML = `
+      <h3>${escapeHtml(name)}</h3>
+      <div class="meta">${sd} &nbsp; → &nbsp; ${ed} ${c.isActive ? '<span style="color:var(--accent);font-weight:600; margin-left:8px;">Active</span>':''}</div>
+      <div class="card-footer">
+        <div class="muted">${escapeHtml(c.snapshot && c.snapshot.note ? c.snapshot.note : '')}</div>
+        <div>
+          <button class="btn secondary" data-id="${escapeHtml(c._id || '')}" data-action="view">View</button>
+         
+          ${adminButtons}
+        </div>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+
+  // attach handlers (after DOM built)
+  container.querySelectorAll('[data-action="view"]').forEach(b => b.addEventListener('click', onView));
+  container.querySelectorAll('[data-action="export-csv"]').forEach(b => b.addEventListener('click', onExportCSV));
+  container.querySelectorAll('[data-action="delete-results"]').forEach(b => b.addEventListener('click', onDeleteResults));
+}
+
+
+/* ---------- Delete stored results (admin only) ---------- */
+async function onDeleteResults(e){
+  if (!isAdminUser()) return alert('Only admin can delete results');
+  const id = e.currentTarget.dataset.id;
+  if (!id) return;
+  if (!confirm('Delete stored results and snapshot for this competition? This cannot be undone.')) return;
+  const token = getToken();
+  if (!token) return alert('Admin login required');
+  try {
+    const resp = await fetch(API_BASE + '/api/competitions/' + encodeURIComponent(id) + '/results', {
+      method: 'DELETE',
+      headers: { Authorization: 'Bearer ' + token, 'Content-Type':'application/json' }
+    });
+    if (!resp.ok) {
+      const txt = await resp.text().catch(()=>null);
+      throw new Error(txt || 'Delete failed');
+    }
+    alert('Competition results cleared.');
+    await loadList();
+  } catch (err) {
+    console.error(err);
+    alert('Delete failed: ' + (err.message || 'Server error'));
+  }
+}
+
+/* ---------- modal helper + view modal (unchanged logic, but updated to use fetchJson) ---------- */
+function createModal(contentHtml){
+  const root = document.getElementById('modalRoot');
+  root.innerHTML = '';
+  const back = document.createElement('div'); back.className='modal-backdrop';
+  const box = document.createElement('div'); box.className='modal';
+  box.innerHTML = contentHtml;
+  back.appendChild(box);
+  root.appendChild(back);
+  back.addEventListener('click', (ev)=>{ if (ev.target === back) root.innerHTML = ''; });
+  return { root, close: ()=> root.innerHTML = '', box };
+}
+
+async function onView(e){
+  const id = e.currentTarget.dataset.id;
+  if (!id) return alert('Invalid id');
+
+  // loading modal
+  const loadHtml = `<div style="grid-column:1/-1"><h2>Loading…</h2><div class="muted">Fetching results and comments</div></div>`;
+  const modal = createModal(loadHtml);
+
+  const r = await fetchJson(`/api/competitions/${encodeURIComponent(id)}/results`);
+  if (!r.ok) { modal.close(); return alert('Failed to load results: ' + (r.error || '')); }
+
+  const comp = r.data.competition || {};
+  const finalResults = Array.isArray(r.data.finalResults) ? r.data.finalResults : [];
+  const comments = Array.isArray(r.data.comments) ? r.data.comments : [];
+  const computedNote = r.data.computed ? '<div class="small-muted" style="margin-bottom:8px">(computed fallback)</div>' : '';
+
+  const leftHtml = `
+    <div class="left">
+      <h2>${escapeHtml(comp.name || 'Competition')}</h2>
+      ${computedNote}
+      <div class="muted" style="margin-bottom:8px">${fmtDate(comp.startDate)} → ${comp.endDate ? fmtDate(comp.endDate) : '—'}</div>
+      <ol class="toplist">
+        ${finalResults.length ? finalResults.map(fr => `<li><div style="font-weight:700">${escapeHtml(fr.fullName || fr.username || 'Unknown')}</div><div class="muted">${String(fr.points||0)} pts</div></li>`).join('') : '<div class="muted">No results available</div>'}
+      </ol>
+      <div style="margin-top:10px;display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn secondary" id="closeModalBtn">Close</button>
+      </div>
+    </div>
+  `;
+
+  // current user for comment-author delete rights
+  const currentUser = getCurrentUser();
+  const rightHtml = `
+    <div class="right">
+      <h3>Comments (${comments.length})</h3>
+      <div style="margin-bottom:8px" class="muted">Community discussion for this competition</div>
+      <div id="commentsWrap">
+        ${comments.length ? comments.map(c => {
+          const canDelete = isAdminUser() || (currentUser && String(currentUser._id) === String(c.userId));
+          return `<div class="comment" data-id="${escapeHtml(c._id||'')}">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div style="font-weight:700">${escapeHtml(c.userName || 'Unknown')}</div>
+              <div class="muted" style="font-size:12px">${fmtDate(c.createdAt)}</div>
+            </div>
+            <div style="margin-top:6px">${escapeHtml(c.content)}</div>
+            <div style="margin-top:8px">${canDelete ? `<button class="btn secondary del-comment" data-id="${escapeHtml(c._id||'')}">Delete</button>` : ''}</div>
+          </div>`;
+        }).join('') : '<div class="muted">No comments</div>'}
+      </div>
+    </div>
+  `;
+
+  modal.box.innerHTML = leftHtml + rightHtml;
+
+  // handlers
+  modal.box.querySelector('#closeModalBtn').addEventListener('click', ()=> modal.close());
+  const modalExportBtn = modal.box.querySelector('#modalExportBtn');
+  if (modalExportBtn) modalExportBtn.addEventListener('click', () => {
+    // Reuse PDF export that opens print dialog (client side)
+    const rows = finalResults;
+    const printed = `
+     <!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(comp.name || 'Competition Results')}</title>
+      <style>body{font-family:Arial,Helvetica,sans-serif;padding:20px;color:#111}h1{font-size:20px;margin-bottom:4px}.meta{color:#666;margin-bottom:12px}table{width:100%;border-collapse:collapse;margin-top:12px}th,td{padding:8px;border:1px solid #e6e6e6;text-align:left}th{background:#f7fbff}.footer{margin-top:20px;color:#666;font-size:13px}</style>
+      </head><body>
+      <h1>${escapeHtml(comp.name || 'Competition')}</h1>
+      <div class="meta">${fmtDate(comp.startDate)} → ${comp.endDate ? fmtDate(comp.endDate) : '—'}</div>
+      <table><thead><tr><th style="width:8%">#</th><th>Participant</th><th style="width:12%">Points</th></tr></thead><tbody>
+        ${rows.map((r,i)=>`<tr><td>${r.rank || i+1}</td><td>${escapeHtml(r.fullName||r.username||'Unknown')}</td><td>${String(r.points||0)}</td></tr>`).join('')}
+      </tbody></table>
+      <div class="footer">Generated: ${new Date().toLocaleString()}</div>
+
+    `;
+    const w = window.open('', '_blank'); if (!w) return alert('Popup blocked — allow popups to export PDF.');
+    w.document.open(); w.document.write(printed); w.document.close();
+  });
+
+  // comment delete buttons (only visible when authorized)
+  modal.box.querySelectorAll('.del-comment').forEach(btn => btn.addEventListener('click', async (ev) => {
+    const cid = btn.dataset.id;
+    if (!cid) return;
+    if (!confirm('Delete comment?')) return;
+    const token = getToken();
+    if (!token) return alert('Login required to delete comments');
+    try {
+      const resp = await fetch(API_BASE + '/api/leaderboard/comments/' + encodeURIComponent(cid), { method:'DELETE', headers: { Authorization: 'Bearer ' + token } });
+      if (!resp.ok) {
+        const txt = await resp.text().catch(()=>null);
+        throw new Error(txt || 'Delete failed');
+      }
+      btn.closest('.comment').remove();
+    } catch(err) {
+      console.error(err); alert('Delete failed: ' + (err.message || 'Server error'));
+    }
+  }));
+}
+
+/* ---------- header user small helper ---------- */
+(function hdr(){
+  const node = document.getElementById('hdrUser');
+  const s = localStorage.getItem('user');
+  if (!s) node.innerHTML = `<button class="btn secondary" onclick="login()">Login</button>`;
+  else {
+    const u = JSON.parse(s);
+    node.innerHTML = `<span style="margin-right:8px;font-weight:700">${escapeHtml(u.fullName || u.username)}</span><button class="btn secondary" onclick="logout()">Logout</button>`;
+  }
+})();
+
+function login(){ (async ()=>{ const username=prompt('username'); const password=prompt('password'); if(!username||!password) return; const r = await fetchJson('/api/auth/login',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ username,password })}); if(!r.ok) return alert('Login failed: '+(r.error||'')); localStorage.setItem('token', r.data.token); localStorage.setItem('user', JSON.stringify(r.data.user)); location.reload(); })(); }
+function logout(){ localStorage.removeItem('token'); localStorage.removeItem('user'); location.reload(); }
+
+/* ---------- initial load ---------- */
+loadList();
+</script>
+</body>
+</html>
