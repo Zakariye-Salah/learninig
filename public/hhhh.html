@@ -1,55 +1,499 @@
-<script>
-  async function loadTree(){
-  // FAST local fallback: populate window.userFavorites from localStorage so UI shows favorites immediately
-  window.userFavorites = window.userFavorites || [];
-  try {
-    const saved = localStorage.getItem('userFavorites');
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed)) window.userFavorites = parsed.map(String);
-    }
-  } catch (e) {
-    console.warn('Failed to read saved favorites from localStorage', e);
-    window.userFavorites = window.userFavorites || [];
-  }
+create mode 100644 node_modules/simple-update-notifier/src/types.ts
+create mode 100644 node_modules/smart-buffer/.prettierrc.yaml
+create mode 100644 node_modules/smart-buffer/.travis.yml
+create mode 100644 node_modules/smart-buffer/LICENSE
+create mode 100644 node_modules/smart-buffer/README.md
+create mode 100644 node_modules/smart-buffer/build/smartbuffer.js
+create mode 100644 node_modules/smart-buffer/build/smartbuffer.js.map
+create mode 100644 node_modules/smart-buffer/build/utils.js
+create mode 100644 node_modules/smart-buffer/build/utils.js.map
+create mode 100644 node_modules/smart-buffer/docs/CHANGELOG.md
+create mode 100644 node_modules/smart-buffer/docs/README_v3.md
+create mode 100644 node_modules/smart-buffer/docs/ROADMAP.md
+create mode 100644 node_modules/smart-buffer/package.json
+create mode 100644 node_modules/smart-buffer/typings/smartbuffer.d.ts
+create mode 100644 node_modules/smart-buffer/typings/utils.d.ts
+create mode 100644 node_modules/socket.io-adapter/LICENSE
+create mode 100644 node_modules/socket.io-adapter/Readme.md
+create mode 100644 node_modules/socket.io-adapter/dist/cluster-adapter.d.ts
+create mode 100644 node_modules/socket.io-adapter/dist/cluster-adapter.js
+create mode 100644 node_modules/socket.io-adapter/dist/contrib/yeast.d.ts
+create mode 100644 node_modules/socket.io-adapter/dist/contrib/yeast.js
+create mode 100644 node_modules/socket.io-adapter/dist/in-memory-adapter.d.ts
+create mode 100644 node_modules/socket.io-adapter/dist/in-memory-adapter.js
+create mode 100644 node_modules/socket.io-adapter/dist/index.d.ts
+create mode 100644 node_modules/socket.io-adapter/dist/index.js
+create mode 100644 node_modules/socket.io-adapter/node_modules/debug/LICENSE
+create mode 100644 node_modules/socket.io-adapter/node_modules/debug/README.md
+create mode 100644 node_modules/socket.io-adapter/node_modules/debug/package.json
+create mode 100644 node_modules/socket.io-adapter/node_modules/debug/src/browser.js
+create mode 100644 node_modules/socket.io-adapter/node_modules/debug/src/common.js
+create mode 100644 node_modules/socket.io-adapter/node_modules/debug/src/index.js
+create mode 100644 node_modules/socket.io-adapter/node_modules/debug/src/node.js
+create mode 100644 node_modules/socket.io-adapter/node_modules/ms/index.js
+create mode 100644 node_modules/socket.io-adapter/node_modules/ms/license.md
+create mode 100644 node_modules/socket.io-adapter/node_modules/ms/package.json
+create mode 100644 node_modules/socket.io-adapter/node_modules/ms/readme.md
+create mode 100644 node_modules/socket.io-adapter/package.json
+create mode 100644 node_modules/socket.io-parser/LICENSE
+create mode 100644 node_modules/socket.io-parser/Readme.md
+create mode 100644 node_modules/socket.io-parser/build/cjs/binary.d.ts
+create mode 100644 node_modules/socket.io-parser/build/cjs/binary.js
+create mode 100644 node_modules/socket.io-parser/build/cjs/index.d.ts
+create mode 100644 node_modules/socket.io-parser/build/cjs/index.js
+create mode 100644 node_modules/socket.io-parser/build/cjs/is-binary.d.ts
+create mode 100644 node_modules/socket.io-parser/build/cjs/is-binary.js
+create mode 100644 node_modules/socket.io-parser/build/cjs/package.json
+create mode 100644 node_modules/socket.io-parser/build/esm-debug/binary.d.ts
+create mode 100644 node_modules/socket.io-parser/build/esm-debug/binary.js
+create mode 100644 node_modules/socket.io-parser/build/esm-debug/index.d.ts
+create mode 100644 node_modules/socket.io-parser/build/esm-debug/index.js
+create mode 100644 node_modules/socket.io-parser/build/esm-debug/is-binary.d.ts
+create mode 100644 node_modules/socket.io-parser/build/esm-debug/is-binary.js
+create mode 100644 node_modules/socket.io-parser/build/esm-debug/package.json
+create mode 100644 node_modules/socket.io-parser/build/esm/binary.d.ts
+create mode 100644 node_modules/socket.io-parser/build/esm/binary.js
+create mode 100644 node_modules/socket.io-parser/build/esm/index.d.ts
+create mode 100644 node_modules/socket.io-parser/build/esm/index.js
+create mode 100644 node_modules/socket.io-parser/build/esm/is-binary.d.ts
+create mode 100644 node_modules/socket.io-parser/build/esm/is-binary.js
+create mode 100644 node_modules/socket.io-parser/build/esm/package.json
+create mode 100644 node_modules/socket.io-parser/node_modules/debug/LICENSE
+create mode 100644 node_modules/socket.io-parser/node_modules/debug/README.md
+create mode 100644 node_modules/socket.io-parser/node_modules/debug/package.json
+create mode 100644 node_modules/socket.io-parser/node_modules/debug/src/browser.js
+create mode 100644 node_modules/socket.io-parser/node_modules/debug/src/common.js
+create mode 100644 node_modules/socket.io-parser/node_modules/debug/src/index.js
+create mode 100644 node_modules/socket.io-parser/node_modules/debug/src/node.js
+create mode 100644 node_modules/socket.io-parser/node_modules/ms/index.js
+create mode 100644 node_modules/socket.io-parser/node_modules/ms/license.md
+create mode 100644 node_modules/socket.io-parser/node_modules/ms/package.json
+create mode 100644 node_modules/socket.io-parser/node_modules/ms/readme.md
+create mode 100644 node_modules/socket.io-parser/package.json
+create mode 100644 node_modules/socket.io/LICENSE
+create mode 100644 node_modules/socket.io/Readme.md
+create mode 100644 node_modules/socket.io/client-dist/socket.io.esm.min.js
+create mode 100644 node_modules/socket.io/client-dist/socket.io.esm.min.js.map
+create mode 100644 node_modules/socket.io/client-dist/socket.io.js
+create mode 100644 node_modules/socket.io/client-dist/socket.io.js.map
+create mode 100644 node_modules/socket.io/client-dist/socket.io.min.js
+create mode 100644 node_modules/socket.io/client-dist/socket.io.min.js.map
+create mode 100644 node_modules/socket.io/client-dist/socket.io.msgpack.min.js
+create mode 100644 node_modules/socket.io/client-dist/socket.io.msgpack.min.js.map
+create mode 100644 node_modules/socket.io/dist/broadcast-operator.d.ts
+create mode 100644 node_modules/socket.io/dist/broadcast-operator.js
+create mode 100644 node_modules/socket.io/dist/client.d.ts
+create mode 100644 node_modules/socket.io/dist/client.js
+create mode 100644 node_modules/socket.io/dist/index.d.ts
+create mode 100644 node_modules/socket.io/dist/index.js
+create mode 100644 node_modules/socket.io/dist/namespace.d.ts
+create mode 100644 node_modules/socket.io/dist/namespace.js
+create mode 100644 node_modules/socket.io/dist/parent-namespace.d.ts
+create mode 100644 node_modules/socket.io/dist/parent-namespace.js
+create mode 100644 node_modules/socket.io/dist/socket-types.d.ts
+create mode 100644 node_modules/socket.io/dist/socket-types.js
+create mode 100644 node_modules/socket.io/dist/socket.d.ts
+create mode 100644 node_modules/socket.io/dist/socket.js
+create mode 100644 node_modules/socket.io/dist/typed-events.d.ts
+create mode 100644 node_modules/socket.io/dist/typed-events.js
+create mode 100644 node_modules/socket.io/dist/uws.d.ts
+create mode 100644 node_modules/socket.io/dist/uws.js
+create mode 100644 node_modules/socket.io/node_modules/debug/LICENSE
+create mode 100644 node_modules/socket.io/node_modules/debug/README.md
+create mode 100644 node_modules/socket.io/node_modules/debug/package.json
+create mode 100644 node_modules/socket.io/node_modules/debug/src/browser.js
+create mode 100644 node_modules/socket.io/node_modules/debug/src/common.js
+create mode 100644 node_modules/socket.io/node_modules/debug/src/index.js
+create mode 100644 node_modules/socket.io/node_modules/debug/src/node.js
+create mode 100644 node_modules/socket.io/node_modules/ms/index.js
+create mode 100644 node_modules/socket.io/node_modules/ms/license.md
+create mode 100644 node_modules/socket.io/node_modules/ms/package.json
+create mode 100644 node_modules/socket.io/node_modules/ms/readme.md
+create mode 100644 node_modules/socket.io/package.json
+create mode 100644 node_modules/socket.io/wrapper.mjs
+create mode 100644 node_modules/socks/.eslintrc.cjs
+create mode 100644 node_modules/socks/.prettierrc.yaml
+create mode 100644 node_modules/socks/LICENSE
+create mode 100644 node_modules/socks/README.md
+create mode 100644 node_modules/socks/build/client/socksclient.js
+create mode 100644 node_modules/socks/build/client/socksclient.js.map
+create mode 100644 node_modules/socks/build/common/constants.js
+create mode 100644 node_modules/socks/build/common/constants.js.map
+create mode 100644 node_modules/socks/build/common/helpers.js
+create mode 100644 node_modules/socks/build/common/helpers.js.map
+create mode 100644 node_modules/socks/build/common/receivebuffer.js
+create mode 100644 node_modules/socks/build/common/receivebuffer.js.map
+create mode 100644 node_modules/socks/build/common/util.js
+create mode 100644 node_modules/socks/build/common/util.js.map
+create mode 100644 node_modules/socks/build/index.js
+create mode 100644 node_modules/socks/build/index.js.map
+create mode 100644 node_modules/socks/docs/examples/index.md
+create mode 100644 node_modules/socks/docs/examples/javascript/associateExample.md
+create mode 100644 node_modules/socks/docs/examples/javascript/bindExample.md
+create mode 100644 node_modules/socks/docs/examples/javascript/connectExample.md
+create mode 100644 node_modules/socks/docs/examples/typescript/associateExample.md
+create mode 100644 node_modules/socks/docs/examples/typescript/bindExample.md
+create mode 100644 node_modules/socks/docs/examples/typescript/connectExample.md
+create mode 100644 node_modules/socks/docs/index.md
+create mode 100644 node_modules/socks/docs/migratingFromV1.md
+create mode 100644 node_modules/socks/package.json
+create mode 100644 node_modules/socks/typings/client/socksclient.d.ts
+create mode 100644 node_modules/socks/typings/common/constants.d.ts
+create mode 100644 node_modules/socks/typings/common/helpers.d.ts
+create mode 100644 node_modules/socks/typings/common/receivebuffer.d.ts
+create mode 100644 node_modules/socks/typings/common/util.d.ts
+create mode 100644 node_modules/socks/typings/index.d.ts
+create mode 100644 node_modules/source-map-js/LICENSE
+create mode 100644 node_modules/source-map-js/README.md
+create mode 100644 node_modules/source-map-js/lib/array-set.js
+create mode 100644 node_modules/source-map-js/lib/base64-vlq.js
+create mode 100644 node_modules/source-map-js/lib/base64.js
+create mode 100644 node_modules/source-map-js/lib/binary-search.js
+create mode 100644 node_modules/source-map-js/lib/mapping-list.js
+create mode 100644 node_modules/source-map-js/lib/quick-sort.js
+create mode 100644 node_modules/source-map-js/lib/source-map-consumer.d.ts
+create mode 100644 node_modules/source-map-js/lib/source-map-consumer.js
+create mode 100644 node_modules/source-map-js/lib/source-map-generator.d.ts
+create mode 100644 node_modules/source-map-js/lib/source-map-generator.js
+create mode 100644 node_modules/source-map-js/lib/source-node.d.ts
+create mode 100644 node_modules/source-map-js/lib/source-node.js
+create mode 100644 node_modules/source-map-js/lib/util.js
+create mode 100644 node_modules/source-map-js/package.json
+create mode 100644 node_modules/source-map-js/source-map.d.ts
+create mode 100644 node_modules/source-map-js/source-map.js
+create mode 100644 node_modules/sparse-bitfield/.npmignore
+create mode 100644 node_modules/sparse-bitfield/.travis.yml
+create mode 100644 node_modules/sparse-bitfield/LICENSE
+create mode 100644 node_modules/sparse-bitfield/README.md
+create mode 100644 node_modules/sparse-bitfield/index.js
+create mode 100644 node_modules/sparse-bitfield/package.json
+create mode 100644 node_modules/sparse-bitfield/test.js
+create mode 100644 node_modules/statuses/HISTORY.md
+create mode 100644 node_modules/statuses/LICENSE
+create mode 100644 node_modules/statuses/README.md
+create mode 100644 node_modules/statuses/codes.json
+create mode 100644 node_modules/statuses/index.js
+create mode 100644 node_modules/statuses/package.json
+create mode 100644 node_modules/string-width/index.d.ts
+create mode 100644 node_modules/string-width/index.js
+create mode 100644 node_modules/string-width/license
+create mode 100644 node_modules/string-width/package.json
+create mode 100644 node_modules/string-width/readme.md
+create mode 100644 node_modules/string_decoder/LICENSE
+create mode 100644 node_modules/string_decoder/README.md
+create mode 100644 node_modules/string_decoder/lib/string_decoder.js
+create mode 100644 node_modules/string_decoder/package.json
+create mode 100644 node_modules/strip-ansi/index.d.ts
+create mode 100644 node_modules/strip-ansi/index.js
+create mode 100644 node_modules/strip-ansi/license
+create mode 100644 node_modules/strip-ansi/package.json
+create mode 100644 node_modules/strip-ansi/readme.md
+create mode 100644 node_modules/supports-color/browser.js
+create mode 100644 node_modules/supports-color/index.js
+create mode 100644 node_modules/supports-color/license
+create mode 100644 node_modules/supports-color/package.json
+create mode 100644 node_modules/supports-color/readme.md
+create mode 100644 node_modules/tar/LICENSE
+create mode 100644 node_modules/tar/README.md
+create mode 100644 node_modules/tar/index.js
+create mode 100644 node_modules/tar/lib/create.js
+create mode 100644 node_modules/tar/lib/extract.js
+create mode 100644 node_modules/tar/lib/get-write-flag.js
+create mode 100644 node_modules/tar/lib/header.js
+create mode 100644 node_modules/tar/lib/high-level-opt.js
+create mode 100644 node_modules/tar/lib/large-numbers.js
+create mode 100644 node_modules/tar/lib/list.js
+create mode 100644 node_modules/tar/lib/mkdir.js
+create mode 100644 node_modules/tar/lib/mode-fix.js
+create mode 100644 node_modules/tar/lib/normalize-unicode.js
+create mode 100644 node_modules/tar/lib/normalize-windows-path.js
+create mode 100644 node_modules/tar/lib/pack.js
+create mode 100644 node_modules/tar/lib/parse.js
+create mode 100644 node_modules/tar/lib/path-reservations.js
+create mode 100644 node_modules/tar/lib/pax.js
+create mode 100644 node_modules/tar/lib/read-entry.js
+create mode 100644 node_modules/tar/lib/replace.js
+create mode 100644 node_modules/tar/lib/strip-absolute-path.js
+create mode 100644 node_modules/tar/lib/strip-trailing-slashes.js
+create mode 100644 node_modules/tar/lib/types.js
+create mode 100644 node_modules/tar/lib/unpack.js
+create mode 100644 node_modules/tar/lib/update.js
+create mode 100644 node_modules/tar/lib/warn-mixin.js
+create mode 100644 node_modules/tar/lib/winchars.js
+create mode 100644 node_modules/tar/lib/write-entry.js
+create mode 100644 node_modules/tar/package.json
+create mode 100644 node_modules/to-regex-range/LICENSE
+create mode 100644 node_modules/to-regex-range/README.md
+create mode 100644 node_modules/to-regex-range/index.js
+create mode 100644 node_modules/to-regex-range/package.json
+create mode 100644 node_modules/toidentifier/HISTORY.md
+create mode 100644 node_modules/toidentifier/LICENSE
+create mode 100644 node_modules/toidentifier/README.md
+create mode 100644 node_modules/toidentifier/index.js
+create mode 100644 node_modules/toidentifier/package.json
+create mode 100644 node_modules/touch/LICENSE
+create mode 100644 node_modules/touch/README.md
+create mode 100644 node_modules/touch/bin/nodetouch.js
+create mode 100644 node_modules/touch/index.js
+create mode 100644 node_modules/touch/package.json
+create mode 100644 node_modules/tr46/LICENSE.md
+create mode 100644 node_modules/tr46/README.md
+create mode 100644 node_modules/tr46/index.js
+create mode 100644 node_modules/tr46/lib/mappingTable.json
+create mode 100644 node_modules/tr46/lib/regexes.js
+create mode 100644 node_modules/tr46/lib/statusMapping.js
+create mode 100644 node_modules/tr46/package.json
+create mode 100644 node_modules/type-is/HISTORY.md
+create mode 100644 node_modules/type-is/LICENSE
+create mode 100644 node_modules/type-is/README.md
+create mode 100644 node_modules/type-is/index.js
+create mode 100644 node_modules/type-is/package.json
+create mode 100644 node_modules/undefsafe/.github/workflows/release.yml
+create mode 100644 node_modules/undefsafe/.jscsrc
+create mode 100644 node_modules/undefsafe/.jshintrc
+create mode 100644 node_modules/undefsafe/.travis.yml
+create mode 100644 node_modules/undefsafe/LICENSE
+create mode 100644 node_modules/undefsafe/README.md
+create mode 100644 node_modules/undefsafe/example.js
+create mode 100644 node_modules/undefsafe/lib/undefsafe.js
+create mode 100644 node_modules/undefsafe/package.json
+create mode 100644 node_modules/undici-types/LICENSE
+create mode 100644 node_modules/undici-types/README.md
+create mode 100644 node_modules/undici-types/agent.d.ts
+create mode 100644 node_modules/undici-types/api.d.ts
+create mode 100644 node_modules/undici-types/balanced-pool.d.ts
+create mode 100644 node_modules/undici-types/cache-interceptor.d.ts
+create mode 100644 node_modules/undici-types/cache.d.ts
+create mode 100644 node_modules/undici-types/client-stats.d.ts
+create mode 100644 node_modules/undici-types/client.d.ts
+create mode 100644 node_modules/undici-types/connector.d.ts
+create mode 100644 node_modules/undici-types/content-type.d.ts
+create mode 100644 node_modules/undici-types/cookies.d.ts
+create mode 100644 node_modules/undici-types/diagnostics-channel.d.ts
+create mode 100644 node_modules/undici-types/dispatcher.d.ts
+create mode 100644 node_modules/undici-types/env-http-proxy-agent.d.ts
+create mode 100644 node_modules/undici-types/errors.d.ts
+create mode 100644 node_modules/undici-types/eventsource.d.ts
+create mode 100644 node_modules/undici-types/fetch.d.ts
+create mode 100644 node_modules/undici-types/formdata.d.ts
+create mode 100644 node_modules/undici-types/global-dispatcher.d.ts
+create mode 100644 node_modules/undici-types/global-origin.d.ts
+create mode 100644 node_modules/undici-types/h2c-client.d.ts
+create mode 100644 node_modules/undici-types/handlers.d.ts
+create mode 100644 node_modules/undici-types/header.d.ts
+create mode 100644 node_modules/undici-types/index.d.ts
+create mode 100644 node_modules/undici-types/interceptors.d.ts
+create mode 100644 node_modules/undici-types/mock-agent.d.ts
+create mode 100644 node_modules/undici-types/mock-call-history.d.ts
+create mode 100644 node_modules/undici-types/mock-client.d.ts
+create mode 100644 node_modules/undici-types/mock-errors.d.ts
+create mode 100644 node_modules/undici-types/mock-interceptor.d.ts
+create mode 100644 node_modules/undici-types/mock-pool.d.ts
+create mode 100644 node_modules/undici-types/package.json
+create mode 100644 node_modules/undici-types/patch.d.ts
+create mode 100644 node_modules/undici-types/pool-stats.d.ts
+create mode 100644 node_modules/undici-types/pool.d.ts
+create mode 100644 node_modules/undici-types/proxy-agent.d.ts
+create mode 100644 node_modules/undici-types/readable.d.ts
+create mode 100644 node_modules/undici-types/retry-agent.d.ts
+create mode 100644 node_modules/undici-types/retry-handler.d.ts
+create mode 100644 node_modules/undici-types/snapshot-agent.d.ts
+create mode 100644 node_modules/undici-types/util.d.ts
+create mode 100644 node_modules/undici-types/utility.d.ts
+create mode 100644 node_modules/undici-types/webidl.d.ts
+create mode 100644 node_modules/undici-types/websocket.d.ts
+create mode 100644 node_modules/unpipe/HISTORY.md
+create mode 100644 node_modules/unpipe/LICENSE
+create mode 100644 node_modules/unpipe/README.md
+create mode 100644 node_modules/unpipe/index.js
+create mode 100644 node_modules/unpipe/package.json
+create mode 100644 node_modules/util-deprecate/History.md
+create mode 100644 node_modules/util-deprecate/LICENSE
+create mode 100644 node_modules/util-deprecate/README.md
+create mode 100644 node_modules/util-deprecate/browser.js
+create mode 100644 node_modules/util-deprecate/node.js
+create mode 100644 node_modules/util-deprecate/package.json
+create mode 100644 node_modules/utils-merge/.npmignore
+create mode 100644 node_modules/utils-merge/LICENSE
+create mode 100644 node_modules/utils-merge/README.md
+create mode 100644 node_modules/utils-merge/index.js
+create mode 100644 node_modules/utils-merge/package.json
+create mode 100644 node_modules/uuid/CHANGELOG.md
+create mode 100644 node_modules/uuid/CONTRIBUTING.md
+create mode 100644 node_modules/uuid/LICENSE.md
+create mode 100644 node_modules/uuid/README.md
+create mode 100644 node_modules/uuid/dist/bin/uuid
+create mode 100644 node_modules/uuid/dist/commonjs-browser/index.js
+create mode 100644 node_modules/uuid/dist/commonjs-browser/md5.js
+create mode 100644 node_modules/uuid/dist/commonjs-browser/native.js
+create mode 100644 node_modules/uuid/dist/commonjs-browser/nil.js
+create mode 100644 node_modules/uuid/dist/commonjs-browser/parse.js
+create mode 100644 node_modules/uuid/dist/commonjs-browser/regex.js
+create mode 100644 node_modules/uuid/dist/commonjs-browser/rng.js
+create mode 100644 node_modules/uuid/dist/commonjs-browser/sha1.js
+create mode 100644 node_modules/uuid/dist/commonjs-browser/stringify.js
+create mode 100644 node_modules/uuid/dist/commonjs-browser/v1.js
+create mode 100644 node_modules/uuid/dist/commonjs-browser/v3.js
+create mode 100644 node_modules/uuid/dist/commonjs-browser/v35.js
+create mode 100644 node_modules/uuid/dist/commonjs-browser/v4.js
+create mode 100644 node_modules/uuid/dist/commonjs-browser/v5.js
+create mode 100644 node_modules/uuid/dist/commonjs-browser/validate.js
+create mode 100644 node_modules/uuid/dist/commonjs-browser/version.js
+create mode 100644 node_modules/uuid/dist/esm-browser/index.js
+create mode 100644 node_modules/uuid/dist/esm-browser/md5.js
+create mode 100644 node_modules/uuid/dist/esm-browser/native.js
+create mode 100644 node_modules/uuid/dist/esm-browser/nil.js
+create mode 100644 node_modules/uuid/dist/esm-browser/parse.js
+create mode 100644 node_modules/uuid/dist/esm-browser/regex.js
+create mode 100644 node_modules/uuid/dist/esm-browser/rng.js
+create mode 100644 node_modules/uuid/dist/esm-browser/sha1.js
+create mode 100644 node_modules/uuid/dist/esm-browser/stringify.js
+create mode 100644 node_modules/uuid/dist/esm-browser/v1.js
+create mode 100644 node_modules/uuid/dist/esm-browser/v3.js
+create mode 100644 node_modules/uuid/dist/esm-browser/v35.js
+create mode 100644 node_modules/uuid/dist/esm-browser/v4.js
+create mode 100644 node_modules/uuid/dist/esm-browser/v5.js
+create mode 100644 node_modules/uuid/dist/esm-browser/validate.js
+create mode 100644 node_modules/uuid/dist/esm-browser/version.js
+create mode 100644 node_modules/uuid/dist/esm-node/index.js
+create mode 100644 node_modules/uuid/dist/esm-node/md5.js
+create mode 100644 node_modules/uuid/dist/esm-node/native.js
+create mode 100644 node_modules/uuid/dist/esm-node/nil.js
+create mode 100644 node_modules/uuid/dist/esm-node/parse.js
+create mode 100644 node_modules/uuid/dist/esm-node/regex.js
+create mode 100644 node_modules/uuid/dist/esm-node/rng.js
+create mode 100644 node_modules/uuid/dist/esm-node/sha1.js
+create mode 100644 node_modules/uuid/dist/esm-node/stringify.js
+create mode 100644 node_modules/uuid/dist/esm-node/v1.js
+create mode 100644 node_modules/uuid/dist/esm-node/v3.js
+create mode 100644 node_modules/uuid/dist/esm-node/v35.js
+create mode 100644 node_modules/uuid/dist/esm-node/v4.js
+create mode 100644 node_modules/uuid/dist/esm-node/v5.js
+create mode 100644 node_modules/uuid/dist/esm-node/validate.js
+create mode 100644 node_modules/uuid/dist/esm-node/version.js
+create mode 100644 node_modules/uuid/dist/index.js
+create mode 100644 node_modules/uuid/dist/md5-browser.js
+create mode 100644 node_modules/uuid/dist/md5.js
+create mode 100644 node_modules/uuid/dist/native-browser.js
+create mode 100644 node_modules/uuid/dist/native.js
+create mode 100644 node_modules/uuid/dist/nil.js
+create mode 100644 node_modules/uuid/dist/parse.js
+create mode 100644 node_modules/uuid/dist/regex.js
+create mode 100644 node_modules/uuid/dist/rng-browser.js
+create mode 100644 node_modules/uuid/dist/rng.js
+create mode 100644 node_modules/uuid/dist/sha1-browser.js
+create mode 100644 node_modules/uuid/dist/sha1.js
+create mode 100644 node_modules/uuid/dist/stringify.js
+create mode 100644 node_modules/uuid/dist/uuid-bin.js
+create mode 100644 node_modules/uuid/dist/v1.js
+create mode 100644 node_modules/uuid/dist/v3.js
+create mode 100644 node_modules/uuid/dist/v35.js
+create mode 100644 node_modules/uuid/dist/v4.js
+create mode 100644 node_modules/uuid/dist/v5.js
+create mode 100644 node_modules/uuid/dist/validate.js
+create mode 100644 node_modules/uuid/dist/version.js
+create mode 100644 node_modules/uuid/package.json
+create mode 100644 node_modules/uuid/wrapper.mjs
+create mode 100644 node_modules/vary/HISTORY.md
+create mode 100644 node_modules/vary/LICENSE
+create mode 100644 node_modules/vary/README.md
+create mode 100644 node_modules/vary/index.js
+create mode 100644 node_modules/vary/package.json
+create mode 100644 node_modules/webidl-conversions/LICENSE.md
+create mode 100644 node_modules/webidl-conversions/README.md
+create mode 100644 node_modules/webidl-conversions/lib/index.js
+create mode 100644 node_modules/webidl-conversions/package.json
+create mode 100644 node_modules/whatwg-url/LICENSE.txt
+create mode 100644 node_modules/whatwg-url/README.md
+create mode 100644 node_modules/whatwg-url/index.js
+create mode 100644 node_modules/whatwg-url/lib/Function.js
+create mode 100644 node_modules/whatwg-url/lib/URL-impl.js
+create mode 100644 node_modules/whatwg-url/lib/URL.js
+create mode 100644 node_modules/whatwg-url/lib/URLSearchParams-impl.js
+create mode 100644 node_modules/whatwg-url/lib/URLSearchParams.js
+create mode 100644 node_modules/whatwg-url/lib/VoidFunction.js
+create mode 100644 node_modules/whatwg-url/lib/encoding.js
+create mode 100644 node_modules/whatwg-url/lib/infra.js
+create mode 100644 node_modules/whatwg-url/lib/percent-encoding.js
+create mode 100644 node_modules/whatwg-url/lib/url-state-machine.js
+create mode 100644 node_modules/whatwg-url/lib/urlencoded.js
+create mode 100644 node_modules/whatwg-url/lib/utils.js
+create mode 100644 node_modules/whatwg-url/package.json
+create mode 100644 node_modules/whatwg-url/webidl2js-wrapper.js
+create mode 100644 node_modules/wide-align/LICENSE
+create mode 100644 node_modules/wide-align/README.md
+create mode 100644 node_modules/wide-align/align.js
+create mode 100644 node_modules/wide-align/package.json
+create mode 100644 node_modules/wrappy/LICENSE
+create mode 100644 node_modules/wrappy/README.md
+create mode 100644 node_modules/wrappy/package.json
+create mode 100644 node_modules/wrappy/wrappy.js
+create mode 100644 node_modules/ws/LICENSE
+create mode 100644 node_modules/ws/README.md
+create mode 100644 node_modules/ws/browser.js
+create mode 100644 node_modules/ws/index.js
+create mode 100644 node_modules/ws/lib/buffer-util.js
+create mode 100644 node_modules/ws/lib/constants.js
+create mode 100644 node_modules/ws/lib/event-target.js
+create mode 100644 node_modules/ws/lib/extension.js
+create mode 100644 node_modules/ws/lib/limiter.js
+create mode 100644 node_modules/ws/lib/permessage-deflate.js
+create mode 100644 node_modules/ws/lib/receiver.js
+create mode 100644 node_modules/ws/lib/sender.js
+create mode 100644 node_modules/ws/lib/stream.js
+create mode 100644 node_modules/ws/lib/subprotocol.js
+create mode 100644 node_modules/ws/lib/validation.js
+create mode 100644 node_modules/ws/lib/websocket-server.js
+create mode 100644 node_modules/ws/lib/websocket.js
+create mode 100644 node_modules/ws/package.json
+create mode 100644 node_modules/ws/wrapper.mjs
+create mode 100644 node_modules/yallist/LICENSE
+create mode 100644 node_modules/yallist/README.md
+create mode 100644 node_modules/yallist/iterator.js
+create mode 100644 node_modules/yallist/package.json
+create mode 100644 node_modules/yallist/yallist.js
+PS C:\Users\ZAAK\OneDrive\Desktop\LearningHub> git remote remove origin 2>$null     # remove any existing origin (no error if none)
+PS C:\Users\ZAAK\OneDrive\Desktop\LearningHub> git remote add origin https://github.com/Zakariye-Salah/learning.git
+PS C:\Users\ZAAK\OneDrive\Desktop\LearningHub> git remote -v
+origin  https://github.com/Zakariye-Salah/learning.git (fetch)
+origin  https://github.com/Zakariye-Salah/learning.git (push)
+PS C:\Users\ZAAK\OneDrive\Desktop\LearningHub> git branch -M main
+PS C:\Users\ZAAK\OneDrive\Desktop\LearningHub> git push -u origin main
+remote: Repository not found.
+fatal: repository 'https://github.com/Zakariye-Salah/learning.git/' not found
+PS C:\Users\ZAAK\OneDrive\Desktop\LearningHub> origin  https://github.com/Zakariye-Salah/learning.git (fetch)
+fetch : The term 'fetch' is not recognized as the name of a cmdlet, function, script file, or operable program. Check
+the spelling of the name, or if a path was included, verify that the path is correct and try again.
+At line:1 char:57
++ origin  https://github.com/Zakariye-Salah/learning.git (fetch)
++                                                         ~~~~~
+   + CategoryInfo          : ObjectNotFound: (fetch:String) [], CommandNotFoundException
+   + FullyQualifiedErrorId : CommandNotFoundException
 
-  // fetch tree (server)
-  const r = await fetchJson('/api/lessons/tree', { headers: authHeaders(), method: 'GET' });
+PS C:\Users\ZAAK\OneDrive\Desktop\LearningHub> origin  https://github.com/Zakariye-Salah/learning.git (push)
+push : The term 'push' is not recognized as the name of a cmdlet, function, script file, or operable program. Check
+the spelling of the name, or if a path was included, verify that the path is correct and try again.
+At line:1 char:57
++ origin  https://github.com/Zakariye-Salah/learning.git (push)
++                                                         ~~~~
+   + CategoryInfo          : ObjectNotFound: (push:String) [], CommandNotFoundException
+   + FullyQualifiedErrorId : CommandNotFoundException
 
-  // then try to refresh favorites from server (this will overwrite local fallback)
-  if (getToken()) {
-    try {
-      // try lessons-scoped users endpoint first
-      let ru = await fetchJson('/api/lessons/users/me', { headers: authHeaders(), method: 'GET' });
-      if (!ru || !ru.ok) {
-        ru = await fetchJson('/api/users/me', { headers: authHeaders(), method: 'GET' });
-      }
-      // normalize shapes
-      const userObj = (ru && ru.data && ru.data.user) ? ru.data.user : (ru && ru.user ? ru.user : (ru && ru.data ? ru.data : null));
-      if (userObj && Array.isArray(userObj.favorites)) {
-        window.userFavorites = userObj.favorites.map(String);
-        localStorage.setItem('userFavorites', JSON.stringify(window.userFavorites));
-      } else {
-        // fallback: call syncFavoritesFromServer which handles many shapes and persists
-        await syncFavoritesFromServer(ru);
-      }
-    } catch (e) {
-      console.warn('Could not load user favorites:', e);
-      // keep localStorage fallback
-      window.userFavorites = window.userFavorites || [];
-    }
-  } else {
-    window.userFavorites = [];
-    localStorage.removeItem('userFavorites');
-  }
-
-  // ... continue with your existing handling of r (tree response)
-  if (!r.ok) {
-    contentArea.innerHTML = '<div class="muted">Failed to load folders: '+(r.error||'')+'</div>';
-    return;
-  }
-  // rest of your existing loadTree logic follows...
-  treeCache = r.data.tree || [];
-  ...
-
-</script>
+PS C:\Users\ZAAK\OneDrive\Desktop\LearningHub> git remote set-url origin https://github.com/Zakariye-Salah/learning.git
+PS C:\Users\ZAAK\OneDrive\Desktop\LearningHub> git branch -M main
+PS C:\Users\ZAAK\OneDrive\Desktop\LearningHub> git push -u origin main
+remote: Repository not found.
+fatal: repository 'https://github.com/Zakariye-Salah/learning.git/' not found
+PS C:\Users\ZAAK\OneDrive\Desktop\LearningHub> git pull --rebase origin main
+remote: Repository not found.
+fatal: repository 'https://github.com/Zakariye-Salah/learning.git/' not found
+PS C:\Users\ZAAK\OneDrive\Desktop\LearningHub> # resolve any conflicts if prompted, then:
+PS C:\Users\ZAAK\OneDrive\Desktop\LearningHub> git push -u origin main
+remote: Repository not found.
+fatal: repository 'https://github.com/Zakariye-Salah/learning.git/' not found
+PS C:\Users\ZAAK\OneDrive\Desktop\LearningHub> git push -u origin main --force
+remote: Repository not found.
+fatal: repository 'https://github.com/Zakariye-Salah/learning.git/' not found
+PS C:\Users\ZAAK\OneDrive\Desktop\LearningHub> git ls-remote https://github.com/Zakariye-Salah/learning.git
+remote: Repository not found.
+fatal: repository 'https://github.com/Zakariye-Salah
