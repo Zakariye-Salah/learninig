@@ -19,12 +19,16 @@ function emitIO(req, event, payload) {
 }
 
 
-// POST /api/help/messages  -> user sends a message (creates conversation if needed)
 router.post('/messages', authMiddleware, async (req, res) => {
   try {
     const textRaw = (req.body.text || '').toString().trim();
     if (!textRaw) return res.status(400).json({ error: 'Message text required' });
     const text = sanitizeHtml(textRaw, { allowedTags: [], allowedAttributes: {} }).slice(0,2000);
+
+    // accept issueType from client (validate/normalize)
+    const issueTypeRaw = (req.body.issueType || '').toString().trim();
+    const ALLOWED = ['general','points','balance','withdrawal','test','other'];
+    const issueType = ALLOWED.includes(issueTypeRaw) ? issueTypeRaw : (issueTypeRaw || 'general');
 
     let conv = await HelpConversation.findOne({ userId: req.user._id });
     if (!conv) {
@@ -33,17 +37,26 @@ router.post('/messages', authMiddleware, async (req, res) => {
         userName: req.user.fullName || '',
         userUsername: req.user.username || '',
         messages: [],
-        lastMessage: text
+        lastMessage: text,
+        issueType: issueType
       });
     }
 
-    conv.messages.push({ sender: 'user', text, createdAt: new Date(), readByAdmin: false, readByUser: true });
+    conv.messages.push({
+      sender: 'user',
+      text,
+      createdAt: new Date(),
+      readByAdmin: false,
+      readByUser: true,
+      issueType // store on the message as well
+    });
+
     conv.lastMessage = text;
     conv.updatedAt = new Date();
     await conv.save();
 
-    // notify admins via socket.io if available
-    emitIO(req, 'help:new-message', { conversationId: conv._id, userId: String(req.user._id), userName: conv.userName, lastMessage: conv.lastMessage });
+    // notify admins (socket.io)...
+    emitIO(req, 'help:new-message', { conversationId: conv._id, userId: String(req.user._id), userName: conv.userName, lastMessage: conv.lastMessage, issueType: conv.issueType });
 
     res.json({ ok: true, conversation: conv });
   } catch (err) {
@@ -51,6 +64,7 @@ router.post('/messages', authMiddleware, async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 });
+
 
 // GET /api/help/my -> get the current user's conversation and messages
 router.get('/my', authMiddleware, async (req, res) => {
@@ -70,23 +84,44 @@ router.get('/my', authMiddleware, async (req, res) => {
 router.get('/conversations', authMiddleware, requireAdmin, async (req, res) => {
   try {
     const limit = Math.min(200, parseInt(req.query.limit || '100', 10));
-    const convs = await HelpConversation.find({}).sort({ updatedAt: -1 }).limit(limit).select('userId userName userUsername lastMessage updatedAt messages').lean();
-    // compute unread counts for admin
-    const list = convs.map(c => ({
-      _id: c._id,
-      userId: c.userId,
-      userName: c.userName,
-      userUsername: c.userUsername,
-      lastMessage: c.lastMessage,
-      updatedAt: c.updatedAt,
-      unreadForAdmin: (Array.isArray(c.messages) ? c.messages.filter(m => !m.readByAdmin && m.sender === 'user').length : 0)
-    }));
+    const convs = await HelpConversation.find({})
+    .sort({ updatedAt: -1 })
+    .limit(limit)
+    .select('userId userName userUsername lastMessage updatedAt messages issueType')
+    .lean();
+  
+
+    // fetch roles of the users in these conversations
+    const userIds = convs.map(c => c.userId).filter(Boolean);
+    let usersMap = new Map();
+    if (userIds.length) {
+      const users = await User.find({ _id: { $in: userIds } }).select('role fullName username').lean();
+      usersMap = new Map(users.map(u => [String(u._id), u]));
+    }
+
+    const list = convs.map(c => {
+      const u = usersMap.get(String(c.userId)) || {};
+      return {
+        _id: c._id,
+        userId: c.userId,
+        userName: c.userName,
+        userUsername: c.userUsername,
+        userRole: u.role || 'user',
+        userFullName: u.fullName || c.userName || '',
+        issueType: c.issueType || null, // include issue type
+        lastMessage: c.lastMessage,
+        updatedAt: c.updatedAt,
+        unreadForAdmin: (Array.isArray(c.messages) ? c.messages.filter(m => !m.readByAdmin && m.sender === 'user').length : 0)
+      };
+    });
+
     res.json({ conversations: list });
   } catch (err) {
     console.error('help.conversations.list', err);
     res.status(500).json({ error: 'Server error' });
   }
 });
+
 
 // GET /api/help/conversations/:id -> admin reads a conversation (and mark user messages as read by admin)
 router.get('/conversations/:id', authMiddleware, requireAdmin, async (req, res) => {
@@ -101,8 +136,8 @@ router.get('/conversations/:id', authMiddleware, requireAdmin, async (req, res) 
     conv.messages.forEach(m => { if (m.sender === 'user' && !m.readByAdmin) { m.readByAdmin = true; changed = true; } });
     if (changed) { conv.updatedAt = new Date(); await conv.save(); }
 
-    // populate some user info if available
-    const user = await User.findById(conv.userId).select('fullName username email').lean();
+    // populate some user info if available (include role)
+    const user = await User.findById(conv.userId).select('fullName username email role').lean();
     return res.json({ conversation: conv.toObject(), user });
   } catch (err) {
     console.error('help.conversations.get', err);
@@ -110,7 +145,7 @@ router.get('/conversations/:id', authMiddleware, requireAdmin, async (req, res) 
   }
 });
 
-// POST /api/help/conversations/:id/reply -> admin replies to user
+
 router.post('/conversations/:id/reply', authMiddleware, requireAdmin, async (req, res) => {
   try {
     const id = req.params.id;
@@ -122,7 +157,16 @@ router.post('/conversations/:id/reply', authMiddleware, requireAdmin, async (req
     const conv = await HelpConversation.findById(id);
     if (!conv) return res.status(404).json({ error: 'Not found' });
 
-    conv.messages.push({ sender: 'admin', text, createdAt: new Date(), readByAdmin: true, readByUser: false });
+    conv.messages.push({
+      sender: 'admin',
+      text,
+      createdAt: new Date(),
+      readByAdmin: true,
+      readByUser: false,
+      adminName: req.user.fullName || req.user.username || '',
+      adminRole: req.user.role || 'admin'
+    });
+
     conv.lastMessage = text;
     conv.updatedAt = new Date();
     await conv.save();
@@ -136,6 +180,8 @@ router.post('/conversations/:id/reply', authMiddleware, requireAdmin, async (req
     res.status(500).json({ error: 'Server error' });
   }
 });
+
+
 
 // POST /api/help/conversations/:id/mark-read (admin) optional -> mark all as readByAdmin
 router.post('/conversations/:id/mark-read', authMiddleware, requireAdmin, async (req, res) => {

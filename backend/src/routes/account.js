@@ -194,33 +194,7 @@ router.post('/convert-back', authMiddleware, async (req, res) => {
   }
 });
 
-// --- Paste into backend/src/routes/account.js (replace the existing handlers for summary/withdraw/withdrawals) ---
 
-/**
- * GET /api/account/withdraw/summary
- * Response: {
- *   ok: true,
- *   spent24,            // total VERIFIED in last 24h
- *   pending24,          // total PENDING in last 24h
- *   remainingVerified,  // cap - spent24
- *   remainingIncludingPending, // cap - (spent24 + pending24)
- *   cap,
- *   nextAllowedAt       // ISO string or null (when any contributing oldest item falls out of 24h window)
- * }
- */
-/**
- * GET /api/account/withdraw/summary
- * Response: {
- *   ok: true,
- *   spent24,                 // verified total (but computed over a 24-hour verified window)
- *   pending24,               // pending total in last 24h (requestedAt)
- *   remainingVerified,       // cap - verifiedTotal
- *   remainingIncludingPending, // cap - (verified + pending)
- *   cap,
- *   nextAllowedAt            // ISO or null
- * }
- */
-// GET /api/account/withdraw/summary
 // GET /api/account/withdraw/summary
 router.get('/withdraw/summary', authMiddleware, async (req, res) => {
   try {
@@ -231,7 +205,9 @@ router.get('/withdraw/summary', authMiddleware, async (req, res) => {
         remainingVerified: Number(WITHDRAWAL_24H_CAP.toFixed(3)),
         remainingIncludingPending: Number(WITHDRAWAL_24H_CAP.toFixed(3)),
         cap: WITHDRAWAL_24H_CAP,
-        nextAllowedAt: null
+        nextAllowedAt: null,
+        requestCount24: 0,
+        nextRequestAllowedAt: null
       };
       return res.json({ ok: true, data: payload, ...payload });
     }
@@ -244,7 +220,9 @@ router.get('/withdraw/summary', authMiddleware, async (req, res) => {
         remainingVerified: Number(WITHDRAWAL_24H_CAP.toFixed(3)),
         remainingIncludingPending: Number(WITHDRAWAL_24H_CAP.toFixed(3)),
         cap: WITHDRAWAL_24H_CAP,
-        nextAllowedAt: null
+        nextAllowedAt: null,
+        requestCount24: 0,
+        nextRequestAllowedAt: null
       };
       return res.json({ ok: true, data: payload, ...payload });
     }
@@ -262,34 +240,52 @@ router.get('/withdraw/summary', authMiddleware, async (req, res) => {
     }
 
     const now = Date.now();
-    const sincePending = new Date(now - 24 * 3600 * 1000);   // pending window: 24h (requestedAt)
-    const sinceVerified = new Date(now - 24 * 3600 * 1000);  // verified window: 24h (verifiedAt)
+    const sincePending = new Date(now - 24 * 3600 * 1000);   // requestedAt window
+    const sinceVerified = new Date(now - 24 * 3600 * 1000);  // verifiedAt window
 
     let verifiedTotal = 0;
     let pendingTotal = 0;
+    let requestCount24 = 0;
+    let nextRequestAllowedAt = null;
+    let nextAllowedAt = null;
+
     try {
+      // verified amount
       const aggVerified = await Withdrawal.aggregate([
         { $match: Object.assign({}, userIdQuery, { status: 'verified', verifiedAt: { $gte: sinceVerified } }) },
         { $group: { _id: null, total: { $sum: '$amount' } } }
       ]).allowDiskUse(true);
       if (aggVerified && aggVerified.length) verifiedTotal = toNumber(aggVerified[0].total, 0);
 
+      // pending amount (requestedAt)
       const aggPending = await Withdrawal.aggregate([
         { $match: Object.assign({}, userIdQuery, { status: 'pending', requestedAt: { $gte: sincePending } }) },
         { $group: { _id: null, total: { $sum: '$amount' } } }
       ]).allowDiskUse(true);
       if (aggPending && aggPending.length) pendingTotal = toNumber(aggPending[0].total, 0);
-    } catch (aggErr) {
-      console.warn('withdraw.summary: aggregation failed', aggErr && aggErr.stack ? aggErr.stack : aggErr);
-      verifiedTotal = 0; pendingTotal = 0;
-    }
 
-    const remainingVerified = Math.max(0, WITHDRAWAL_24H_CAP - verifiedTotal);
-    const remainingIncludingPending = Math.max(0, WITHDRAWAL_24H_CAP - (verifiedTotal + pendingTotal));
+      // request count in last 24h (any status, based on requestedAt)
+      const aggCount = await Withdrawal.aggregate([
+        { $match: Object.assign({}, userIdQuery, { requestedAt: { $gte: sincePending } }) },
+        { $group: { _id: null, count: { $sum: 1 } } }
+      ]).allowDiskUse(true);
+      requestCount24 = (aggCount && aggCount.length) ? toNumber(aggCount[0].count, 0) : 0;
 
-    // compute nextAllowedAt when cap reached
-    let nextAllowedAt = null;
-    try {
+      // compute nextRequestAllowedAt if count >= limit (we need the earliest to expire)
+      if (requestCount24 >= WITHDRAWAL_REQUEST_COUNT_LIMIT /* define or use 5 */) {
+        // compute index to skip = requestCount24 - limit
+        const limit = WITHDRAWAL_REQUEST_COUNT_LIMIT || 5;
+        const skipIdx = Math.max(0, requestCount24 - limit);
+        const earliestToExpire = await Withdrawal.findOne(Object.assign({}, userIdQuery, { requestedAt: { $gte: sincePending } }))
+          .sort({ requestedAt: 1 })
+          .skip(skipIdx)
+          .lean();
+        if (earliestToExpire && earliestToExpire.requestedAt) {
+          nextRequestAllowedAt = new Date(new Date(earliestToExpire.requestedAt).getTime() + 24 * 3600 * 1000).toISOString();
+        }
+      }
+
+      // compute nextAllowedAt for money cap (existing logic)
       if ((verifiedTotal + pendingTotal) >= WITHDRAWAL_24H_CAP || verifiedTotal >= WITHDRAWAL_24H_CAP) {
         const earliestVerified = await Withdrawal.findOne(Object.assign({}, userIdQuery, { status: 'verified', verifiedAt: { $gte: sinceVerified } })).sort({ verifiedAt: 1 }).lean();
         const earliestPending = await Withdrawal.findOne(Object.assign({}, userIdQuery, { status: 'pending', requestedAt: { $gte: sincePending } })).sort({ requestedAt: 1 }).lean();
@@ -302,9 +298,14 @@ router.get('/withdraw/summary', authMiddleware, async (req, res) => {
         }
         if (earliestDate) nextAllowedAt = new Date(earliestDate.getTime() + 24 * 3600 * 1000).toISOString();
       }
-    } catch (e) {
-      console.warn('withdraw.summary: nextAllowedAt compute failed', e && e.stack ? e.stack : e);
+
+    } catch (aggErr) {
+      console.warn('withdraw.summary: aggregation failed', aggErr && aggErr.stack ? aggErr.stack : aggErr);
+      verifiedTotal = 0; pendingTotal = 0; requestCount24 = 0;
     }
+
+    const remainingVerified = Math.max(0, WITHDRAWAL_24H_CAP - verifiedTotal);
+    const remainingIncludingPending = Math.max(0, WITHDRAWAL_24H_CAP - (verifiedTotal + pendingTotal));
 
     const payload = {
       spent24: Number(verifiedTotal.toFixed(3)),
@@ -312,7 +313,9 @@ router.get('/withdraw/summary', authMiddleware, async (req, res) => {
       remainingVerified: Number(remainingVerified.toFixed(3)),
       remainingIncludingPending: Number(remainingIncludingPending.toFixed(3)),
       cap: WITHDRAWAL_24H_CAP,
-      nextAllowedAt
+      nextAllowedAt,
+      requestCount24,
+      nextRequestAllowedAt
     };
 
     return res.json({ ok: true, data: payload, ...payload });
@@ -324,15 +327,148 @@ router.get('/withdraw/summary', authMiddleware, async (req, res) => {
       remainingVerified: Number(WITHDRAWAL_24H_CAP.toFixed(3)),
       remainingIncludingPending: Number(WITHDRAWAL_24H_CAP.toFixed(3)),
       cap: WITHDRAWAL_24H_CAP,
-      nextAllowedAt: null
+      nextAllowedAt: null,
+      requestCount24: 0,
+      nextRequestAllowedAt: null
     };
     return res.json({ ok: true, data: payload, ...payload });
   }
 });
+// DELETE /api/account/withdraw/:id  (user or admin)
+router.delete('/withdraw/:id', authMiddleware, async (req, res) => {
+  try {
+    const id = req.params.id;
+    if (!id) return res.status(400).json({ ok: false, error: 'Missing id' });
+
+    const dbUser = await findDbUserFromReqUser(req.user);
+    if (!dbUser) return res.status(404).json({ ok: false, error: 'User not found' });
+
+    const w = await Withdrawal.findById(id).lean();
+    if (!w) return res.status(404).json({ ok: false, error: 'Withdrawal not found' });
+
+    // only allow delete if pending OR user is admin
+    const isOwner = String(w.userId) === String(dbUser._id) || (w.userId && String(w.userId) === String(dbUser._id));
+    const isAdminUser = (String(req.user.role || '').toLowerCase() === 'admin' || !!req.user.isAdmin);
+
+    if (!isOwner && !isAdminUser) return res.status(403).json({ ok: false, error: 'Not allowed' });
+
+    // safe status check (avoid client-only helper)
+    const statusLower = String(w.status || '').toLowerCase();
+    if (!isAdminUser && statusLower !== 'pending') {
+      return res.status(400).json({ ok: false, error: 'Only pending withdrawals may be removed by the user' });
+    }
+
+    // delete document
+    await Withdrawal.deleteOne({ _id: id });
+
+    // emit socket event so other clients (admin) can update live
+    try {
+      const io = req.app.get('io');
+      if (io) {
+        io.emit('withdrawals:deleted', { id: String(id), userId: String(w.userId || '') });
+      }
+    } catch (e) {
+      // don't fail the API if socket emit fails
+      console.warn('withdraw.delete: socket emit failed', e && e.stack ? e.stack : e);
+    }
+
+    // recompute fresh summary and return (reuse logic similar to /summary)
+    let userIdQuery;
+    try {
+      if (mongoose.isValidObjectId(dbUser._id)) {
+        userIdQuery = { $or: [{ userId: mongoose.Types.ObjectId(dbUser._id) }, { userId: String(dbUser._id) }] };
+      } else {
+        userIdQuery = { userId: String(dbUser._id) };
+      }
+    } catch (e) {
+      userIdQuery = { userId: String(dbUser._id) };
+    }
+
+    const now = Date.now();
+    const sincePending = new Date(now - 24 * 3600 * 1000);
+    const sinceVerified = new Date(now - 24 * 3600 * 1000);
+
+       // existing vars: now we'll compute both total requestCount24 (all requests) AND verifiedRequestCount24 (only verified)
+       let verified24 = 0, pending24 = 0, requestCount24 = 0, verifiedRequestCount24 = 0, nextAllowedAt = null, nextRequestAllowedAt = null;
+       try {
+         const aggV = await Withdrawal.aggregate([
+           { $match: Object.assign({}, userIdQuery, { status: 'verified', verifiedAt: { $gte: sinceVerified } }) },
+           { $group: { _id: null, total: { $sum: '$amount' } } }
+         ]).allowDiskUse(true);
+         if (aggV && aggV.length) verified24 = toNumber(aggV[0].total, 0);
+ 
+         const aggP = await Withdrawal.aggregate([
+           { $match: Object.assign({}, userIdQuery, { status: 'pending', requestedAt: { $gte: sincePending } }) },
+           { $group: { _id: null, total: { $sum: '$amount' } } }
+         ]).allowDiskUse(true);
+         if (aggP && aggP.length) pending24 = toNumber(aggP[0].total, 0);
+ 
+         // original count: all requests in the last 24h (any status)
+         const aggCount = await Withdrawal.aggregate([
+           { $match: Object.assign({}, userIdQuery, { requestedAt: { $gte: sincePending } }) },
+           { $group: { _id: null, count: { $sum: 1 } } }
+         ]).allowDiskUse(true);
+         requestCount24 = (aggCount && aggCount.length) ? toNumber(aggCount[0].count, 0) : 0;
+ 
+         // additional: count verified-only (useful for admin decision/display)
+         const aggVerifiedCount = await Withdrawal.aggregate([
+           { $match: Object.assign({}, userIdQuery, { status: 'verified', verifiedAt: { $gte: sinceVerified } }) },
+           { $group: { _id: null, count: { $sum: 1 } } }
+         ]).allowDiskUse(true);
+         verifiedRequestCount24 = (aggVerifiedCount && aggVerifiedCount.length) ? toNumber(aggVerifiedCount[0].count, 0) : 0;
+ 
+         // compute nextRequestAllowedAt (count limit) using all requests (this preserves user-facing count limit behavior)
+         const limit = typeof WITHDRAWAL_REQUEST_COUNT_LIMIT !== 'undefined' ? WITHDRAWAL_REQUEST_COUNT_LIMIT : 5;
+         if (requestCount24 >= limit) {
+           const skipIdx = Math.max(0, requestCount24 - limit);
+           const earliestToExpire = await Withdrawal.findOne(Object.assign({}, userIdQuery, { requestedAt: { $gte: sincePending } }))
+             .sort({ requestedAt: 1 })
+             .skip(skipIdx)
+             .lean();
+           if (earliestToExpire && earliestToExpire.requestedAt) {
+             nextRequestAllowedAt = new Date(new Date(earliestToExpire.requestedAt).getTime() + 24 * 3600 * 1000).toISOString();
+           }
+         }
+ 
+         // money-cap nextAllowedAt (existing logic)
+         if ((verified24 + pending24) >= WITHDRAWAL_24H_CAP || verified24 >= WITHDRAWAL_24H_CAP) {
+           const earliestVerified = await Withdrawal.findOne(Object.assign({}, userIdQuery, { status: 'verified', verifiedAt: { $gte: sinceVerified } })).sort({ verifiedAt: 1 }).lean();
+           const earliestPending = await Withdrawal.findOne(Object.assign({}, userIdQuery, { status: 'pending', requestedAt: { $gte: sincePending } })).sort({ requestedAt: 1 }).lean();
+           let earliestDate = null;
+           if (earliestVerified && earliestVerified.verifiedAt) earliestDate = new Date(earliestVerified.verifiedAt);
+           if (earliestPending && earliestPending.requestedAt) {
+             const d = new Date(earliestPending.requestedAt);
+             if (!earliestDate || d < earliestDate) earliestDate = d;
+           }
+           if (earliestDate) nextAllowedAt = new Date(earliestDate.getTime() + 24 * 3600 * 1000).toISOString();
+         }
+       } catch (e) {
+         console.warn('withdraw.delete: recompute failed', e && e.stack ? e.stack : e);
+       }
+ 
+       const payload = {
+         spent24: Number(verified24.toFixed(3)),
+         pending24: Number(pending24.toFixed(3)),
+         remainingVerified: Number(Math.max(0, WITHDRAWAL_24H_CAP - verified24).toFixed(3)),
+         remainingIncludingPending: Number(Math.max(0, WITHDRAWAL_24H_CAP - (verified24 + pending24)).toFixed(3)),
+         cap: WITHDRAWAL_24H_CAP,
+         nextAllowedAt,
+         requestCount24,               // all requests in 24h (existing behavior)
+         verifiedRequestCount24,      // verified-only requests in 24h (new, admin-friendly)
+         nextRequestAllowedAt
+       };
+ 
+
+    return res.json({ ok: true, deletedId: id, data: payload, ...payload });
+  } catch (err) {
+    console.error('account.withdraw.delete error:', err && err.stack ? err.stack : err);
+    return res.status(500).json({ ok: false, error: 'Server error' });
+  }
+});
 
 
-// POST /api/account/withdraw
-// POST /api/account/withdraw
+
+
 // POST /api/account/withdraw
 router.post('/withdraw', authMiddleware, async (req, res) => {
   try {
@@ -486,8 +622,6 @@ router.post('/withdraw', authMiddleware, async (req, res) => {
   }
 });
 
- 
-// GET /api/account/withdrawals// GET /api/account/withdrawals
 // GET /api/account/withdrawals
 router.get('/withdrawals', authMiddleware, async (req, res) => {
   try {

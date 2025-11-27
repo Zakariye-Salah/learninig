@@ -10,6 +10,14 @@
       --accent:#0b5cff; --bg:#f6f7fb; --card:#fff; --muted:#6b7280; --glass:rgba(255,255,255,0.7);
       --nav-hover-bg: rgba(11,92,255,0.06);
     }
+
+    /* Make thread header sticky for long conversations */
+.card.thread { display:flex; flex-direction:column; }
+#threadHeader { position:sticky; top:0; background:var(--card); z-index:5; padding:12px; border-bottom:1px solid #f1f5f9; }
+.messages { padding:14px; overflow:auto; }
+.back-btn { margin-right:12px; font-weight:700; color:var(--accent); background:transparent; border:0; cursor:pointer; }
+.issue-pill { font-size:12px; padding:4px 8px; border-radius:999px; background:#eef6ff; color:var(--accent); border:1px solid rgba(11,92,255,0.06); }
+
     /* --- toggle helpers --- */
 .grid.full-thread { grid-template-columns: 1fr !important; }
 .hidden-left { display:none !important; }
@@ -298,13 +306,28 @@
         <div class="card thread" id="threadArea">
           <div id="threadHeader" style="padding:8px;border-bottom:1px solid #eee"></div>
           <div class="messages" id="messages" role="log" aria-live="polite"></div>
-          <div class="composer" id="composer">
-            <textarea id="msgText" placeholder="Write a message..." aria-label="Message"></textarea>
-            <div style="display:flex;flex-direction:column;gap:8px">
-              <button id="sendBtn" class="small">Send</button>
-              <button id="loginBtn" class="btn-ghost small" style="display:none">Login</button>
-            </div>
-          </div>
+      <!-- REPLACE current composer inner HTML with this -->
+<div class="composer" id="composer">
+  <div style="display:flex;flex-direction:column;gap:8px;flex:1">
+    <div style="display:flex;gap:8px;align-items:center">
+      <select id="issueType" style="min-width:170px;padding:8px;border-radius:8px;border:1px solid #e6e6e6">
+        <option value="general">General / Other</option>
+        <option value="points">Points</option>
+        <option value="balance">Balance Dollar</option>
+        <option value="withdrawal">Withdrawal</option>
+        <option value="test">Take Test</option>
+      </select>
+      <small class="muted" style="font-size:13px">Choose the issue category</small>
+    </div>
+    <textarea id="msgText" placeholder="Write a message..." aria-label="Message"></textarea>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:8px;margin-left:12px">
+    <button id="sendBtn" class="small">Send</button>
+    <button id="loginBtn" class="btn-ghost small" style="display:none">Login</button>
+  </div>
+</div>
+
         </div>
       </div>
     </div>
@@ -366,7 +389,12 @@ function authHeaders(json = true){
   if (json) h['Content-Type'] = 'application/json';
   return h;
 }
-function isAdmin(){ const u = getUser(); return u && u.role === 'admin'; }
+function isAdmin(){
+  const u = getUser();
+  if (!u || !u.role) return false;
+  const role = String(u.role).toLowerCase();
+  return role === 'admin' || role === 'controller';
+}
 function escapeHtml(s){ if (s === 0) return '0'; if (!s) return ''; return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 
 // --- UI refs ---
@@ -384,16 +412,16 @@ const userInfoHeader = document.getElementById('userInfoHeader');
 function isMobileView(){ return window.innerWidth <= 900; }
 
 function showListView(){
-  // show left list and normal grid
-  try {
-    conversationsList.style.display = '';
-    const g = document.querySelector('.grid');
-    if (g) g.classList.remove('full-thread');
-    // remove any back button
-    const back = threadHeader.querySelector('.back-btn');
-    if (back) back.remove();
-  } catch(e){ /* ignore */ }
+  conversationsList.style.display = '';
+  const g = document.querySelector('.grid');
+  if (g) g.classList.remove('full-thread');
+  const back = threadHeader.querySelector('.back-btn');
+  if (back) back.remove();
+  // clear selected and refresh list
+  selectedConvId = null;
+  loadAdminList(); // reload to refresh read/unread state
 }
+
 
 function showThreadOnly(addBack = false){
   // hide left list and expand thread
@@ -458,15 +486,27 @@ function showEmptyList(msg){
 
 function renderMessages(msgs){
   if (!Array.isArray(msgs) || msgs.length === 0) {
-    messagesEl.innerHTML = `<div class="empty">No messages yet.</div>`; return;
+    messagesEl.innerHTML = `<div class="empty">No messages yet.</div>`;
+    return;
   }
   messagesEl.innerHTML = msgs.map(m => {
     const cls = m.sender === 'user' ? 'msg user' : 'msg admin';
-    const who = (m.sender === 'user') ? (m.userName || 'User') : (m.adminName || 'Admin');
-    return `<div class="${cls}">
-              <div class="meta">${escapeHtml(who)} • ${new Date(m.createdAt).toLocaleString()}</div>
-              <div>${escapeHtml(m.text)}</div>
-            </div>`;
+    // for user messages show userName if present
+    if (m.sender === 'user') {
+      const who = m.userName || m.userUsername || 'User';
+      return `<div class="${cls}">
+                <div class="meta">${escapeHtml(who)} • ${new Date(m.createdAt).toLocaleString()}</div>
+                <div>${escapeHtml(m.text)}</div>
+              </div>`;
+    } else {
+      // admin message
+      const who = m.adminName || (getUser() && (getUser().fullName || getUser().username)) || 'Admin';
+      const roleLabel = m.adminRole ? ` <small style="color:var(--muted)">(${escapeHtml(m.adminRole)})</small>` : '';
+      return `<div class="${cls}">
+                <div class="meta">${escapeHtml(who)}${roleLabel} • ${new Date(m.createdAt).toLocaleString()}</div>
+                <div>${escapeHtml(m.text)}</div>
+              </div>`;
+    }
   }).join('');
   setTimeout(()=> messagesEl.scrollTop = messagesEl.scrollHeight, 40);
 }
@@ -499,12 +539,19 @@ async function loadForUser(){
 async function sendUserMessage(){
   if (!getToken()) return promptLoginAndRetry(sendUserMessage);
   const txt = msgText.value.trim();
+  const issueType = (document.getElementById('issueType') && document.getElementById('issueType').value) ? document.getElementById('issueType').value : 'general';
   if (!txt) return alert('Please type a message.');
   sendBtn.disabled = true;
-  const r = await fetchJson('/api/help/messages', { method:'POST', headers: authHeaders(true), body: JSON.stringify({ text: txt }) });
+  const r = await fetchJson('/api/help/messages', {
+    method:'POST',
+    headers: authHeaders(true),
+    body: JSON.stringify({ text: txt, issueType })
+  });
   sendBtn.disabled = false;
   if (!r.ok) return alert('Send failed: ' + (r.error || ''));
   msgText.value = '';
+  // keep selected issueType the same (optional) or reset
+  // document.getElementById('issueType').value = 'general';
   await loadForUser();
 }
 
@@ -521,27 +568,54 @@ async function loadAdminList(){
     const node = document.createElement('div');
     node.className = 'conv-item' + unread;
     node.dataset.id = c._id;
-    node.innerHTML = `<div style="font-weight:700">${escapeHtml(c.userName || c.userUsername || 'User')} ${c.unreadForAdmin ? '<span class="badge">new</span>' : ''}</div>
-                      <div class="muted" style="font-size:13px">${escapeHtml(c.lastMessage||'')} • ${new Date(c.updatedAt||c.createdAt).toLocaleString()}</div>`;
+// inside loadAdminList loop:
+node.innerHTML = `<div style="font-weight:700">
+  ${escapeHtml(c.userFullName || c.userName || c.userUsername || 'User')}
+  ${c.userRole ? ' <small style="color:var(--muted)">(' + escapeHtml(c.userRole) + ')</small>' : ''}
+  ${c.unreadForAdmin ? ' <span class="badge">new</span>' : ''}
+</div>
+<div class="muted" style="font-size:13px">
+  ${c.issueType ? '[' + escapeHtml(c.issueType) + '] ' : ''}${escapeHtml(c.lastMessage||'')} • ${new Date(c.updatedAt||c.createdAt).toLocaleString()}
+</div>`;
+
+
     node.onclick = ()=> openAdminConversation(c._id);
     conversationsList.appendChild(node);
   });
 }
-
 async function openAdminConversation(id){
   selectedConvId = id;
+  // hide list so admin gets a full-page thread view
+  showThreadOnly(true);
+
+  // show loading state
   threadHeader.innerHTML = `<div class="muted">Loading…</div>`;
   const r = await fetchJson('/api/help/conversations/' + encodeURIComponent(id), { headers: authHeaders(), method:'GET' });
-  if (!r.ok) { threadHeader.innerHTML = `<div class="muted">Failed to load: ${escapeHtml(r.error||'')}</div>`; messagesEl.innerHTML=''; return; }
+  if (!r.ok) {
+    threadHeader.innerHTML = `<div class="muted">Failed to load: ${escapeHtml(r.error||'')}</div>`;
+    messagesEl.innerHTML = '';
+    return;
+  }
+
   const conv = r.data.conversation;
   const user = r.data.user || {};
-  threadHeader.innerHTML = `<div><strong>${escapeHtml(user.fullName || user.username || conv.userName || 'User')}</strong>
-                            <div class="muted">User id: ${escapeHtml(String(conv.userId||''))} • Last: ${new Date(conv.updatedAt||conv.createdAt).toLocaleString()}</div></div>`;
+  const roleLabel = (r.data.user && r.data.user.role) ? ` (${escapeHtml(r.data.user.role)})` : '';
+  const issueTypeLabel = conv.issueType ? `<div class="muted">Issue: ${escapeHtml(conv.issueType)}</div>` : '';
+
+  // header shows user, role, issue type and back button already added by showThreadOnly(true)
+  threadHeader.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center">
+    <div>
+      <strong>${escapeHtml(user.fullName || user.username || conv.userName || 'User')}${roleLabel}</strong>
+      <div class="muted">User id: ${escapeHtml(String(conv.userId||''))} • Last: ${new Date(conv.updatedAt||conv.createdAt).toLocaleString()}</div>
+      ${issueTypeLabel}
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="btn-ghost small" onclick="markRead()">Mark read</button>
+      <button class="btn-ghost small" onclick="() => {}"> </button>
+    </div>
+  </div>`;
+
   renderMessages(conv.messages || []);
-  // if admin on mobile, hide left list and add a back button
-  if (isMobileView()) {
-    showThreadOnly(true);
-  }
 }
 
 async function sendAdminReply(){

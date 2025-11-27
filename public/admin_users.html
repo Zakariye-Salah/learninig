@@ -1,14 +1,11 @@
 <!doctype html>
 <html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Admin Users</title>
 <style>
   :root{
-    --accent:#0b5cff;
-    --bg:#f6f7fb;
-    --card:#fff;
-    --muted:#6b7280;
-    --shadow:0 10px 30px rgba(16,24,40,0.06);
+    --accent:#0b5cff; --bg:#f6f7fb; --card:#fff; --muted:#6b7280; --shadow:0 10px 30px rgba(16,24,40,0.06);
   }
   *{box-sizing:border-box}
   body{font-family:system-ui,Arial;padding:12px;background:var(--bg);color:#111}
@@ -42,6 +39,17 @@
   .controls{display:flex;gap:8px;align-items:center}
   .muted{color:#666}
   input.search{padding:8px;border-radius:6px;border:1px solid #e6e6e6;flex:1}
+
+  /* modal */
+  .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;z-index:9999}
+  .modal {width:720px; max-width:94vw;background:var(--card);border-radius:12px;padding:16px;box-shadow:0 20px 40px rgba(2,6,23,0.2)}
+  .modal h3{margin:0 0 12px}
+  .form-row{display:flex;gap:8px;margin-bottom:8px}
+  .form-row .col{flex:1}
+  .field{display:flex;flex-direction:column}
+  .field label{font-size:13px;color:#333;margin-bottom:6px}
+  .field input, .field select{padding:8px;border-radius:6px;border:1px solid #e6e6e6}
+  .inline-msg{font-size:13px;color:#b91c1c;margin-top:6px}
 </style>
 </head>
 <body>
@@ -64,9 +72,14 @@
   </div>
 
 <div class="card">
-  <h2>Manage Users</h2>
+  <div style="display:flex;align-items:center;gap:12px;justify-content:space-between">
+    <h2 style="margin:0">Manage Users</h2>
+    <div>
+      <button id="btnAddUser" class="small" style="background:var(--accent);color:#fff;border-color:var(--accent)">+ Add user</button>
+    </div>
+  </div>
 
-  <div class="controls" style="margin-bottom:8px">
+  <div class="controls" style="margin:12px 0">
     <input id="search" class="search" placeholder="Search name / username / email" >
     <button id="btnSearch" class="small">Search</button>
     <button id="btnRefresh" class="small">Refresh</button>
@@ -75,12 +88,14 @@
   <div id="users">Loading...</div>
 </div>
 
+<!-- Add User Modal: inserted/hidden via JS -->
+<div id="addUserModalWrap" style="display:none"></div>
+
 <script>
-/* NAV header script (role-based links + mobile toggle) */
+/* NAV header + helper functions (kept from previous file) */
 (function(){
   function getUserLocal(){ const s = localStorage.getItem('user'); return s ? JSON.parse(s) : null; }
   function isAdmin(u){ return u && (u.role === 'admin' || u.isAdmin); }
-
   function makeA(href,label){ const a = document.createElement('a'); a.href = href; a.innerText = label; return a; }
 
   function buildNavByRole(){
@@ -89,7 +104,6 @@
     const mobileNav = document.getElementById('mobileNav');
     if (mainNav) mainNav.innerHTML = '';
     if (mobileNav) mobileNav.innerHTML = '';
-
     let links = [];
     if (!u) {
       links = [{href:'index.html',label:'Lessons'},{href:'leaderboard.html',label:'Leaderboard'},{href:'history.html',label:'History'}];
@@ -112,7 +126,6 @@
         {href:'helpCenter.html',label:'Help Center'}
       ];
     }
-
     if (mainNav) {
       links.forEach(l => {
         const a = makeA(l.href, l.label);
@@ -143,13 +156,13 @@
           const text = await res.text(); const data = text ? JSON.parse(text) : null;
           if (!res.ok) return alert('Login failed: ' + (data && (data.error||data.message) ? (data.error||data.message) : res.statusText));
           localStorage.setItem('token', data.token); localStorage.setItem('user', JSON.stringify(data.user));
-          renderHeaderUser();
+          renderHeaderUser(); load();
         } catch(e){ alert('Login error: ' + e.message); }
       };
     } else {
       el.innerHTML = `<span style="font-weight:600">${escapeHtml(u.fullName || u.username || 'User')}</span> <button id="hdrLogout" class="btn-ghost small" style="margin-left:8px">Logout</button>`;
       const lo = document.getElementById('hdrLogout');
-      if (lo) lo.onclick = ()=> { localStorage.removeItem('token'); localStorage.removeItem('user'); renderHeaderUser(); };
+      if (lo) lo.onclick = ()=> { localStorage.removeItem('token'); localStorage.removeItem('user'); renderHeaderUser(); load(); };
     }
   }
 
@@ -180,7 +193,7 @@
   window._Nav = { rebuild: buildNavByRole, renderHeaderUser };
 })();
 
-/* ------------------ ORIGINAL admin_users logic (unchanged) ------------------ */
+/* ------------------ admin users logic & add-user modal ------------------ */
 
 const API_BASE = 'http://localhost:4000';
 async function fetchJson(url, opts={}) {
@@ -189,7 +202,7 @@ async function fetchJson(url, opts={}) {
     const res = await fetch(full, opts);
     const text = await res.text(); let data=null;
     try{ data = text ? JSON.parse(text) : null } catch(e){ data = null }
-    if (!res.ok) return { ok:false, status:res.status, error:(data && data.error) ? data.error : res.statusText, data };
+    if (!res.ok) return { ok:false, status:res.status, error:(data && (data.error||data.message)) ? (data.error||data.message) : res.statusText, data };
     return { ok:true, data };
   } catch(err){ return { ok:false, error:err.message } }
 }
@@ -205,7 +218,7 @@ async function load(page=1, limit=200, search=''){
   const users = r.data.users || [];
   if (users.length === 0) { root.innerHTML = '<div class="muted">No users found.</div>'; return; }
 
-  let html = `<table><thead><tr><th>#</th><th>Name</th><th>Username</th><th>Points</th><th>Created</th><th>Last login</th><th>Actions</th></tr></thead><tbody>`;
+  let html = `<table><thead><tr><th>#</th><th>Name</th><th>Username / Email</th><th>Role</th><th>Points</th><th>Created</th><th>Last login</th><th>Actions</th></tr></thead><tbody>`;
   users.forEach((u, idx) => {
     const created = u.createdAt ? new Date(u.createdAt).toLocaleString() : '-';
     const last = u.lastLogin ? new Date(u.lastLogin).toLocaleString() : '-';
@@ -213,6 +226,7 @@ async function load(page=1, limit=200, search=''){
       <td>${idx+1}</td>
       <td><strong>${escapeHtml(u.fullName||'')}</strong><div class="meta">${escapeHtml(u.email||'')}</div></td>
       <td>${escapeHtml(u.username||'')}</td>
+      <td>${escapeHtml(u.role||'user')}</td>
       <td>${Number(u.pointsCurrent||0)} pts</td>
       <td class="muted">${escapeHtml(created)}</td>
       <td class="muted">${escapeHtml(last)}</td>
@@ -251,7 +265,151 @@ document.getElementById('search').addEventListener('keydown', (e)=> { if (e.key 
 
 load();
 
+/* ---------------- Add User Modal code ---------------- */
+
+const modalWrap = document.getElementById('addUserModalWrap');
+
+function openAddUserModal(prefill={}) {
+  modalWrap.innerHTML = `
+    <div class="modal-backdrop" id="addUserModalBackdrop">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="addUserTitle">
+        <h3 id="addUserTitle">Add User</h3>
+
+        <div class="form-row">
+          <div class="col field">
+            <label>Full name</label>
+            <input id="m_fullName" placeholder="Full name" />
+            <div id="m_fullName_msg" class="inline-msg"></div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="col field">
+            <label>Username or email</label>
+            <input id="m_username" placeholder="username (e.g. canab) or email (canab@gmail.com)" />
+            <div id="m_username_msg" class="inline-msg"></div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="col field">
+            <label>Type / Role</label>
+            <select id="m_role">
+              <option value="user">Normal user</option>
+              <option value="controller">Controller</option>
+              <option value="admin">Admin</option>
+            </select>
+            <div id="m_role_msg" class="inline-msg"></div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="col field">
+            <label>Password</label>
+            <input id="m_password" type="password" placeholder="Password (min 6 chars)"/>
+            <div id="m_password_msg" class="inline-msg"></div>
+          </div>
+          <div class="col field">
+            <label>Confirm password</label>
+            <input id="m_password_confirm" type="password" placeholder="Confirm password"/>
+            <div id="m_password_confirm_msg" class="inline-msg"></div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+          <button id="m_cancel" class="small">Cancel</button>
+          <button id="m_submit" class="small" style="background:var(--accent);color:#fff;border-color:var(--accent)">Create user</button>
+        </div>
+      </div>
+    </div>
+  `;
+  modalWrap.style.display = 'block';
+
+  // prefill
+  if (prefill.fullName) document.getElementById('m_fullName').value = prefill.fullName;
+  if (prefill.username) document.getElementById('m_username').value = prefill.username;
+  if (prefill.role) document.getElementById('m_role').value = prefill.role;
+
+  document.getElementById('m_cancel').onclick = closeAddUserModal;
+  document.getElementById('addUserModalBackdrop').addEventListener('click', (e) => {
+    if (e.target.id === 'addUserModalBackdrop') closeAddUserModal();
+  });
+
+  document.getElementById('m_submit').onclick = submitAddUser;
+}
+
+function closeAddUserModal() {
+  modalWrap.innerHTML = '';
+  modalWrap.style.display = 'none';
+}
+
+function validateAddUserForm({ fullName, username, role, password, confirm }) {
+  const errors = {};
+  if (!fullName || fullName.trim().length < 2) errors.fullName = 'Full name required';
+  if (!username || username.trim().length < 3) errors.username = 'Username or email required (min 3 chars)';
+  if (!role) errors.role = 'Select role';
+  if (!password || password.length < 6) errors.password = 'Password min 6 chars';
+  if (password !== confirm) errors.confirm = 'Passwords do not match';
+  return errors;
+}
+
+async function submitAddUser() {
+  const token = getToken();
+  if (!token) return alert('Not authenticated as admin');
+
+  const fullName = (document.getElementById('m_fullName').value || '').trim();
+  const username = (document.getElementById('m_username').value || '').trim();
+  const role = (document.getElementById('m_role').value || '').trim();
+  const password = (document.getElementById('m_password').value || '');
+  const confirm = (document.getElementById('m_password_confirm').value || '');
+
+  // clear old messages
+  ['m_fullName_msg','m_username_msg','m_role_msg','m_password_msg','m_password_confirm_msg'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.innerText = '';
+  });
+
+  const errs = validateAddUserForm({ fullName, username, role, password, confirm });
+  if (Object.keys(errs).length) {
+    if (errs.fullName) document.getElementById('m_fullName_msg').innerText = errs.fullName;
+    if (errs.username) document.getElementById('m_username_msg').innerText = errs.username;
+    if (errs.role) document.getElementById('m_role_msg').innerText = errs.role;
+    if (errs.password) document.getElementById('m_password_msg').innerText = errs.password;
+    if (errs.confirm) document.getElementById('m_password_confirm_msg').innerText = errs.confirm;
+    return;
+  }
+
+  // prepare payload
+  const payload = { username, fullName, password, role };
+
+  // call admin API to create user
+  const r = await fetchJson('/api/admin/users', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+    body: JSON.stringify(payload)
+  });
+
+  if (!r.ok) {
+    // show server error inline if possible
+    const msg = r.error || 'Create failed';
+    // try to parse field errors
+    if (r.data && r.data.error) {
+      alert('Error: ' + r.data.error);
+    } else {
+      alert('Error: ' + msg);
+    }
+    return;
+  }
+
+  alert('User created successfully');
+  closeAddUserModal();
+  load();
+}
+
+// Wire Add button
+document.getElementById('btnAddUser').addEventListener('click', () => openAddUserModal());
+
 function escapeHtml(s){ if (s === 0) return '0'; if (!s) return ''; return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
 </script>
 </body>
 </html>

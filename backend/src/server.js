@@ -36,6 +36,10 @@ const gamesRoutes = require('./routes/games');
 // in backend/src/server.js or where you mount other routes
 const storiesRoutes = require('./routes/stories');
 
+
+// somewhere near your other route registrations
+const spinsRouter = require('./routes/spins');
+
 const app = express();
 const server = http.createServer(app);
 
@@ -97,6 +101,8 @@ app.use('/api/help', helpRoutes);
 app.use('/api/games', gamesRoutes);
 
 app.use('/api/stories', storiesRoutes);
+
+app.use('/api/leaderboard', spinsRouter);
 
 // mount users compatibility router at top-level /api
 app.use('/api', require('./routes/users'));

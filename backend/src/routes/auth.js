@@ -13,38 +13,63 @@ function sign(user) {
   return jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, { expiresIn: TOKEN_EXPIRY || '7d' });
 }
 
-// helper: compute flag emoji from ISO alpha-2 code (e.g. "US" -> 🇺🇸)
-function countryCodeToEmoji(code) {
-  try {
-    if (!code || typeof code !== 'string') return null;
-    // handle special custom codes
-    const custom = {
-      'XS-SL': '🏳️', // Somaliland - simple fallback emoji (replace with URL if desired)
-      'XN-SL': '🏳️',
-      'XK': '🇽🇰'
-    };
-    if (custom[code]) return custom[code];
+function escapeRegex(s = '') {
+  return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
-    // standard 2-letter codes only
-    const c = code.trim().toUpperCase();
-    if (c.length !== 2) return null;
-    const A = 0x1F1E6; // regional indicator symbol letter A
-    const first = c.charCodeAt(0) - 65;
-    const second = c.charCodeAt(1) - 65;
-    if (first < 0 || first > 25 || second < 0 || second > 25) return null;
-    return String.fromCodePoint(A + first) + String.fromCodePoint(A + second);
-  } catch (e) {
-    return null;
-  }
+function looksLikeEmail(s) {
+  return typeof s === 'string' && s.indexOf('@') !== -1;
 }
 
 /**
+ * GET /api/auth/check-username?username=...
+ * Returns { ok: true, available: true/false }
+ * Accepts both plain usernames and email-like usernames.
+ */
+router.get('/check-username', async (req, res) => {
+  try {
+    const raw = (req.query.username || '').trim();
+    if (!raw) return res.status(400).json({ ok: false, error: 'Missing username' });
+
+    const normalized = raw.toLowerCase();
+    console.log('auth.check-username ->', { raw, normalized });
+
+    let exists = null;
+    if (looksLikeEmail(raw)) {
+      // check email uniqueness
+      exists = await User.findOne({
+        $or: [
+          { email: { $regex: `^${escapeRegex(raw)}$`, $options: 'i' } },
+          { username: { $regex: `^${escapeRegex(raw)}$`, $options: 'i' } }
+        ]
+      }).lean();
+    } else {
+      // plain username - check usernameNormalized or case-insensitive username
+      exists = await User.findOne({
+        $or: [
+          { usernameNormalized: normalized },
+          { username: { $regex: `^${escapeRegex(raw)}$`, $options: 'i' } }
+        ]
+      }).lean();
+    }
+
+    return res.json({ ok: true, available: !Boolean(exists) });
+  } catch (err) {
+    console.error('auth.check-username', err && err.stack ? err.stack : err);
+    return res.status(500).json({ ok: false, error: 'Server error' });
+  }
+});
+
+/**
  * POST /api/auth/register
- * Body: { username, fullName, password, phoneNumber?, country?, countryName?, city?, countryCallingCode? }
+ * Accepts username (plain or email), fullName, password, optionally phone/country/city.
+ * - If username contains '@', we set user's email field to that value (lowercased).
+ * - server computes usernameNormalized (lowercase).
  */
 router.post('/register', async (req, res) => {
   try {
-    const username = sanitizeHtml(String(req.body.username || '').trim());
+    const usernameRaw = String(req.body.username || '').trim();
+    const usernameNormalized = usernameRaw.toLowerCase();
     const fullName = sanitizeHtml(String(req.body.fullName || '').trim());
     const password = String(req.body.password || '');
     const phoneNumber = sanitizeHtml(String(req.body.phoneNumber || '').trim() || '');
@@ -53,26 +78,54 @@ router.post('/register', async (req, res) => {
     const city = sanitizeHtml(String(req.body.city || '').trim() || '');
     const countryCallingCode = sanitizeHtml(String(req.body.countryCallingCode || '').trim() || '');
 
-    if (!username || !fullName || !password) return res.status(400).json({ ok: false, error: 'Missing required fields' });
-    if (password.length < 6) return res.status(400).json({ ok: false, error: 'Password too short (min 6 characters)' });
+    console.log('auth.register attempt ->', { usernameRaw, usernameNormalized, fullName });
 
-    // ensure username uniqueness
-    const exists = await User.findOne({ username }).lean();
-    if (exists) return res.status(400).json({ ok: false, error: 'Username already exists' });
+    if (!usernameRaw || !fullName || !password) {
+      return res.status(400).json({ ok: false, error: 'Missing required fields' });
+    }
+    if (password.length < 6) {
+      return res.status(400).json({ ok: false, error: 'Password too short (min 6 characters)' });
+    }
+
+    // Determine if usernameRaw is an email-like string. If yes, we will store it in email.
+    const isEmail = looksLikeEmail(usernameRaw);
+    const emailNormalized = isEmail ? usernameNormalized : null;
+
+    // Check for existing user: either username or email conflict (case-insensitive)
+    let exists = await User.findOne({
+      $or: [
+        { usernameNormalized },
+        { username: { $regex: `^${escapeRegex(usernameRaw)}$`, $options: 'i' } },
+        ...(isEmail ? [{ email: { $regex: `^${escapeRegex(usernameRaw)}$`, $options: 'i' } }] : [])
+      ]
+    }).lean();
+
+    if (exists) {
+      console.warn('auth.register -> username/email exists', { usernameRaw, usernameNormalized, existId: exists._id });
+      return res.status(400).json({ ok: false, error: 'Username already exists' });
+    }
 
     const hash = await bcrypt.hash(password, 10);
 
-    const flagEmoji = country ? countryCodeToEmoji(country) : null;
+    // compute flag emoji helper if you have it; else set null
+    const flagEmoji = typeof countryCodeToEmoji === 'function' ? countryCodeToEmoji(country) : null;
 
     const userDoc = {
-      username, fullName, passwordHash: hash,
+      username: usernameRaw,
+      usernameNormalized,
+      fullName,
+      passwordHash: hash,
       phoneNumber: phoneNumber || null,
       country: country || null,
       countryName: countryName || (country || null),
-      countryFlagEmoji: flagEmoji,
+      countryFlagEmoji: flagEmoji || null,
       countryCallingCode: countryCallingCode || null,
       city: city || null
     };
+
+    if (isEmail) {
+      userDoc.email = emailNormalized; // store email normalized (lowercase)
+    }
 
     const user = await User.create(userDoc);
 
@@ -94,19 +147,52 @@ router.post('/register', async (req, res) => {
       }
     });
   } catch (err) {
+    // duplicate key (handle race conditions)
+    if (err && (err.code === 11000 || (err.name === 'MongoError' && err.code === 11000))) {
+      console.warn('auth.register duplicate key', err.keyValue || err);
+      return res.status(400).json({ ok: false, error: 'Username already exists' });
+    }
+    if (err && err.name === 'ValidationError') {
+      const messages = Object.values(err.errors || {}).map(e => e.message).filter(Boolean);
+      return res.status(400).json({ ok: false, error: messages.join('; ') || 'Validation failed' });
+    }
+
     console.error('auth.register', err && err.stack ? err.stack : err);
     return res.status(500).json({ ok: false, error: 'Server error' });
   }
 });
 
-// POST /api/auth/login  (unchanged logic but returns country/city, flag)
+
+/**
+ * POST /api/auth/login
+ * Accepts username or email. Uses case-insensitive lookup.
+ */
 router.post('/login', async (req, res) => {
   try {
-    const username = (req.body.username || '').trim();
+    const raw = (req.body.username || req.body.email || '').trim();
     const password = req.body.password;
-    if (!username || !password) return res.status(400).json({ ok: false, error: 'Missing fields' });
+    if (!raw || !password) return res.status(400).json({ ok: false, error: 'Missing fields' });
 
-    const user = await User.findOne({ username, isDeleted: { $ne: true } });
+    let user = null;
+    if (looksLikeEmail(raw)) {
+      // login by email (case-insensitive)
+      user = await User.findOne({ email: { $regex: `^${escapeRegex(raw)}$`, $options: 'i' }, isDeleted: { $ne: true } });
+      if (!user) {
+        // also allow login by username that equals this email exactly
+        user = await User.findOne({ username: { $regex: `^${escapeRegex(raw)}$`, $options: 'i' }, isDeleted: { $ne: true } });
+      }
+    } else {
+      // login by username: try normalized then fallback to case-insensitive username
+      const normalized = raw.toLowerCase();
+      user = await User.findOne({
+        $or: [
+          { usernameNormalized: normalized },
+          { username: { $regex: `^${escapeRegex(raw)}$`, $options: 'i' } }
+        ],
+        isDeleted: { $ne: true }
+      });
+    }
+
     if (!user) return res.status(401).json({ ok: false, error: 'Invalid credentials' });
 
     const ok = await bcrypt.compare(password, user.passwordHash);
@@ -137,6 +223,7 @@ router.post('/login', async (req, res) => {
     return res.status(500).json({ ok: false, error: 'Server error' });
   }
 });
+
 
 // GET /api/auth/me
 router.get('/me', authMiddleware, async (req, res) => {
@@ -185,12 +272,13 @@ router.put('/me', authMiddleware, async (req, res) => {
     if (req.body.city !== undefined) updates.city = sanitizeHtml(String(req.body.city || '').trim());
 
     if (req.body.country && !req.body.countryFlagEmoji) {
-      // compute emoji server-side for better cross-platform
+      // compute emoji server-side
       updates.countryFlagEmoji = countryCodeToEmoji(String(req.body.country || '').trim());
     } else if (req.body.countryFlagEmoji !== undefined) {
       updates.countryFlagEmoji = sanitizeHtml(String(req.body.countryFlagEmoji || '').trim());
     }
 
+    // If password passed and long enough, hash & set
     if (req.body.password && String(req.body.password).trim().length >= 6) {
       const hash = await bcrypt.hash(String(req.body.password).trim(), 10);
       updates.passwordHash = hash;

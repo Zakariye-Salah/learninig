@@ -88,13 +88,16 @@ async function requireAuth(req, res, next) {
     return res.status(500).json({ error: 'Authentication error' });
   }
 }
-
 function requireAdmin(req, res, next) {
   try {
     const u = req.user;
     if (!u) return res.status(401).json({ error: 'Authentication required' });
-    const isAdmin = (u.role && String(u.role).toLowerCase() === 'admin') || !!u.isAdmin;
-    if (!isAdmin) return res.status(403).json({ error: 'Admins only' });
+
+    // Allow 'admin' OR 'controller' (and keep backward compatibility with isAdmin flag)
+    const role = (u.role && String(u.role).toLowerCase()) || '';
+    const isAdmin = role === 'admin' || role === 'controller' || !!u.isAdmin;
+
+    if (!isAdmin) return res.status(403).json({ error: 'Admins (or controllers) only' });
     return next();
   } catch (err) {
     console.error('[auth] requireAdmin error', err);
@@ -102,9 +105,40 @@ function requireAdmin(req, res, next) {
   }
 }
 
+
+
+// Add this function to allow "optional" auth (does not block guests)
+async function optionalAuthenticate(req, res, next) {
+  try {
+    const auth = req.headers && req.headers.authorization;
+    if (!auth) return next();
+    const parts = auth.split(' ');
+    if (parts.length !== 2) return next();
+    const token = parts[1];
+    if (!token) return next();
+    let data;
+    try {
+      data = jwt.verify(token, JWT_SECRET);
+    } catch (err) {
+      // invalid token -> treat as guest
+      return next();
+    }
+    if (!data || !data.id) return next();
+    const user = await User.findById(data.id);
+    if (!user || user.isDeleted) return next();
+    req.user = user;
+    return next();
+  } catch (err) {
+    console.warn('optionalAuthenticate failed:', err && err.message ? err.message : err);
+    return next();
+  }
+}
+
+
 // Export both the new names and a compatibility alias `authMiddleware`
 module.exports = {
   requireAuth,
   requireAdmin,
+  optionalAuthenticate,
   authMiddleware: requireAuth
 };

@@ -8,6 +8,8 @@ const Competition = require('../models/Competition');
 const Folder = require('../models/Folder');   // adjust path if your model file name differs
 const Lesson = require('../models/Lesson');   // adjust path if necessary
 
+const bcrypt = require('bcrypt');
+
 // Admin: list and verify withdrawals
 const Withdrawal = require('../models/Withdrawal');
 // IMPORT BOTH middlewares
@@ -23,6 +25,75 @@ function toOid(id) {
   catch (e) { return id; }
 }
 const router = express.Router();
+
+
+// near top of backend/src/routes/admin.js (ensure authMiddleware is imported)
+router.post('/users', authMiddleware, requireAdmin, async (req, res) => {
+  try {
+    const bodyUsername = String(req.body.username || '').trim();
+    const fullName = sanitizeHtml(String(req.body.fullName || '').trim());
+    const password = String(req.body.password || '');
+    const roleRequested = String(req.body.role || 'user').trim().toLowerCase();
+
+    if (!bodyUsername || !fullName || !password) {
+      return res.status(400).json({ ok: false, error: 'Missing required fields' });
+    }
+    if (password.length < 6) {
+      return res.status(400).json({ ok: false, error: 'Password too short (min 6 characters)' });
+    }
+
+    const ALLOWED = ['admin','controller','user'];
+    if (!ALLOWED.includes(roleRequested)) {
+      return res.status(400).json({ ok: false, error: 'Invalid role' });
+    }
+
+    const usernameNormalized = bodyUsername.toLowerCase();
+    const isEmail = bodyUsername.indexOf('@') !== -1;
+    const emailNormalized = isEmail ? usernameNormalized : null;
+
+    const existing = await User.findOne({
+      $or: [
+        { usernameNormalized: usernameNormalized },
+        { username: { $regex: `^${bodyUsername.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' } },
+        ...(isEmail ? [{ email: { $regex: `^${bodyUsername.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' } }] : [])
+      ]
+    }).lean();
+
+    if (existing) {
+      return res.status(400).json({ ok: false, error: 'Username or email already exists' });
+    }
+
+    const hash = await bcrypt.hash(password, 10);
+
+    const userDoc = {
+      username: bodyUsername,
+      usernameNormalized,
+      fullName,
+      passwordHash: hash,
+      role: roleRequested,
+      email: emailNormalized || null
+    };
+
+    const user = await User.create(userDoc);
+
+    return res.json({
+      ok: true,
+      user: {
+        id: user._id,
+        username: user.username,
+        fullName: user.fullName,
+        role: user.role,
+        email: user.email
+      }
+    });
+  } catch (err) {
+    if (err && (err.code === 11000 || err.name === 'MongoError' && err.code === 11000)) {
+      return res.status(400).json({ ok: false, error: 'Username or email already exists' });
+    }
+    console.error('POST /api/admin/users error', err);
+    return res.status(500).json({ ok: false, error: 'Server error' });
+  }
+});
 
 /* ---------- Admin: clear points ---------- */
 router.post('/users/:id/clear-points', authMiddleware, requireAdmin, async (req, res) => {
@@ -122,7 +193,6 @@ router.get('/users', authMiddleware, requireAdmin, async (req, res) => {
 });
 
 /* GET /api/admin/dashboard */
-// replace existing /api/admin/dashboard handler with this improved version
 router.get('/dashboard', authMiddleware, requireAdmin, async (req, res) => {
   try {
     // query params
@@ -335,70 +405,186 @@ router.post('/competitions/:id/deactivate', authMiddleware, requireAdmin, async 
 
 
 // GET /api/admin/withdrawals  (admin: list pending and recent)
+// router.get('/withdrawals', authMiddleware, requireAdmin, async (req, res) => {
+//   try {
+//     const q = {};
+//     if (req.query.status) q.status = req.query.status;
+//     const list = await Withdrawal.find(q).sort({ requestedAt: -1 }).limit(200).populate('userId', 'fullName username email').lean();
+//     res.json({ withdrawals: list });
+//   } catch (err) {
+//     console.error('admin.withdrawals.list', err);
+//     res.status(500).json({ error: 'Server error' });
+//   }
+// });
+
+// SERVER-SIDE (Express + Mongoose)
+// Put this in the same router file where you handle admin withdraws.
+// Assumes Withdrawal model, User model, authMiddleware, requireAdmin, toOid helper exist.
+
+const MS_24H = 24 * 3600 * 1000;
+
 router.get('/withdrawals', authMiddleware, requireAdmin, async (req, res) => {
   try {
+    // optional: allow status filter, keep your existing q
     const q = {};
     if (req.query.status) q.status = req.query.status;
-    const list = await Withdrawal.find(q).sort({ requestedAt: -1 }).limit(200).populate('userId', 'fullName username email').lean();
-    res.json({ withdrawals: list });
+
+    // fetch recent withdrawals (same as before)
+    const list = await Withdrawal.find(q)
+      .sort({ requestedAt: -1 })
+      .limit(200)
+      .populate('userId', 'fullName username email')
+      .lean();
+
+    // If no results, quick-return empty
+    if (!list || !list.length) {
+      return res.json({ withdrawals: [] });
+    }
+
+    // Collect unique user ids from the list (could be strings or ObjectIds)
+    const userIdSet = new Set();
+    list.forEach(w => {
+      if (w.userId && (typeof w.userId === 'object' || mongoose.isValidObjectId(w.userId))) {
+        // if populated object, use its _id; if string, use string
+        const uid = (typeof w.userId === 'object') ? String(w.userId._id || w.userId.id || '') : String(w.userId);
+        if (uid) userIdSet.add(uid);
+      } else if (w.userId) {
+        userIdSet.add(String(w.userId));
+      }
+    });
+
+    const userIds = Array.from(userIdSet).filter(Boolean);
+    // if no user ids, return list as-is
+    if (!userIds.length) {
+      return res.json({ withdrawals: list });
+    }
+
+    // Aggregate verified counts/amount per user in the last 24h
+    const since = new Date(Date.now() - MS_24H);
+
+    // Use aggregate pipeline to compute per-user totals and counts (verified)
+    const agg = await Withdrawal.aggregate([
+      { $match: { userId: { $in: userIds.map(id => {
+          try { return toOid(id); } catch(e) { return String(id); }
+        }) },
+        status: 'verified',
+        verifiedAt: { $gte: since }
+      }},
+      { $group: {
+          _id: '$userId',
+          verifiedAmount24: { $sum: '$amount' },
+          verifiedCount24: { $sum: 1 }
+      }}
+    ]);
+
+    // Also compute total requests count (all statuses) in last 24h per user:
+    const aggAllCount = await Withdrawal.aggregate([
+      { $match: { userId: { $in: userIds.map(id => {
+            try { return toOid(id); } catch(e) { return String(id); }
+          }) },
+          requestedAt: { $gte: since }
+      }},
+      { $group: { _id: '$userId', requestCount24: { $sum: 1 } } }
+    ]);
+
+    // Map aggregated results by userId string
+    const statsByUser = {};
+    (agg || []).forEach(a => {
+      const key = String(a._id);
+      statsByUser[key] = statsByUser[key] || {};
+      statsByUser[key].verifiedAmount24 = Number((a.verifiedAmount24 || 0).toFixed(6));
+      statsByUser[key].verifiedCount24 = Number((a.verifiedCount24 || 0));
+    });
+    (aggAllCount || []).forEach(a => {
+      const key = String(a._id);
+      statsByUser[key] = statsByUser[key] || {};
+      statsByUser[key].requestCount24 = Number(a.requestCount24 || 0);
+    });
+
+    // Attach per-user stats to each withdrawal item (useful for admin UI)
+    const enhancedList = list.map(w => {
+      let uid = '';
+      if (w.userId && typeof w.userId === 'object') uid = String(w.userId._id || w.userId.id || '');
+      else uid = String(w.userId || '');
+      const st = statsByUser[uid] || { verifiedAmount24: 0, verifiedCount24: 0, requestCount24: 0 };
+      // attach non-enumerable? Keep simple: attach as _userStats
+      w._userStats = {
+        verifiedAmount24: st.verifiedAmount24 || 0,
+        verifiedCount24: st.verifiedCount24 || 0,
+        requestCount24: st.requestCount24 || 0
+      };
+      return w;
+    });
+
+    return res.json({ withdrawals: enhancedList });
   } catch (err) {
-    console.error('admin.withdrawals.list', err);
-    res.status(500).json({ error: 'Server error' });
+    console.error('admin.withdrawals.list', err && err.stack ? err.stack : err);
+    return res.status(500).json({ error: 'Server error' });
   }
 });
 
-// POST /api/admin/withdrawals/:id/verify  -> mark verified and deduct from user balance
-// ... inside backend/src/routes/admin.js (where verify currently is)
-
-
-
-// then the route:
 router.post('/withdrawals/:id/verify', authMiddleware, requireAdmin, async (req, res) => {
   try {
     const id = req.params.id;
+    if (!id) return res.status(400).json({ ok: false, error: 'Missing id' });
+
     const w = await Withdrawal.findById(id);
-    if (!w) return res.status(404).json({ error: 'Not found' });
-    if (w.status !== 'pending') return res.status(400).json({ error: 'Not pending' });
+    if (!w) return res.status(404).json({ ok: false, error: 'Withdrawal not found' });
 
-    const user = await User.findById(w.userId);
-    if (!user) return res.status(404).json({ error: 'User not found' });
-
-    const now = new Date();
-    const since = new Date(now.getTime() - 24 * 3600 * 1000);
-
-      w.verifiedBy = req.user && req.user._id ? req.user._id : wd.verifiedBy;
-
-    let verified24 = 0;
-    try {
-      const agg = await Withdrawal.aggregate([
-        { $match: { userId: toOid(user._id), requestedAt: { $gte: since }, status: 'verified' } },
-        { $group: { _id: null, total: { $sum: '$amount' } } }
-      ]);
-      verified24 = (agg[0] && agg[0].total) ? Number(agg[0].total) : 0;
-    } catch (aggErr) {
-      console.warn('verify: aggregation failed', aggErr && aggErr.stack ? aggErr.stack : aggErr);
-      verified24 = 0;
+    if (String(w.status || '').toLowerCase() !== 'pending') {
+      return res.status(400).json({ ok: false, error: 'Only pending withdrawals may be verified' });
     }
+
+    // load user
+    const user = await User.findById(w.userId);
+    if (!user) return res.status(404).json({ ok: false, error: 'User not found' });
+
+    // compute verified total in last 24h excluding this withdrawal (if the same doc were verified earlier)
+    const since = new Date(Date.now() - MS_24H);
+
+    // aggregate all verified amounts for this user within last 24h excluding current id
+    const match = {
+      userId: toOid(user._id),
+      status: 'verified',
+      verifiedAt: { $gte: since }
+    };
+
+    const agg = await Withdrawal.aggregate([
+      { $match: match },
+      { $group: { _id: null, total: { $sum: '$amount' }, count: { $sum: 1 } } }
+    ]);
+
+    const verified24 = (agg && agg.length && agg[0].total) ? Number(agg[0].total) : 0;
+    const verifiedCount24 = (agg && agg.length && agg[0].count) ? Number(agg[0].count) : 0;
 
     const remaining = Math.max(0, WITHDRAWAL_24H_CAP - verified24);
 
+    // if verifying this will exceed cap, return error with helpful metadata
     if (Number(w.amount) > remaining) {
-      const oldest = await Withdrawal.findOne({ userId: user._id, requestedAt: { $gte: since }, status: 'verified' }).sort({ requestedAt: 1 }).lean();
+      // find earliest verified entry (to compute nextAllowedAt) - if none use earliest pending as fallback
+      const oldestVerified = await Withdrawal.findOne({ userId: user._id, status: 'verified', verifiedAt: { $gte: since } }).sort({ verifiedAt: 1 }).lean();
       let nextAllowedAt = null;
-      if (oldest && verified24 >= WITHDRAWAL_24H_CAP) nextAllowedAt = new Date(new Date(oldest.requestedAt).getTime() + 24 * 3600 * 1000).toISOString();
+      if (oldestVerified && oldestVerified.verifiedAt && verified24 >= WITHDRAWAL_24H_CAP) {
+        nextAllowedAt = new Date(new Date(oldestVerified.verifiedAt).getTime() + MS_24H).toISOString();
+      }
 
       return res.status(400).json({
+        ok: false,
         error: 'Verifying this withdrawal would exceed the 24h verified cap.',
         remaining: Number(remaining.toFixed(3)),
         cap: WITHDRAWAL_24H_CAP,
-        nextAllowedAt
+        nextAllowedAt,
+        verified24: Number(verified24.toFixed(3)),
+        verifiedCount24
       });
     }
 
+    // Deduct from user balance (safe numeric handling)
     const balance = Number(user.balanceDollar || 0);
     const deduct = Math.min(balance, Number(w.amount || 0));
     user.balanceDollar = Number((balance - deduct).toFixed(6));
 
+    // mark withdrawal verified
     w.status = 'verified';
     w.verifiedAt = new Date();
     try {
@@ -406,18 +592,89 @@ router.post('/withdrawals/:id/verify', authMiddleware, requireAdmin, async (req,
     } catch (e) {
       w.verifiedBy = req.user._id;
     }
-    await user.save();
-    await w.save();
 
+    // Save both user and withdrawal in parallel
+    await Promise.all([ user.save(), w.save() ]);
+
+    // emit socket to notify clients of verification
     const io = req.app.get('io');
     if (io) io.emit('withdrawals:verified', { withdrawal: w });
 
     return res.json({ ok: true, withdrawal: w, userBalance: user.balanceDollar });
   } catch (err) {
     console.error('admin.withdrawals.verify', err && err.stack ? err.stack : err);
-    return res.status(500).json({ error: 'Server error', message: err.message || String(err) });
+    return res.status(500).json({ ok: false, error: 'Server error', message: err.message || String(err) });
   }
 });
+
+// then the route:
+// router.post('/withdrawals/:id/verify', authMiddleware, requireAdmin, async (req, res) => {
+//   try {
+//     const id = req.params.id;
+//     const w = await Withdrawal.findById(id);
+//     if (!w) return res.status(404).json({ error: 'Not found' });
+//     if (w.status !== 'pending') return res.status(400).json({ error: 'Not pending' });
+
+//     const user = await User.findById(w.userId);
+//     if (!user) return res.status(404).json({ error: 'User not found' });
+
+//     const now = new Date();
+//     const since = new Date(now.getTime() - 24 * 3600 * 1000);
+
+//       w.verifiedBy = req.user && req.user._id ? req.user._id : wd.verifiedBy;
+
+//     let verified24 = 0;
+//     try {
+//       const agg = await Withdrawal.aggregate([
+//         { $match: { userId: toOid(user._id), requestedAt: { $gte: since }, status: 'verified' } },
+//         { $group: { _id: null, total: { $sum: '$amount' } } }
+//       ]);
+//       verified24 = (agg[0] && agg[0].total) ? Number(agg[0].total) : 0;
+//     } catch (aggErr) {
+//       console.warn('verify: aggregation failed', aggErr && aggErr.stack ? aggErr.stack : aggErr);
+//       verified24 = 0;
+//     }
+
+//     const remaining = Math.max(0, WITHDRAWAL_24H_CAP - verified24);
+
+//     if (Number(w.amount) > remaining) {
+//       const oldest = await Withdrawal.findOne({ userId: user._id, requestedAt: { $gte: since }, status: 'verified' }).sort({ requestedAt: 1 }).lean();
+//       let nextAllowedAt = null;
+//       if (oldest && verified24 >= WITHDRAWAL_24H_CAP) nextAllowedAt = new Date(new Date(oldest.requestedAt).getTime() + 24 * 3600 * 1000).toISOString();
+
+//       return res.status(400).json({
+//         error: 'Verifying this withdrawal would exceed the 24h verified cap.',
+//         remaining: Number(remaining.toFixed(3)),
+//         cap: WITHDRAWAL_24H_CAP,
+//         nextAllowedAt
+//       });
+//     }
+
+//     const balance = Number(user.balanceDollar || 0);
+//     const deduct = Math.min(balance, Number(w.amount || 0));
+//     user.balanceDollar = Number((balance - deduct).toFixed(6));
+
+//     w.status = 'verified';
+//     w.verifiedAt = new Date();
+//     // before saving, ensure verifiedBy is set properly
+//     try {
+//       w.verifiedBy = new mongoose.Types.ObjectId(req.user._id);
+//     } catch (e) {
+//       w.verifiedBy = req.user._id;
+//     }
+
+//     await user.save();
+//     await w.save();
+
+//     const io = req.app.get('io');
+//     if (io) io.emit('withdrawals:verified', { withdrawal: w });
+
+//     return res.json({ ok: true, withdrawal: w, userBalance: user.balanceDollar });
+//   } catch (err) {
+//     console.error('admin.withdrawals.verify', err && err.stack ? err.stack : err);
+//     return res.status(500).json({ error: 'Server error', message: err.message || String(err) });
+//   }
+// });
 
 
 

@@ -1,0 +1,879 @@
+for the result was so good when i finish :
+Basic Computer Test
+User: Aliyo Zakariye Salah
+Total
+24
+Correct
+5
+Incorrect
+1
+Unanswered
+18
+Local points delta:
+14
+Your streak: x0
+Highest streak: 18 by Shafie Abdi Hassan
+Server per-test results
+Lesson questions (auto)
+scoreDelta: 0 (totalAfter: 10006)
+Lesson questions (auto)
+scoreDelta: 0 (totalAfter: 10006)
+test
+scoreDelta: 0 (totalAfter: 10006)
+Lesson questions (auto)
+scoreDelta: 0 (totalAfter: 10006)
+Basic Computer Test
+scoreDelta: 11 (totalAfter: 10017)
+Math Basics
+scoreDelta: 0 (totalAfter: 10017)
+Math Basics
+scoreDelta: 3 (totalAfter: 10020)
+Math Basics
+scoreDelta: 0 (totalAfter: 10020)
+Math Basics
+scoreDelta: 0 (totalAfter: 10020)
+Demo Test
+scoreDelta: 0 (totalAfter: 10020)
+
+but i want to add for several things and i want to fix for several things
+1: please add for the current Competition active titel please
+2: please for the streak user got current like he got now for 5 streak and then Answered for incorrect so the streak will be x0  that was so good but i want if the user finish i want to appear for his heighest streak he got not the last streak he got example he got for x10 streak and then incorect and then again got for x5 so appear x10 please
+3: when i click for the finish it takes so many times please make smoother and cleaner please for fast when i clcik finish please
+
+note please don't change the logics or the styles it already perfect only add for these and fix for these 
+
+  
+/* ============================
+   STREAK STORAGE + UI HELPERS (fixed)
+   ============================ */
+
+// key helper (unchanged)
+function testStreakKey(testId){ return 'testBestStreak:' + String(testId); }
+
+// load best streak record (tries server if logged-in; otherwise localStorage)
+async function loadBestStreak(testId){
+  try {
+    if (!testId) return { streak: 0, name: null };
+
+    // local-only key handling
+    if (String(testId).startsWith('yourBest:')) {
+      const rawLocal = localStorage.getItem(testId);
+      if (!rawLocal) return { streak: 0, name: null };
+      try {
+        const parsed = JSON.parse(rawLocal);
+        return { streak: Number(parsed.streak || 0), name: parsed.name || null };
+      } catch(e) {
+        return { streak: 0, name: null };
+      }
+    }
+
+    // Try server when logged in (optionalAuthenticate on server allows guests)
+    if (typeof getToken === 'function' && getToken()) {
+      try {
+        const r = await fetchJson(`/api/tests/${encodeURIComponent(testId)}/streak`, { method:'GET', headers: authHeaders() });
+        if (r && r.ok && r.data) {
+          // server returns { ok:true, serverBest, personalBest }
+          const serverBest = r.data.serverBest || (r.data.serverBest === 0 ? r.data.serverBest : null);
+          const personalBest = r.data.personalBest || null;
+          if (serverBest) {
+            try {
+              localStorage.setItem(testStreakKey(testId), JSON.stringify({ streak: serverBest.streak || 0, name: serverBest.name || null, updatedAt: serverBest.updatedAt || null }));
+            } catch(e){}
+          }
+          if (personalBest) {
+            try { localStorage.setItem('yourBest:' + testId, JSON.stringify({ streak: personalBest.streak || 0, updatedAt: personalBest.updatedAt || null })); } catch(e){}
+          }
+          if (serverBest) return { streak: Number(serverBest.streak || 0), name: serverBest.name || null };
+        }
+      } catch (e) {
+        console.warn('streak GET failed', e);
+      }
+    }
+
+    // fallback to localStorage
+    const raw = localStorage.getItem(testStreakKey(testId));
+    if (!raw) return { streak: 0, name: null };
+    const parsed = JSON.parse(raw);
+    return { streak: Number(parsed.streak||0), name: parsed.name || null };
+  } catch (e) {
+    console.warn('loadBestStreak error', e);
+    return { streak: 0, name: null };
+  }
+}
+
+// save best streak record (will attempt server update if logged-in; always update localStorage)
+async function saveBestStreak(testId, streak, name){
+  try {
+    const record = { streak: Number(streak||0), name: name || null, updatedAt: new Date().toISOString() };
+    // update local copy (fast)
+    try { localStorage.setItem(testStreakKey(testId), JSON.stringify(record)); } catch(e){}
+
+    // if logged in, send to server (await result to get server's authoritative returned object)
+    if (typeof getToken === 'function' && getToken()) {
+      try {
+        const resp = await fetchJson(`/api/tests/${encodeURIComponent(testId)}/streak`, { method:'POST', headers: authHeaders(), body: JSON.stringify({ streak }) });
+        if (resp && resp.ok && resp.data) {
+          // server returns updatedTest and/or personalBest inside resp.data
+          if (resp.data.updatedTest) {
+            const upd = resp.data.updatedTest;
+            const serverRec = { streak: Number(upd.streak||0), name: upd.name || name || null, updatedAt: upd.updatedAt || new Date().toISOString() };
+            try { localStorage.setItem(testStreakKey(testId), JSON.stringify(serverRec)); } catch(e){}
+            return serverRec;
+          }
+          if (resp.data.personalBest) {
+            try { localStorage.setItem('yourBest:' + testId, JSON.stringify({ streak: Number(resp.data.personalBest.streak||0), updatedAt: resp.data.personalBest.updatedAt || new Date().toISOString() })); } catch(e){}
+            return record;
+          }
+          return record;
+        } else {
+          console.warn('streak POST not ok', resp && resp.error);
+          return record;
+        }
+      } catch (e) {
+        console.warn('streak POST failed', e);
+        return record;
+      }
+    } else {
+      // not logged in — keep local record only
+      return record;
+    }
+  } catch (e) {
+    console.warn('saveBestStreak error', e);
+    return { streak: Number(streak||0), name: name || null };
+  }
+}
+
+/* ------------------- Modal helpers (robust) ------------------- */
+
+// Attempt to close modal using known functions, otherwise remove typical overlays
+function safeCloseModal() {
+  try {
+    if (typeof closeModal === 'function') { closeModal(); return; }
+    // try common overlay classes
+    const selectors = ['.admin-modal-overlay', '.modal-overlay', '.modal', '.overlay'];
+    for (const s of selectors) {
+      const el = document.querySelector(s);
+      if (el) { el.remove(); /* stop at first found */ return; }
+    }
+    // fallback: remove any element with role dialog
+    const dlg = document.querySelector('[role="dialog"]');
+    if (dlg && dlg.parentNode) dlg.parentNode.removeChild(dlg);
+  } catch(e){
+    console.warn('safeCloseModal failed', e);
+  }
+}
+
+// show modal compat: prefer renderIntoModal() / showModal(), but return a reference if we created one
+function safeShowModal(html) {
+  try {
+    if (typeof renderIntoModal === 'function') { renderIntoModal(html); return { created:false }; }
+    if (typeof showModal === 'function') { showModal(html); return { created:false }; }
+  } catch(e){}
+  // fallback: create a simple overlay modal we can always close
+  const overlay = document.createElement('div');
+  overlay.className = 'admin-modal-overlay';
+  Object.assign(overlay.style, { position:'fixed', inset:0, display:'flex', alignItems:'center', justifyContent:'center', background:'rgba(0,0,0,0.35)', zIndex:9999 });
+  const box = document.createElement('div');
+  Object.assign(box.style, { width:'760px', maxWidth:'94vw', background:'#fff', borderRadius:'10px', padding:'14px', boxShadow:'0 24px 60px rgba(2,6,23,0.14)' });
+  box.innerHTML = html;
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', (e)=> { if (e.target === overlay) overlay.remove(); });
+  return { created:true, overlay, box };
+}
+
+
+
+// choose streak color based on value (returns inline-style CSS string for color and optional glow)
+function streakColorStyle(n){
+  n = Number(n||0);
+  if (n <= 0) return 'background:#f1f1f1;color:#444;border:1px solid #ddd';
+  if (n === 1) return 'background:#2ecc71;color:#fff;border:1px solid #2ecc71'; // bright green
+  if (n === 2) return 'background:#7fe3a6;color:#023;color:#fff;border:1px solid #7fe3a6'; // light green (slightly different)
+  if (n >=3 && n <=8) return 'background:#ffd37d;color:#3b2e00;border:1px solid #ffc857'; // amber
+  if (n >=9 && n < 20) return 'background:#ff6b6b;color:#fff;border:1px solid #ff4b4b'; // red-ish
+  // n >= 20 => strong glow red
+  return 'background:linear-gradient(90deg,#ff3b3b,#ff6b6b);color:#fff;border:1px solid #ff1a1a;box-shadow:0 6px 18px rgba(255,26,26,0.28)';
+}
+
+// helper to render streak badge HTML
+function streakBadgeHtml(prefix, n){
+  const style = streakColorStyle(n);
+  return `<span class="streak-badge" style="display:inline-block;padding:6px 10px;border-radius:20px;font-weight:700;margin-left:8px;${style}">${escapeHtml('x' + n)}</span>`;
+}
+
+/* ============================
+   MODERN SYNTH SOUNDS (WebAudio)
+   - pleasant ascending melody for correct
+   - muted descending buzz for incorrect
+   - soft ping for warning
+   ============================ */
+
+function playModernSound(kind){
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const now = ctx.currentTime;
+
+    if (kind === 'correct') {
+      // two short ascending notes
+      const freqs = [880, 1100];
+      freqs.forEach((f, i) => {
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.type = 'triangle';
+        o.frequency.setValueAtTime(f, now + i*0.09);
+        g.gain.setValueAtTime(0, now + i*0.09);
+        g.gain.linearRampToValueAtTime(0.12, now + i*0.09 + 0.01);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + i*0.09 + 0.26);
+        o.connect(g); g.connect(ctx.destination);
+        o.start(now + i*0.09); o.stop(now + i*0.09 + 0.28);
+      });
+      return;
+    }
+
+    if (kind === 'incorrect') {
+      // two descending muted notes (soft)
+      const freqs = [240, 200];
+      freqs.forEach((f, i) => {
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.type = 'sine';
+        o.frequency.setValueAtTime(f, now + i*0.08);
+        g.gain.setValueAtTime(0, now + i*0.08);
+        g.gain.linearRampToValueAtTime(0.09, now + i*0.08 + 0.01);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + i*0.08 + 0.22);
+        o.connect(g); g.connect(ctx.destination);
+        o.start(now + i*0.08); o.stop(now + i*0.08 + 0.22);
+      });
+      return;
+    }
+
+    if (kind === 'warning') {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = 'sine'; o.frequency.value = 660;
+      g.gain.value = 0.06;
+      o.connect(g); g.connect(ctx.destination);
+      o.start(now); o.stop(now + 0.12);
+      return;
+    }
+  } catch(e){
+    // fallback silent
+    console.warn('sound failed', e);
+  }
+}
+
+
+  /* ---------------------------
+   Helper: safeText(t) - normalize explanation/question text
+   --------------------------- */
+   function safeText(t) {
+  // If t is object like { en:'', som:'' } prefer en, else stringify safely
+  if (!t && t !== '') return '';
+  if (typeof t === 'string') return t;
+  if (typeof t === 'object') {
+    if (t.en && typeof t.en === 'string') return t.en;
+    if (t.som && typeof t.som === 'string') return t.som;
+    // fallback: try toString
+    try { return String(t); } catch(e) { return ''; }
+  }
+  return String(t);
+}
+
+
+
+/* ===================== TEST TAKING (unchanged except keyboard/progress) ===================== */
+/* ... keep showPaginatedRunner, showTestRunner, aggregate runner from previous file ... */
+/* For brevity I reference your existing runner code here — it's already present above in previous version and unchanged except that Take Test buttons were removed from folder cards. */
+/* (If you want I can paste the full runner code again — but current file already contains the runner functions from earlier which we kept.) */
+
+/* ===================== TEST TAKING (folder aggregation + paginated runner w/progress + keyboard) ===================== */
+/* ===================== FRONTEND PATCH ===================== */
+/* Replace collectLessonIdsFromFolderNode and gatherTestsForFolder with these versions */
+
+/**
+ * collectFolderIdsRecursive(node)
+ * Returns array of folder._id strings for node and all descendants.
+ */
+
+ function collectFolderIdsRecursive(node){
+  const ids = [];
+  if (!node) return ids;
+  ids.push(String(node._id));
+  if (Array.isArray(node.children)) {
+    node.children.forEach(c => ids.push(...collectFolderIdsRecursive(c)));
+  }
+  return ids;
+}
+
+/**
+ * collectLessonIdsFromFolderNode recursively collects lesson ids for a node and all descendants.
+ */
+function collectLessonIdsFromFolderNode(node){
+  const ids = [];
+  if (!node) return ids;
+  if (Array.isArray(node.lessons)) {
+    node.lessons.forEach(l => ids.push(String(l._id)));
+  }
+  if (Array.isArray(node.children)) {
+    node.children.forEach(c => {
+      ids.push(...collectLessonIdsFromFolderNode(c));
+    });
+  }
+  return ids;
+}
+
+/**
+ * gatherTestsForFolder(folderId)
+ * - Fetches tests for every folder id in subtree AND for every lesson id in subtree.
+ * - Deduplicates by test._id / id.
+ */
+
+ 
+
+ async function gatherTestsForFolder(folderId){
+  const tests = [];
+  const seen = new Set();
+  if (!folderId) return tests;
+
+  // Find folder node in treeCache
+  const rootNode = findNodeById(folderId, treeCache);
+  if (!rootNode) {
+    // fallback: try server-level query for folder
+    const rFolderOnly = await fetchJson(`/api/tests?folderId=${encodeURIComponent(folderId)}`, { headers: authHeaders(), method: 'GET' });
+    if (rFolderOnly.ok) {
+      const arr = Array.isArray(rFolderOnly.data) ? rFolderOnly.data : (rFolderOnly.data && rFolderOnly.data.tests) ? rFolderOnly.data.tests : [];
+      arr.forEach(t => { if (t && (t._id || t.id) && !seen.has(String(t._id||t.id))) { seen.add(String(t._id||t.id)); tests.push(t); } });
+    }
+    return tests;
+  }
+
+  // Collect all folder ids in subtree
+  const folderIds = collectFolderIdsRecursive(rootNode);
+
+  // For each folder id, fetch tests attached to that folder
+  for (const fid of folderIds) {
+    const r = await fetchJson(`/api/tests?folderId=${encodeURIComponent(fid)}`, { headers: authHeaders(), method:'GET' });
+    if (!r.ok) continue;
+    const arr = Array.isArray(r.data) ? r.data : (r.data && r.data.tests) ? r.data.tests : (r.data ? (Array.isArray(r.data)?r.data:[]) : []);
+    arr.forEach(t => { if (t && (t._id || t.id) && !seen.has(String(t._id||t.id))) { seen.add(String(t._id||t.id)); tests.push(t); } });
+  }
+
+
+
+ // Collect all lesson ids in subtree and fetch tests for each lesson
+  const lessonIds = collectLessonIdsFromFolderNode(rootNode);
+  for (const lid of lessonIds) {
+    const r = await fetchJson(`/api/tests?lessonId=${encodeURIComponent(lid)}`, { headers: authHeaders(), method:'GET' });
+    if (!r.ok) continue;
+    const arr = Array.isArray(r.data) ? r.data : (r.data && r.data.tests) ? r.data.tests : (r.data ? (Array.isArray(r.data)?r.data:[]) : []);
+    arr.forEach(t => { if (t && (t._id || t.id) && !seen.has(String(t._id||t.id))) { seen.add(String(t._id||t.id)); tests.push(t); } });
+  }
+
+  return tests;
+}
+
+async function openTakeTest(folderId=null, lessonId=null){
+  let tests = [];
+  if (lessonId) {
+    const r = await fetchJson(`/api/tests?lessonId=${encodeURIComponent(lessonId)}`, { headers: authHeaders(), method:'GET' });
+    if (r && r.ok) tests = Array.isArray(r.data) ? r.data : (r.data.tests || r.data || []);
+  }
+  if ((!tests||tests.length===0) && folderId) tests = await gatherTestsForFolder(folderId);
+  if (!tests || tests.length===0) return alert('No tests found for this folder/lesson.');
+
+  // If multiple tests and no explicit folder, let user pick
+  if (tests.length > 1 && !folderId) {
+    const html = `<h3>Select Test</h3>
+      <div style="max-height:50vh;overflow:auto">
+        ${tests.map(t=>`<div style="padding:8px;border-bottom:1px solid #eee">
+          <strong>${escapeHtml(t.title||'Untitled')}</strong>
+          <div style="margin-top:6px">
+            <button class="small-btn pick-test" data-id="${escapeHtml(t._id||t.id)}">Take</button>
+            ${isAdmin() ? `<button class="small-btn edit-test" data-id="${escapeHtml(t._id||t.id)}">Edit</button>` : ''}
+          </div>
+        </div>`).join('')}
+      </div>
+      <div style="margin-top:10px"><button id="closePick" class="btn-ghost">Close</button></div>`;
+
+    const modalRef = safeShowModal(html);
+    // attach handlers - robust close
+    const closeBtn = document.getElementById('closePick') || (modalRef.box && modalRef.box.querySelector('#closePick'));
+    if (closeBtn) closeBtn.onclick = () => safeCloseModal();
+
+    // pick buttons
+    const pickEls = document.querySelectorAll('.pick-test');
+    pickEls.forEach(btn => {
+      btn.onclick = async (e) => {
+        e.preventDefault();
+        const id = btn.dataset.id;
+        safeCloseModal();
+        await showTestRunner(id);
+      };
+    });
+
+    const editEls = document.querySelectorAll('.edit-test');
+    editEls.forEach(btn => {
+      btn.onclick = async (e) => {
+        e.preventDefault();
+        const id = btn.dataset.id;
+        safeCloseModal();
+        if (typeof openEditTestModal === 'function') openEditTestModal(id);
+        else alert('Edit modal not implemented');
+      };
+    });
+    return;
+  }
+
+  if (folderId && tests.length > 1) { await showAggregatedTestRunner(tests); return; }
+  const testId = tests[0]._id || tests[0].id;
+  await showTestRunner(testId);
+}
+
+async function showTestRunner(testId){
+  const r = await fetchJson('/api/tests/'+encodeURIComponent(testId), { headers: authHeaders(), method:'GET' });
+  if (!r || !r.ok) return alert('Failed to load test: '+(r && r.error ? r.error : 'Server error'));
+  const test = (r.data && (r.data.test || r.data)) || null;
+  if (!test) return alert('Test data malformed');
+  const qs = (test.questions||[]).map((q,idx)=>({
+    ...q,
+    __testId: test._id || test.id,
+    __origIndex: idx,
+    textStr: (q.text && (q.text.en||q.text)) || (typeof q.text==='string' ? q.text : '')
+  }));
+  await showPaginatedRunner([{ testId: test._id||test.id, title: test.title||'', questions: qs }], false);
+}
+
+async function showAggregatedTestRunner(testsArray){
+  const normalized = [];
+  const concurrency = 6;
+  async function fetchOne(t){
+    try {
+      const tId = t._id || t.id;
+      if (!tId) return null;
+      const r = await fetchJson('/api/tests/' + encodeURIComponent(tId), { headers: authHeaders(), method:'GET' });
+      if (!r || !r.ok) return null;
+      const test = (r.data && (r.data.test || r.data)) || null;
+      if (!test) return null;
+      const qs = (test.questions||[]).map((q, idx) => ({
+        ...q,
+        __testId: tId,
+        __origIndex: idx,
+        textStr: safeText((q.text && (q.text.en || q.text)) || q.text || '')
+      }));
+      return { testId: tId, title: test.title || '', questions: qs };
+    } catch(e){
+      return null;
+    }
+  }
+
+  for (let i=0; i<testsArray.length; i+=concurrency) {
+    const chunk = testsArray.slice(i, i+concurrency);
+    const res = await Promise.all(chunk.map(fetchOne));
+    res.filter(Boolean).forEach(x => normalized.push(x));
+  }
+
+  // dedupe by testId
+  const seen = new Set();
+  const unique = [];
+  normalized.forEach(n => {
+    if (!n || !n.testId) return;
+    if (!seen.has(String(n.testId))) { seen.add(String(n.testId)); unique.push(n); }
+  });
+
+  if (!unique.length) return alert('No valid tests to run.');
+  await showPaginatedRunner(unique, true);
+}
+
+async function showPaginatedRunner(testsNormalized, aggregatedFlag){
+  // Build blocks and question order
+  const blocks = testsNormalized.map(t => ({ testId: t.testId, title: t.title, questions: t.questions }));
+  let flat = [];
+  blocks.forEach(b => b.questions.forEach(q => flat.push({ ...q, __testId: b.testId, __origIndex: q.__origIndex })));
+
+  // Shuffle questions (Fisher-Yates)
+  for (let i = flat.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [flat[i], flat[j]] = [flat[j], flat[i]];
+  }
+  const questionOrder = flat;
+
+  // Answer storage
+  const answersMap = {};
+  const attemptMap = {};
+  blocks.forEach(b => { answersMap[b.testId] = Array(b.questions.length).fill(null); });
+
+  let currentIndex = 0;
+  let timer = null;
+  const QUESTION_SECONDS_DEFAULT = QUESTION_SECONDS || 30;
+  let timeLeft = QUESTION_SECONDS_DEFAULT;
+  let alreadySubmitted = false;
+
+  const POINTS_FOR_CORRECT = 3;
+  const POINTS_FOR_INCORRECT = -1;
+
+  // streak state
+  let currentStreak = 0;
+  const testIdForThisRun = (blocks.length && blocks[0].testId) ? blocks[0].testId : (questionOrder[0] && questionOrder[0].__testId);
+  // load authoritative global best initially
+  let bestGlobal = { streak: 0, name: null };
+  try { bestGlobal = await loadBestStreak(testIdForThisRun); } catch(e){ console.warn('loadBestStreak init failed', e); }
+
+  let warningPlayed = false;
+
+  // toast
+  function showToastMessage(msg, tone='neutral'){
+    const el = document.createElement('div');
+    el.className = 'toast-msg';
+    Object.assign(el.style, { position:'fixed', right:'12px', top:'12px', zIndex:11000, padding:'8px 12px', borderRadius:'8px', boxShadow:'0 6px 18px rgba(0,0,0,0.06)' });
+    el.style.background = tone==='good' ? '#e6ffed' : (tone==='bad' ? '#ffe6e6' : '#fff7cc');
+    el.innerText = msg;
+    document.body.appendChild(el);
+    setTimeout(()=> el.remove(), 2400);
+  }
+
+  // update streak display: async because we may call server
+  async function updateStreakDisplay(containerEl){
+    if (!containerEl) containerEl = document.getElementById('streakBlock');
+    if (!containerEl) return;
+
+    const testIdNow = (questionOrder[currentIndex] && questionOrder[currentIndex].__testId) || testIdForThisRun;
+    let bestRec = { streak: 0, name: null };
+    try { bestRec = await loadBestStreak(testIdNow); } catch(e){ console.warn('loadBestStreak failed', e); }
+    const name = bestRec.name || '—';
+    const best = bestRec.streak || 0;
+
+    // personal best
+    let yourBest = 0;
+    try {
+      const raw = localStorage.getItem('yourBest:' + testIdNow);
+      if (raw) yourBest = Number(JSON.parse(raw).streak || 0);
+      else yourBest = Number(localStorage.getItem('yourBestGlobal') || 0);
+    } catch(e) { yourBest = Number(localStorage.getItem('yourBestGlobal') || 0); }
+
+    const cur = currentStreak || 0;
+    containerEl.innerHTML = `
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+        <div style="font-size:13px;color:#666">Highest streak: <strong style="font-size:14px">${escapeHtml(String(best))}</strong> <span style="color:#444">by</span> <strong style="font-size:13px">${escapeHtml(name || '')}</strong></div>
+        <div style="font-size:13px;color:#666">Your highest: <strong style="font-size:14px">${escapeHtml(String(yourBest))}</strong></div>
+        <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
+          <div style="font-size:13px;color:#666">Current streak:</div>
+          ${streakBadgeHtml('cur', cur)}
+        </div>
+      </div>
+    `;
+  }
+
+  function showFeedbackForOption(optionObj, qObj){
+    document.querySelectorAll('.test-option .opt-feedback').forEach(e=> { e.innerHTML = ''; e.style.color = ''; });
+    document.querySelectorAll('.test-option').forEach(div => {
+      const optId = div.dataset.optid;
+      const fb = div.querySelector('.opt-feedback');
+      if (!fb) return;
+      if (String(optId) === String(optionObj.id || optionObj._id)) {
+        if (optionObj.isCorrect) { fb.innerHTML = ' ✓ Correct'; fb.style.color = 'green'; }
+        else { fb.innerHTML = ' ✖ Incorrect'; fb.style.color = 'red'; }
+      }
+    });
+
+    const explainArea = document.getElementById('explainArea');
+    if (!explainArea) return;
+    if (optionObj.isCorrect) {
+      const explText = safeText((qObj.explanation && (qObj.explanation.en || qObj.explanation)) || '');
+      if (explText && explText.trim()) explainArea.innerHTML = `<div style="padding:8px;border-radius:6px;border:1px solid #eee;background:#eaffea"><strong>Explanation:</strong><div style="white-space:pre-wrap;margin-top:6px">${escapeHtml(explText)}</div></div>`;
+      else explainArea.innerHTML = `<div style="padding:8px;border-radius:6px;border:1px solid #eee;background:#eaffea"><strong>Correct.</strong></div>`;
+    } else {
+      const correctOpt = (qObj.options||[]).find(o => o.isCorrect);
+      if (correctOpt) explainArea.innerHTML = `<div style="padding:8px;border-radius:6px;border:1px solid #eee;background:#fff7f7"><strong>Correct answer:</strong> ${escapeHtml(safeText((correctOpt.text && (correctOpt.text.en || correctOpt.text)) || ''))}</div>`;
+      else explainArea.innerHTML = `<div style="padding:8px;border-radius:6px;border:1px solid #eee;background:#fff7f7"><strong>Incorrect.</strong></div>`;
+    }
+  }
+
+  // record answer and update streaks
+  async function saveCurrentAnswerOnce(selectedOptionId, fromTimeout=false, qObj){
+    if (!qObj) qObj = questionOrder[currentIndex];
+    const tId = qObj.__testId;
+    const qIndexLocal = qObj.__origIndex;
+    const existing = answersMap[tId][qIndexLocal];
+    if (existing && existing.selectedOptionId) {
+      showToastMessage('Answer already recorded. Use Next to continue.', 'neutral');
+      const chosen = (qObj.options||[]).find(o => String(o.id||o._id) === String(selectedOptionId));
+      if (chosen) showFeedbackForOption(chosen, qObj);
+      return;
+    }
+
+    const answeredAt = (new Date()).toISOString();
+    if (timer) { clearInterval(timer); timer = null; }
+    const answerObj = { questionId: qObj.id || qObj._id || String(Math.random()), selectedOptionId: selectedOptionId||null, questionIndex: qIndexLocal, answeredAt, fromTimeout: !!fromTimeout };
+    answersMap[tId][qIndexLocal] = answerObj;
+
+    const chosenOpt = (qObj.options || []).find(o => String(o.id || o._id) === String(selectedOptionId));
+    const isCorrect = !!(chosenOpt && chosenOpt.isCorrect);
+
+    if (selectedOptionId) {
+      if (isCorrect) {
+        currentStreak++;
+        playModernSound('correct');
+
+        // If new global best reached — persist to server (await so other devices see it)
+        if (currentStreak > (bestGlobal && bestGlobal.streak ? Number(bestGlobal.streak) : 0)) {
+          const gu = (typeof getUser === 'function') ? getUser() : null;
+          const name = gu && gu.fullName ? gu.fullName : (gu && gu.username ? gu.username : 'Unknown');
+          try {
+            // await server update if logged in, otherwise local only
+            const saved = await saveBestStreak(qObj.__testId || tId, currentStreak, name);
+            // reload authoritative server value (bestGlobal) if possible
+            try { bestGlobal = await loadBestStreak(qObj.__testId || tId); } catch(e){}
+          } catch(e){ console.warn('saveBestStreak failed', e); }
+          try { localStorage.setItem('yourBest:' + (qObj.__testId || tId), JSON.stringify({ streak: currentStreak, updatedAt: new Date().toISOString() })); } catch(e){}
+          showToastMessage(`New best streak! x${currentStreak}`, 'good');
+        } else {
+          showToastMessage(`Nice! Streak x${currentStreak}`, 'good');
+        }
+      } else {
+        playModernSound('incorrect');
+        if (currentStreak > 0) showToastMessage(`Streak broken (x${currentStreak}) — keep trying!`, 'bad');
+        currentStreak = 0;
+      }
+    }
+
+    // show feedback & disable options
+    if (chosenOpt) showFeedbackForOption(chosenOpt, qObj);
+    else {
+      const corr = (qObj.options||[]).find(o => o.isCorrect);
+      if (corr) showFeedbackForOption(corr, qObj);
+    }
+    document.querySelectorAll('.options input[name="qopt"]').forEach(el => el.disabled = true);
+
+    // refresh streak UI
+    const streakContainer = document.getElementById('streakBlock');
+    if (streakContainer) await updateStreakDisplay(streakContainer);
+  }
+
+  // render one question UI into modal
+  function renderQuestionUI(){
+    if (currentIndex < 0) currentIndex = 0;
+    if (currentIndex >= questionOrder.length) currentIndex = questionOrder.length - 1;
+    const q = questionOrder[currentIndex];
+    const testBlock = blocks.find(b => b.testId === q.__testId) || {};
+    const qTitle = q.textStr || safeText((q.text && (q.text.en || q.text)) || q.text || '');
+    const total = questionOrder.length;
+    const progressPercent = Math.round(((currentIndex+1)/total)*100);
+
+    const optsHtml = (q.options||[]).map((o,oi)=> {
+      const optId = `opt_${currentIndex}_${oi}`;
+      return `<div class="test-option" data-optid="${escapeHtml(o.id||o._id||oi)}" data-idx="${oi}">
+        <label for="${optId}">
+          <input type="radio" id="${optId}" name="qopt" value="${escapeHtml(o.id||o._id||oi)}">
+          <span class="opt-text">${escapeHtml(safeText((o.text && (o.text.en || o.text)) || o.text || ''))}</span>
+        </label>
+        <span class="opt-feedback" id="fb_${optId}" aria-hidden="true"></span>
+      </div>`;
+    }).join('');
+
+    const html = `
+      <div class="runner-header" style="display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <h3 style="margin:0">${escapeHtml(testBlock.title || 'Test')}</h3>
+          <div style="font-size:13px;color:#666">Question ${currentIndex+1} of ${total}</div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:center">
+          <div style="display:flex;gap:8px;align-items:center">
+            <div style="font-size:13px;color:#666">Time left:</div><div id="timerDisplay" class="timer" style="font-weight:700">${timeLeft}s</div>
+            <div style="width:160px;margin-left:12px"><div class="progress-wrap" role="progressbar" style="background:#f3f3f3;border-radius:6px;height:8px;overflow:hidden"><div id="progressBar" style="height:100%;width:${progressPercent}%;background:linear-gradient(90deg,#4ade80,#06b6d4)"></div></div></div>
+          </div>
+          <div id="streakBlock" style="margin-left:auto"></div>
+        </div>
+      </div>
+
+      <div id="questionWrap" style="margin-top:10px">
+        <div class="test-question">
+          <h4 style="white-space:pre-wrap">${escapeHtml(qTitle)}</h4>
+          <div class="options">${optsHtml}</div>
+          <div id="explainArea" style="margin-top:10px"></div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button id="prevQ" class="small-btn" ${currentIndex===0? 'disabled':''}>Prev</button>
+        <button id="nextQ" class="small-btn" ${currentIndex===questionOrder.length-1? 'disabled':''}>Next</button>
+        <button id="finishQ" class="btn-ghost">Finish</button>
+        <button id="cancelQ" class="btn-ghost" style="margin-left:8px">Cancel</button>
+      </div>
+      <div style="margin-top:8px" class="muted-note">Each question has ${QUESTION_SECONDS_DEFAULT} seconds. When timer expires it auto-advances. Use ← and → keys to navigate.</div>
+    `;
+
+    const modalRef = safeShowModal(html);
+
+    // update streak UI
+    updateStreakDisplay(document.getElementById('streakBlock')).catch(()=>{});
+
+    // restore previous answer & disable if needed
+    const prevAns = answersMap[q.__testId][q.__origIndex];
+    if (prevAns && prevAns.selectedOptionId) {
+      setTimeout(()=> {
+        const el = document.querySelector(`input[name="qopt"][value="${prevAns.selectedOptionId}"]`);
+        if (el) el.checked = true;
+        const opt = (q.options || []).find(o => String(o.id || o._id) === String(prevAns.selectedOptionId));
+        if (opt) showFeedbackForOption(opt, q);
+        document.querySelectorAll('.options input[name="qopt"]').forEach(e=> e.disabled = true);
+      }, 30);
+    }
+
+    // start timer
+    timeLeft = QUESTION_SECONDS_DEFAULT;
+    warningPlayed = false;
+    if (timer) clearInterval(timer);
+    timer = setInterval(()=> {
+      timeLeft--;
+      const tEl = document.getElementById('timerDisplay');
+      if (tEl) tEl.innerText = `${timeLeft}s`;
+      if (!warningPlayed && timeLeft <= 5 && timeLeft > 0) {
+        warningPlayed = true;
+        playModernSound('warning');
+        showToastMessage('Hurry — less than 5s left!', 'neutral');
+      }
+      if (timeLeft <= 0) {
+        clearInterval(timer);
+        const selected = getSelectedOption();
+        saveCurrentAnswerOnce(selected, true, q).catch(()=>{});
+        if (currentIndex < questionOrder.length - 1) { currentIndex++; renderQuestionUI(); }
+        else { submitAllAnswers(); }
+      }
+    }, 1000);
+
+    // button handlers
+    document.getElementById('prevQ').onclick = ()=> { if (currentIndex > 0) { currentIndex--; renderQuestionUI(); } };
+    document.getElementById('nextQ').onclick = ()=> { if (currentIndex < questionOrder.length - 1) { currentIndex++; renderQuestionUI(); } };
+    document.getElementById('finishQ').onclick = async ()=> { await saveCurrentAnswerOnce(getSelectedOption(), false, q); await submitAllAnswers(); };
+    const cancelBtn = document.getElementById('cancelQ');
+    if (cancelBtn) cancelBtn.onclick = () => { if (confirm('Cancel this run? Your progress will be lost.')) { safeCloseModal(); } };
+
+    // radio change handlers
+    document.querySelectorAll('.options input[type="radio"]').forEach(inp => {
+      inp.addEventListener('change', (ev) => {
+        const val = ev.currentTarget.value;
+        saveCurrentAnswerOnce(val, false, q);
+      });
+    });
+
+    function getSelectedOption(){ const checked = document.querySelector('input[name="qopt"]:checked'); return checked ? checked.value : null; }
+  } // renderQuestionUI
+
+  // submit answers aggregated
+  async function submitAllAnswers(){
+    if (alreadySubmitted) return alert('Submitting — please wait');
+    alreadySubmitted = true;
+    if (timer) { clearInterval(timer); timer = null; }
+
+    const summary = { totalQuestions:0, correct:0, incorrect:0, unanswered:0, perTest: [], localPointsDelta:0 };
+
+    const activeTestTitle = (questionOrder[currentIndex] && (blocks.find(b => b.testId === questionOrder[currentIndex].__testId) || {}).title) || (testsNormalized && testsNormalized.length && testsNormalized[0].title) || 'Competition';
+
+    for (const b of blocks) {
+      const tId = b.testId;
+      const answersArr = (answersMap[tId] || []).map((a, idx) => {
+        const qObj = b.questions[idx];
+        const questionId = a ? a.questionId : (qObj.id || qObj._id);
+        const picked = a ? a.selectedOptionId : null;
+        const opt = (qObj.options||[]).find(o => String(o.id||o._id) === String(picked));
+        const isCorrect = !!(opt && opt.isCorrect);
+        summary.totalQuestions++;
+        if (!picked) summary.unanswered++;
+        else if (isCorrect) { summary.correct++; summary.localPointsDelta += POINTS_FOR_CORRECT; }
+        else { summary.incorrect++; summary.localPointsDelta += POINTS_FOR_INCORRECT; }
+        return { questionId, selectedOptionId: picked, questionIndex: idx, answeredAt: a ? a.answeredAt : null };
+      });
+
+      if (!attemptMap[tId]) {
+        const sr = await fetchJson('/api/tests/'+encodeURIComponent(tId)+'/start', { method:'POST', headers: authHeaders() });
+        if (sr && sr.ok && sr.data) attemptMap[tId] = sr.data.attemptId || sr.data.attemptId;
+      }
+
+      let submitResp = null;
+      if (attemptMap[tId]) {
+        submitResp = await fetchJson('/api/tests/' + encodeURIComponent(tId) + '/submit', { method:'POST', headers: authHeaders(), body: JSON.stringify({ attemptId: attemptMap[tId], answers: answersArr }) });
+      } else {
+        console.warn('No attemptId for', tId);
+      }
+
+      if (submitResp && submitResp.ok) {
+        const data = submitResp.data || submitResp;
+        summary.perTest.push({ testId: tId, scoreDelta: data.scoreDelta || 0, totalAfter: data.totalAfter != null ? data.totalAfter : null, title: b.title });
+      } else {
+        summary.perTest.push({ testId: tId, scoreDelta: null, totalAfter: null, title: b.title, error: submitResp ? submitResp.error : 'no-response' });
+      }
+    }
+
+    // update personal best locally if needed
+    try {
+      const tIdNow = (questionOrder[currentIndex] && questionOrder[currentIndex].__testId) || testIdForThisRun;
+      const yourBestKey = 'yourBest:' + tIdNow;
+      const yourBestRec = JSON.parse(localStorage.getItem(yourBestKey) || '{"streak":0}');
+      if (currentStreak > (yourBestRec.streak || 0)) {
+        localStorage.setItem(yourBestKey, JSON.stringify({ streak: currentStreak, updatedAt: new Date().toISOString() }));
+      }
+    } catch(e){}
+
+    // Build result UI
+    let perTestHtml = summary.perTest.map(p => `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f3f3f3"><div><strong>${escapeHtml(p.title||p.testId)}</strong></div><div style="font-size:13px">${p.scoreDelta != null ? `scoreDelta: ${escapeHtml(String(p.scoreDelta))}` : '—'} ${p.totalAfter!=null ? `(totalAfter: ${escapeHtml(String(p.totalAfter))})` : ''}</div></div>`).join('');
+
+    const activeTestId = (questionOrder[currentIndex] && questionOrder[currentIndex].__testId) || testIdForThisRun;
+    const bestRecFinal = await loadBestStreak(activeTestId);
+
+    const gu = (typeof getUser === 'function') ? getUser() : null;
+    const userFullName = gu && (gu.fullName || gu.username) ? (gu.fullName || gu.username) : (getToken() ? 'Logged-in user' : 'Guest');
+
+    const resultHtml = `
+      <div style="max-width:720px;padding:18px;font-family:system-ui,Segoe UI,Roboto,Arial;background:#fff;border-radius:12px;box-shadow:0 10px 30px rgba(10,20,30,0.08)">
+        <div style="display:flex;align-items:center;gap:12px">
+          <h2 style="margin:0">${escapeHtml(activeTestTitle)}</h2>
+          <div style="margin-left:auto;font-size:13px;color:#666">User: <strong>${escapeHtml(userFullName)}</strong></div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:14px">
+          <div style="padding:12px;border-radius:8px;background:#f8fafc;text-align:center"><div style="font-size:12px;color:#666">Total</div><div style="font-weight:700;font-size:18px">${summary.totalQuestions}</div></div>
+          <div style="padding:12px;border-radius:8px;background:#e6ffed;text-align:center"><div style="font-size:12px;color:#666">Correct</div><div style="font-weight:700;font-size:18px">${summary.correct}</div></div>
+          <div style="padding:12px;border-radius:8px;background:#fff7f7;text-align:center"><div style="font-size:12px;color:#666">Incorrect</div><div style="font-weight:700;font-size:18px">${summary.incorrect}</div></div>
+          <div style="padding:12px;border-radius:8px;background:#f3f4f6;text-align:center"><div style="font-size:12px;color:#666">Unanswered</div><div style="font-weight:700;font-size:18px">${summary.unanswered}</div></div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:12px;margin-top:12px">
+          <div style="font-size:13px;color:#666">Local points delta:</div><div style="font-weight:700">${summary.localPointsDelta}</div>
+          <div style="margin-left:auto">
+            <div style="font-size:13px;color:#666">Your streak: ${streakBadgeHtml('', currentStreak)}</div>
+            <div style="font-size:13px;color:#666;margin-top:6px">Highest streak: <strong>${escapeHtml(String(bestRecFinal.streak||0))}</strong> ${bestRecFinal.name ? `by ${escapeHtml(bestRecFinal.name)}` : ''}</div>
+          </div>
+        </div>
+
+        <div style="margin-top:14px;padding-top:12px;border-top:1px solid #f3f3f3">
+          <strong>Server per-test results</strong>
+          <div style="margin-top:8px">${perTestHtml}</div>
+        </div>
+
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:18px">
+          <button id="closeResult" class="btn-ghost">Close</button>
+        </div>
+      </div>
+    `;
+
+    const modalRef = safeShowModal(resultHtml);
+    const closeBtn = document.getElementById('closeResult') || (modalRef.box && modalRef.box.querySelector('#closeResult'));
+    if (closeBtn) closeBtn.onclick = ()=> { safeCloseModal(); if (typeof loadTree === 'function') loadTree(); };
+  } // submitAllAnswers
+
+  // keyboard navigation
+  function keyHandler(e){
+    if (e.key === 'ArrowLeft') { e.preventDefault(); document.getElementById('prevQ') && document.getElementById('prevQ').click(); }
+    else if (e.key === 'ArrowRight') { e.preventDefault(); document.getElementById('nextQ') && document.getElementById('nextQ').click(); }
+    else if (e.key === 'Enter') {
+      const finishBtn = document.getElementById('finishQ');
+      if (finishBtn) finishBtn.click();
+    }
+  }
+  document.addEventListener('keydown', keyHandler);
+
+  if (questionOrder.length === 0) return alert('No questions to run.');
+  renderQuestionUI();
+} // end showPaginatedRunner
+

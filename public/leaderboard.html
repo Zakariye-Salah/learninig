@@ -6,185 +6,345 @@
 <title>Leaderboard — LearningHub</title>
 
 <style>
-  :root{
-    --accent:#0b5cff;
-    --bg:#f6f7fb;
-    --card:#ffffff;
-    --muted:#6b7280;
-    --nav-hover-bg: rgba(11,92,255,0.06);
-    --row-hover: rgba(11,92,255,0.03);
-    --pts-color: #111827;
-      
-  }
+:root{
+  --accent:#0b5cff;
+  --bg:#f6f7fb;
+  --card:#ffffff;
+  --muted:#6b7280;
+  --row-hover: rgba(11,92,255,0.04);
+  --pts-color: #0b5cff;
+  --soft-border: #e9eef6;
+  --glass-shadow: 0 8px 30px rgba(10,20,30,0.06);
+}
+html,body{height:100%;}
+body{font-family:Inter, system-ui, Arial, Helvetica, sans-serif; background:var(--bg); margin:0; padding:18px; color:#0f172a}
+.wrap{max-width:1000px;margin:0 auto}
+.card.leader{background:linear-gradient(180deg, rgba(255,255,255,0.98), var(--card));border-radius:14px;padding:14px;box-shadow:var(--glass-shadow);border:1px solid var(--soft-border);} 
+/* optional - modernize day card visuals */
+.lucky-history-day {
+  background: linear-gradient(180deg,#fff,#fbfdff);
+  border: 1px solid #e6eefc;
+  padding: 10px 12px;
+  box-shadow: 0 8px 22px rgba(11,92,255,0.04);
+  transition: transform .16s ease, box-shadow .16s ease;
+}
+.lucky-history-day:hover { transform: translateY(-6px); box-shadow: 0 18px 40px rgba(11,92,255,0.06); }
+.lucky-history-day.active { background: linear-gradient(90deg,#eef6ff,#fff); border-color: #cfe1ff; color: #0b5cff; transform: translateY(-3px); }
+.lucky-history-footer { gap:12px; display:flex; justify-content:space-between; align-items:center; }
 
-  /* page basics */
-  body{font-family:system-ui,Arial,Helvetica,sans-serif;background:var(--bg);margin:0;padding:12px;}
-  .wrap{max-width:1000px;margin:0 auto}
 
-  /* header */
-  #site-header { background:var(--card); border-bottom:1px solid #eef2f6; position:relative; z-index:60; }
-  .sh-top { max-width:1000px; margin:0 auto; display:flex; align-items:center; gap:12px; padding:10px 12px; }
-  .sh-brand { font-weight:700; display:flex; gap:8px; align-items:center; color:#111; font-size:16px; }
-  .sh-brand .logo { font-size:20px; }
+/* HISTORY UI extras */
+.lucky-history-wrap { display:flex; flex-direction:column; gap:8px; }
+.lucky-history-days { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:6px; }
+.lucky-history-day { padding:8px 10px; border-radius:8px; background:#fff; border:1px solid #eef2ff; cursor:pointer; box-shadow:0 6px 12px rgba(2,6,23,0.04); font-weight:700; }
+.lucky-history-day.active { background:linear-gradient(90deg,#eef2ff,#fff); border-color: #cfe1ff; color: #0b5cff; transform: translateY(-3px); }
+.lucky-history-table { width:100%; border-collapse:collapse; font-size:14px; margin-top:6px; }
+.lucky-history-table th, .lucky-history-table td { padding:8px 10px; border-bottom:1px solid #f1f5f9; text-align:left; }
+.lucky-history-footer { margin-top:10px; padding:10px 12px; border-radius:10px; background:linear-gradient(180deg,#fff,#f8fafc); border:1px solid #eef2ff; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.lucky-history-msg { font-weight:700; color:#334155; min-height:20px; }
+.lucky-history-controls { display:flex; gap:8px; align-items:center; }
+.lucky-status-header { display:flex; gap:12px; align-items:center; }
+.lucky-user-name { font-size:16px; font-weight:800; color:#0b5cff; }
+.lucky-countdown { font-size:13px; color:#f97316; font-weight:700; }
+.small-muted { color:#94a3b8; font-size:13px; }
 
-  #mainNav { display:flex; gap:10px; margin-left:16px; align-items:center; }
-  #mainNav a { color:#111; text-decoration:none; padding:6px 10px; border-radius:8px; font-weight:600; transition: color .12s ease, background .12s ease, transform .12s ease; }
-  #mainNav a:hover { color:var(--accent); background: var(--nav-hover-bg); transform: translateY(-2px); }
 
-  .sh-right { margin-left:auto; display:flex; align-items:center; gap:8px; position:relative; }
 
-  .icon-btn { background:transparent; border:0; padding:8px; border-radius:8px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; transition: transform .12s ease; }
-  .small-btn { background:#fff; border:1px solid #e6e6e6; padding:6px 8px; border-radius:8px; cursor:pointer; font-size:13px; color:#111; }
+/* ---------- spinner & pointer visuals ---------- */
+.spinner-wrap { position:relative; margin:18px 0; height:140px; display:flex;align-items:center; justify-content:center; overflow:hidden; }
+.spinner-track { display:flex; align-items:center; gap:10px; will-change:transform; padding:12px; transition: transform 600ms; }
+.spin-tile { min-width:140px; height:96px; border-radius:14px; display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:900;background:linear-gradient(180deg,#fff,#f8fafc);box-shadow:0 6px 14px rgba(4,7,20,0.06); border:1px solid #eee; color:#0b5cff; transition: box-shadow .28s ease, transform .28s cubic-bezier(.2,.9,.2,1), background .28s ease, color .28s ease; }
+.spin-tile.dim { opacity: 0.36; transform: scale(.98); }
+.spin-tile.adjacent { box-shadow: 0 10px 26px rgba(2,6,23,0.08); transform: translateY(-6px); }
 
-  /* user dropdown */
-  .user-dropdown {
-    position:absolute; top:54px; right:8px; width:260px; background:var(--card); border-radius:10px; box-shadow:0 20px 60px rgba(2,6,23,0.15);
-    transform-origin:top right; transform:translateY(-8px) scale(.98);
-    opacity:0; pointer-events:none; transition: transform .18s cubic-bezier(.2,.9,.28,1), opacity .14s ease; z-index:130;
-  }
-  .user-dropdown.open { transform:translateY(0) scale(1); opacity:1; pointer-events:auto; }
-  .user-dropdown .inner { padding:10px; display:flex; flex-direction:column; gap:8px; }
+/* winner special */
+.spin-tile.winner { background: linear-gradient(180deg,#fffbe6,#fffbec); color:#b45309; border:1px solid #f59e0b; box-shadow: 0 18px 40px rgba(245,158,11,0.12), 0 0 0 6px rgba(245,158,11,0.06); transform: translateY(-8px) scale(1.03); z-index:4 }
 
-  /* hamburger + mobile panel */
-  .hamburger { display:none; width:44px; height:44px; align-items:center; justify-content:center; border-radius:8px; border:0; background:transparent; cursor:pointer; }
-  .mobile-panel {
-    position:fixed; top:68px; right:12px; width:320px; max-width:92vw;
-    background:linear-gradient(180deg, rgba(255,255,255,0.98), var(--card));
-    border-radius:14px; box-shadow:0 24px 60px rgba(2,6,23,0.14);
-    transform-origin:top right; transform: translateY(-12px) scale(.98);
-    opacity:0; pointer-events:none; transition: transform .28s cubic-bezier(.2,.9,.28,1), opacity .22s ease; z-index:120;
-  }
-  .mobile-panel.open { transform: translateY(0) scale(1); opacity:1; pointer-events:auto; }
-  .mobile-panel .inner { padding:14px; display:flex; flex-direction:column; gap:8px; }
-  .mobile-panel .brand-row { display:flex;align-items:center;gap:10px;padding:8px 6px;border-bottom:1px solid #f1f5f9;margin-bottom:6px }
-  .mobile-panel a { display:block; text-align:left; padding:12px 14px; border-radius:10px; color:#111; font-size:15px; text-decoration:none; transition: transform .12s ease, background .12s ease; }
-  .mobile-panel a:hover { background: var(--nav-hover-bg); transform: translateX(6px); color: var(--accent); }
+/* ultimate top prize (unique color) */
+.spin-tile.ultimate { background: linear-gradient(180deg,#fff7ed,#fff1f2); color:#7c2dff; border:1px solid rgba(124,45,255,0.12); box-shadow: 0 22px 54px rgba(124,45,255,0.12); transform: translateY(-10px) scale(1.06); }
 
-  /* single-column layout (user requested single page) */
-  .page { max-width:1000px; margin:16px auto; padding:0 12px; display:block; }
+/* pointer */
+.spinner-pointer { position:absolute; top:0; bottom:0; width:60px; left:50%; transform:translateX(-50%); pointer-events:none; display:flex; align-items:center; justify-content:center; z-index:6; }
+.spinner-pointer .pin { width:36px; height:36px; border-radius:50%; background:#ef4444; box-shadow:0 8px 20px rgba(239,68,68,0.14); display:flex; align-items:center; justify-content:center; transform: translateY(-8px); transition: transform .22s cubic-bezier(.2,.9,.2,1), box-shadow .22s ease; }
+.spinner-pointer .pin svg { width:18px; height:18px; fill:#fff; }
 
-  .card { background:var(--card); border-radius:10px; padding:14px; box-shadow: 0 6px 18px rgba(2,6,23,0.04); margin-bottom:12px; }
+/* pointer pulse after stop */
+.spinner-pointer.pulse .pin { animation: spinPointerPulse 920ms cubic-bezier(.2,.9,.2,1) 1; }
+@keyframes spinPointerPulse {
+  0% { transform: translateY(-8px) scale(1); box-shadow:0 8px 20px rgba(239,68,68,0.14); }
+  40% { transform: translateY(-14px) scale(1.06); box-shadow:0 20px 38px rgba(239,68,68,0.2); }
+  100% { transform: translateY(-8px) scale(1); box-shadow:0 8px 20px rgba(239,68,68,0.14); }
+}
 
-  .header-row { display:flex; gap:12px; align-items:center; margin-bottom:10px; flex-wrap:wrap; flex-direction:column; align-items:flex-start; }
-  #compTitle { font-weight:800; font-size:18px; }
-  #compCountdown { margin-top:6px; color:#666; }
+/* small styling helpers for toast inside modal */
+.lh-toast-container { position: absolute; left:50%; transform: translateX(-50%); bottom:22px; z-index:10020; display:flex; flex-direction:column; gap:8px; align-items:center; pointer-events:none; }
+.lh-toast { pointer-events:auto; min-width:240px; padding:10px 14px; border-radius:10px; color:#fff; font-weight:700; }
 
-  .leader-wrap { border-radius:8px; overflow:hidden; }
-  .leader-list.top10 { max-height:none; }
-  .leader-list.all { max-height:520px; overflow:auto; }
 
-  /* row layout: rank column + content + actions */
-  .row {
-    display:flex;
-    align-items:stretch;
-    gap:12px;
-    padding:10px;
-    border-bottom:1px solid #f0f2f6;
-    position:relative;
-    transition: background .12s ease, transform .08s ease;
-  }
-  .row:hover { background: var(--row-hover); transform: translateY(-2px); }
-  .row:last-child { border-bottom:none; }
-  .row.me{ background: linear-gradient(90deg, rgba(11,92,255,0.06), rgba(11,92,255,0.03)); }
+/* 
+pointer SVG sits in .spinner-pointer
+.spinner-pointer svg { width:36px; height:36px; display:block; }
+.confetti-piece { position:fixed; width:8px; height:14px; opacity:0.95; transform-origin:center; pointer-events:none; z-index:99999; }
+/* a simple fade animation for confetti *
+@keyframes confettiFall {
+  0% { transform: translateY(-10vh) rotate(0deg); opacity:1; }
+  100% { transform: translateY(110vh) rotate(720deg); opacity:0; }
+} */
 
-/* Replace the old .rank /.rankNum rules or add these below them */
-.rank {
+
+.lh-toast.info { background: #0b5cff; }
+.lh-toast.success { background: #0bda78; color: #063; }
+.lh-toast.warn { background: #f59e0b; color: #422800; }
+.lh-toast.error { background: #ef4444; }
+
+/* Lucky spin small styles (add into your main CSS) */
+.lucky-input { padding:8px 12px; border-radius:8px; border:1px solid #e6e6e6; width:140px; font-weight:700; font-size:15px; }
+.lucky-btn { padding:8px 12px; border-radius:8px; border:0; background:#0b5cff; color:#fff; font-weight:700; cursor:pointer; }
+.lucky-ghost { background:transparent; border:1px solid #e6eefc; color:#0b5cff; }
+/* Lucky spin modal & spinner styles (modern) */
+.lucky-modal { max-width:820px; width: 95%; background: #fff; border-radius:14px; padding:20px; box-shadow: 0 10px 30px rgba(2,6,23,0.12); font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; color:#0f172a; }
+.lucky-header { display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px; }
+.lucky-title { font-size:20px;font-weight:700; }
+.lucky-sub { color:#64748b;font-size:13px; }
+.lucky-balance { font-size:28px;font-weight:800; margin:6px 0; color:#0b5cff; }
+.lucky-controls { display:flex;gap:8px; align-items:center; margin:12px 0; }
+.lucky-input { width:160px;padding:12px;border-radius:10px;border:1px solid #e6eef8;font-size:16px; }
+.lucky-btn { padding:10px 14px;border-radius:10px;border:0;background:#0b5cff;color:#fff;font-weight:700; cursor:pointer; box-shadow: 0 6px 16px rgba(11,92,255,0.16); }
+.lucky-ghost { background:transparent;border:1px solid #e6eef8;color:#0b5cff;font-weight:700; }
+.lucky-overview { margin-top:10px; border-radius:8px; padding:10px; background:#f8fafc; border:1px solid #eef2ff; max-height:220px; overflow:auto; }
+.lucky-table { width:100%; border-collapse:collapse; font-size:15px; }
+.lucky-table th { text-align:left; padding:6px 8px; color:#334155; font-weight:700; }
+.lucky-table td { padding:6px 8px; color:#0f172a; }
+
+.spinner-wrap { position:relative; margin:18px 0; height:130px; display:flex;align-items:center; justify-content:center; overflow:hidden; }
+.spinner-track { display:flex; align-items:center; gap:10px; will-change:transform; padding:12px; }
+.spin-tile { min-width:140px; height:88px; border-radius:12px; display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:800;background:linear-gradient(180deg,#fff,#f8fafc);box-shadow:0 6px 14px rgba(4,7,20,0.06); border:1px solid #eee; color:#0b5cff; }
+.spinner-pointer { position:absolute; top:0; bottom:0; width:6px; left:50%; transform:translateX(-50%); pointer-events:none; display:flex; align-items:center; justify-content:center; }
+.spinner-pointer:after { content:''; width:18px; height:18px; background:#ef4444; border-radius:50%; box-shadow:0 6px 14px rgba(239,68,68,0.18); transform: translateY(-10px); }
+.lucky-result { margin-top:12px; font-size:18px; font-weight:700; color:#047857; }
+
+.small-muted { color:#94a3b8; font-size:13px; }
+
+
+
+/* Row (same structure on all screens) */
+.row{display:flex;align-items:center;gap:16px;padding:12px;border-radius:10px;transition:transform .12s ease,box-shadow .12s ease,background .12s ease;background:transparent;width:100%;}
+.row + .row{margin-top:8px}
+.row:hover{transform:translateY(-6px);box-shadow:0 14px 30px rgba(12,20,40,0.06);background:var(--row-hover)}
+.row.me{outline:2px solid rgba(11,92,255,0.08);background:linear-gradient(90deg, rgba(11,92,255,0.02), rgba(11,92,255,0));}
+
+/* Rank block always compact on the left */
+.rank{display:flex;align-items:center;gap:10px;padding:6px;border-radius:10px;flex:0 0 auto;min-width:76px}
+.rankStripe{width:10px;height:44px;border-radius:10px;flex:0 0 10px;box-shadow:0 6px 18px rgba(2,6,23,0.06);transition:transform .12s ease,opacity .12s ease;background:linear-gradient(180deg,#10b981,#059669);} 
+.rankNum{display:inline-flex;align-items:center;justify-content:center;min-width:36px;height:36px;font-weight:800;color:#fff;border-radius:10px;padding:0 10px;background:rgba(11,92,255,0.9);box-shadow:0 8px 26px rgba(11,92,255,0.12);font-size:15px}
+
+/* Left content */
+.left{display:flex;flex-direction:column;gap:6px;min-width:0;flex:1}
+.top{display:flex;align-items:center;gap:12px;min-width:0;width:100%}
+.title{font-weight:700;font-size:15px;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.leader-flag{display:inline-flex;align-items:center;justify-content:center;width:22px;height:18px;font-size:16px;opacity:0.95}
+.sub{color:var(--muted);font-size:13px}
+
+/* Right content (points) */
+.right{display:flex;align-items:center;gap:8px;flex:0 0 auto;min-width:120px;justify-content:flex-end}
+.pts{font-weight:800;color:var(--pts-color);background:linear-gradient(180deg,#ffffff,#fbfdff);border:1px solid var(--soft-border);padding:8px 12px;border-radius:18px;box-shadow:0 6px 20px rgba(8,18,40,0.04);min-width:92px;text-align:right}
+.pts-inline{display:none}
+
+/* Responsive — keep same row layout, just tighten sizes & spacing on small screens */
+@media (max-width:700px){
+  .row{gap:10px;padding:10px}
+  .rank{min-width:64px;gap:8px;padding:4px}
+  .rankStripe{height:36px;width:9px;border-radius:8px}
+  .rankNum{height:34px;min-width:34px;padding:0 8px;font-size:13px}
+  .title{font-size:14px}
+  .sub{font-size:12px}
+  .pts{padding:6px 10px;min-width:78px;font-size:13px}
+  .right{min-width:88px}
+}
+
+@media (max-width:420px){
+  .top{gap:8px}
+  .title{white-space:normal;font-size:13px}
+  .row{gap:8px}
+  .rankStripe{height:28px}
+  .rankNum{font-size:12px;padding:0 6px}
+  .pts{font-size:12px;padding:6px 8px;min-width:60px}
+}
+
+/* Utility to visually match rank color gradients for 1..10 */
+.rankStripe.rank-1{background:linear-gradient(180deg,#065f46,#047857)}
+.rankStripe.rank-2{background:linear-gradient(180deg,#047857,#059669)}
+.rankStripe.rank-3{background:linear-gradient(180deg,#059669,#10b981)}
+.rankStripe.rank-4{background:linear-gradient(180deg,#16a34a,#34d399)}
+.rankStripe.rank-5{background:linear-gradient(180deg,#f59e0b,#f59e0b)}
+.rankStripe.rank-6{background:linear-gradient(180deg,#f97316,#fb923c)}
+.rankStripe.rank-7{background:linear-gradient(180deg,#ef4444,#fb6b6b)}
+.rankStripe.rank-8{background:linear-gradient(180deg,#7c3aed,#8b5cf6)}
+.rankStripe.rank-9{background:linear-gradient(180deg,#2563eb,#3b82f6)}
+.rankStripe.rank-10{background:linear-gradient(180deg,#475569,#64748b)}
+
+/* header */
+#site-header { background:var(--card); border-bottom:1px solid #eef2f6; position:relative; z-index:60; }
+.sh-top { max-width:1000px; margin:0 auto; display:flex; align-items:center; gap:12px; padding:10px 12px; }
+.sh-brand { font-weight:700; display:flex; gap:8px; align-items:center; color:#111; font-size:16px; }
+.sh-brand .logo { font-size:20px; display:inline-flex; align-items:center }
+
+#mainNav { display:flex; gap:10px; margin-left:16px; align-items:center; }
+#mainNav a { color:#111; text-decoration:none; padding:6px 10px; border-radius:8px; font-weight:600; transition: color .12s ease, background .12s ease, transform .12s ease; }
+#mainNav a:hover { color:var(--accent); background: rgba(11,92,255,0.06); transform: translateY(-2px); }
+
+.sh-right { margin-left:auto; display:flex; align-items:center; gap:8px; position:relative; }
+.icon-btn { background:transparent; border:0; padding:8px; border-radius:8px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; transition: transform .12s ease; }
+.small-btn { background:#fff; border:1px solid #e6e6e6; padding:6px 8px; border-radius:8px; cursor:pointer; font-size:13px; color:#111; }
+
+/* user dropdown */
+.user-dropdown { position:absolute; top:54px; right:8px; width:260px; background:var(--card); border-radius:10px; box-shadow:0 20px 60px rgba(2,6,23,0.15); transform-origin:top right; transform:translateY(-8px) scale(.98); opacity:0; pointer-events:none; transition: transform .18s cubic-bezier(.2,.9,.28,1), opacity .14s ease; z-index:130; }
+.user-dropdown.open { transform:translateY(0) scale(1); opacity:1; pointer-events:auto; }
+
+/* hamburger + mobile panel */
+.hamburger { display:none; width:44px; height:44px; align-items:center; justify-content:center; border-radius:8px; border:0; background:transparent; cursor:pointer; }
+.mobile-panel { position:fixed; top:68px; right:12px; width:320px; max-width:92vw; background:linear-gradient(180deg, rgba(255,255,255,0.98), var(--card)); border-radius:14px; box-shadow:0 24px 60px rgba(2,6,23,0.14); transform-origin:top right; transform: translateY(-12px) scale(.98); opacity:0; pointer-events:none; transition: transform .28s cubic-bezier(.2,.9,.28,1), opacity .22s ease; z-index:120; }
+.mobile-panel.open { transform: translateY(0) scale(1); opacity:1; pointer-events:auto; }
+.mobile-panel .inner { padding:14px; display:flex; flex-direction:column; gap:8px; }
+.mobile-panel .brand-row { display:flex;align-items:center;gap:10px;padding:8px 6px;border-bottom:1px solid #f1f5f9;margin-bottom:6px }
+.mobile-panel a { display:block; text-align:left; padding:12px 14px; border-radius:10px; color:#111; font-size:15px; text-decoration:none; transition: transform .12s ease, background .12s ease; }
+.mobile-panel a:hover { background: rgba(11,92,255,0.06); transform: translateX(6px); color: var(--accent); }
+
+/* ensure hamburger shows on mobile */
+@media (max-width:900px) {
+  .hamburger { display:inline-flex; }
+  #mainNav { display:none; }
+}
+@media (min-width:901px) { .mobile-panel { display:none; } }
+
+/* small layout tweaks */
+@media (max-width:900px) { .card.leader { padding:12px; border-radius:12px; } }
+
+/* comments collapsed/expanded visuals */
+.comments-list.collapsed { display:none; }
+.comments-list.expanded { display:block; max-height:340px; overflow:auto; }
+
+/* Inline rank shown next to name for admin (non-duplicating) */
+.rankInline {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:30px;
+  height:28px;
+  font-weight:800;
+  border-radius:8px;
+  padding:0 8px;
+  font-size:13px;
+  color:#0f172a;
+  background: rgba(255,255,255,0.0);
+  box-shadow: none;
+  border: 1px solid rgba(15,23,42,0.04);
+  margin-right:8px;
+}
+
+/* Modern comment card */
+.comment {
+  padding:12px;
+  border-radius:10px;
+  background:#fff;
+  border:1px solid rgba(235,244,255,0.9);
+  box-shadow: 0 6px 18px rgba(8,18,40,0.03);
+  margin-bottom:10px;
+  word-break:break-word;
+}
+
+.comment-header {
   display:flex;
   align-items:center;
-  gap:8px;
-  padding:6px 6px;
-  border-radius:6px;
-  flex: 0 0 auto; /* auto width so the badge shows */
+  gap:10px;
 }
 
-.rankStripe {
-  width:8px;
-  border-radius:6px;
-  flex: 0 0 8px;
-  height:100%;
-  min-height:36px;
-}
-
-.rankNum {
-  min-width:36px;
+.comment-avatar {
+  width:36px;
+  height:36px;
+  border-radius:10px;
   display:inline-flex;
   align-items:center;
   justify-content:center;
   font-weight:700;
-  color:#ffffff;
-  border-radius:8px;
-  padding:6px 8px;
-  background: #0b1220;
-  box-shadow: 0 6px 18px rgba(2,6,23,0.03);
-}
-@media(max-width:700px){
-  .rank { width:100%; gap:6px; padding:4px; }
-  .rankStripe { height:6px; width:100%; flex-basis:100%; border-radius:6px; }
-  .rankNum { background: transparent; color:#0f172a; min-width:28px; padding:0 6px; font-weight:800; }
+  background:linear-gradient(180deg,#f3f8ff,#ffffff);
+  border:1px solid rgba(11,92,255,0.06);
+  color:var(--accent);
+  flex:0 0 36px;
 }
 
+.comment-author {
+  font-weight:700;
+  font-size:14px;
+  color:#0f172a;
+}
 
-  .left { display:flex; flex-direction:column; gap:6px; min-width:0; flex:1; }
-  .top { display:flex; align-items:center; gap:10px; min-width:0; }
-  .leader-flag { display:inline-flex; align-items:center; justify-content:center; width:22px; height:18px; font-size:16px; }
+.comment-time {
+  margin-left:auto;
+  font-size:12px;
+  color:var(--muted);
+}
 
-  .title { font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:15px; color:#0f172a; }
-  .sub { color:var(--muted); font-size:12px; }
+.comment-body {
+  margin-top:8px;
+  color:#111827;
+  line-height:1.45;
+  white-space:pre-wrap;
+}
 
-  .right { display:flex; align-items:center; gap:8px; margin-left:12px; white-space:nowrap; align-self:center; }
-  .pts { font-weight:800; min-width:90px; text-align:right; color:var(--pts-color); }
+/* small control area under comment (delete etc.) */
+.comment-controls { margin-top:8px; display:flex; gap:8px; }
 
-  .pts-inline { font-weight:800; margin-left:px; white-space:nowrap; color: #149be4bd;  padding:0px 0px; border-radius:8px; box-shadow:0 6px 18px rgba(2,6,23,0.04); }
+/* Compose area (modern, inline) */
+.comments-compose {
+  display:flex;
+  gap:12px;
+  align-items:flex-end;
+  margin-top:10px;
+}
 
-  .admin-adjust { display:inline-flex; align-items:center; gap:6px; }
-  .adjust-icon { cursor:pointer; padding:6px; border-radius:6px; border:1px solid #eef2ff; background: #fff; font-weight:700; }
+.comments-compose textarea {
+  flex:1;
+  min-height:84px;
+  border-radius:10px;
+  border:1px solid rgba(235,244,255,0.9);
+  padding:12px;
+  font-size:14px;
+  resize:vertical;
+  background:#fff;
+  box-shadow:none;
+}
 
-  .muted { color:#666; font-size:13px; }
+.comments-compose .btn-primary {
+  padding:10px 14px;
+  border-radius:10px;
+  align-self:flex-end;
+}
 
-  .controls { display:flex; gap:8px; align-items:center; margin-bottom:8px; flex-wrap:wrap; }
+/* character counter colors */
+#charCount { font-size:12px; color:var(--muted); }
+#charCount.over { color:#ef4444; font-weight:700; }
 
-  .btn-primary { background:var(--accent); color:#fff; border:none; padding:8px 10px; border-radius:6px; cursor:pointer; }
+/* subtle disabled state for Post button */
+.btn-primary[disabled] { opacity:0.55; cursor:not-allowed; pointer-events:none; }
+
+
 
   #compCountdown.countdown-live { color: #f23500; font-weight:700; transition: color 200ms ease; }
-
-  /* mobile behavior: hamburger visible on small screens */
-  @media (max-width:900px) {
-    .hamburger { display:inline-flex; }
-    #mainNav { display:none; }
-  }
-  @media (min-width:901px) {
-    .mobile-panel { display:none; }
-  }
-
-  /* mobile row compact */
-  @media(max-width:700px) {
-    .row { flex-direction:column; align-items:stretch; padding:10px; gap:8px; }
-    .rank { align-self:stretch; height:6px; width:100%; border-radius:6px; }
-    .rankNum { align-self:flex-start; background:transparent; color:#111; font-weight:700; padding:0 6px; min-width:28px; }
-    .top { width:100%; align-items:center; gap:8px; }
-    .title { white-space:normal; font-size:15px; }
-    .right { margin-left:0; align-self:flex-end; }
-    .pts { min-width:70px; text-align:right; }
-    .pts-inline { margin-left:6px; }
-  }
-
-  /* comments collapsed/expanded visuals */
-  .comments-list.collapsed { display:none; }
-  .comments-list.expanded { display:block; max-height:340px; overflow:auto; }
-
 </style>
 </head>
 <body>
 
-<!-- socket.io -->
+<!-- socket.io (keep as original) -->
 <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
 
 <!-- header -->
 <header id="site-header" class="card" role="banner">
   <div class="sh-top">
     <div class="sh-brand" aria-hidden="false">
-      <span class="logo">📚</span>
-      <span>LearningHub</span>
+      <!-- If you uploaded a logo image, we reference it here (local path preserved) -->
+      <img src="/mnt/data/cb2ed510-4c0e-484d-a8e9-67b3d7c86182.png" alt="logo" style="width:28px;height:28px;border-radius:6px;object-fit:cover;margin-right:6px;" onerror="this.style.display='none'">
+      <span style="display:inline-block">LearningHub</span>
     </div>
 
     <!-- main nav (desktop) -->
@@ -207,7 +367,7 @@
 
       <!-- mobile hamburger -->
       <button id="btnHamburger" class="hamburger icon-btn" aria-expanded="false" aria-label="Menu" title="Menu">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none"><path d="M3 6h18M3 12h18M3 18h18" stroke="#111" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" stroke="#111" stroke-width="1.6" stroke-linecap="round"/></svg>
       </button>
     </div>
   </div>
@@ -242,6 +402,9 @@
 
       <div id="leaderControls" class="controls"></div>
 
+      <!-- No new page: modal created dynamically by script. But place a div root for modal if you have one -->
+      <div id="luckyModalRoot" style="display:none"></div>
+
       <div class="leader-wrap" id="leaderboardWrap">
         <div id="leaderboard" class="leader-list top10">
           <!-- rows will be injected here -->
@@ -254,28 +417,34 @@
     <!-- comments -->
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center">
-        <!-- comments hidden by default; only heading visible -->
         <div id="commentsTitle" style="font-weight:700;cursor:pointer">Comments (0)</div>
         <div class="muted" style="font-size:13px">Newest first</div>
       </div>
 
-      <!-- collapsed by default -->
       <div id="commentsBox" class="comments-list collapsed" style="margin-top:8px; max-height:320px; overflow:auto"></div>
 
-      <!-- compose hidden by default -->
-      <div id="commentsCompose" style="margin-top:10px; display:none">
-        <textarea id="commentInput" placeholder="Write a comment..." style="width:100%;border:1px solid #eef2f7;border-radius:8px;padding:10px"></textarea>
-        <div style="display:flex;justify-content:flex-end;margin-top:8px">
-          <button id="postComment" class="btn-primary">Post comment</button>
-        </div>
-      </div>
+ <!-- REPLACE existing commentsCompose block with this -->
+<div id="commentsCompose" class="comments-compose" style="margin-top:10px; display:none">
+  <textarea id="commentInput"
+            placeholder="Share your thoughts..."
+            aria-label="Write a comment"
+            maxlength="1000"
+            style="width:100%;min-height:84px;border-radius:10px;border:1px solid rgba(235,244,255,0.9);padding:12px;font-size:14px;resize:vertical;background:#fff"></textarea>
+
+  <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:10px;align-items:center">
+    <div id="charCount" style="font-size:12px;color:var(--muted)">0 / 1000</div>
+    <button id="cancelComment" class="small-btn">Close</button>
+    <button id="postComment" class="btn-primary" disabled>Post</button>
+  </div>
+</div>
+
     </div>
 
   </section>
 </main>
 
 <script>
-  /* ---------------- CONFIG + helpers ---------------- */
+  /* ---------------- CONFIG + helpers (kept logic, cleaned up mobile nav wiring) ---------------- */
   const API_BASE = 'http://localhost:4000';
   async function fetchJson(url, opts = {}) {
     try {
@@ -291,11 +460,7 @@
   function getToken(){ return localStorage.getItem('token'); }
   function getUser(){ const s = localStorage.getItem('user'); return s ? JSON.parse(s) : null; }
 
-  function escapeHtml(s){
-    if (s === 0) return '0';
-    if (!s) return '';
-    return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-  }
+  function escapeHtml(s){ if (s === 0) return '0'; if (!s) return ''; return String(s).replace(/[&<>] /g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); }
 
   function codeToFlagEmoji(code){
     if (!code) return null;
@@ -308,7 +473,6 @@
     return String.fromCodePoint(A + first) + String.fromCodePoint(A + second);
   }
 
-  /* minimal profile cache/enrichment (keeps previous behavior) */
   window._lh_profile_cache = window._lh_profile_cache || {};
   function pickProfileFields(profile){
     if (!profile) return {};
@@ -321,23 +485,16 @@
     };
   }
   function resolveIsoFromNameOrCode(val){
-    if (!val) return null;
-    const s = String(val).trim();
-    if (!s) return null;
-    if (/^[A-Za-z]{2}$/.test(s)) return s.toUpperCase();
-    if (Array.isArray(window.COUNTRIES)) {
-      const foundExact = window.COUNTRIES.find(c => c.name && c.name.toLowerCase() === s.toLowerCase());
-      if (foundExact) return String(foundExact.code).toUpperCase();
-      const foundPartial = window.COUNTRIES.find(c => c.name && s.toLowerCase().includes(c.name.toLowerCase()));
-      if (foundPartial) return String(foundPartial.code).toUpperCase();
-    }
-    return null;
+    if (!val) return null; const s = String(val).trim(); if (!s) return null; if (/^[A-Za-z]{2}$/.test(s)) return s.toUpperCase(); return null;
   }
+
   async function enrichTopWithProfiles(top){
     if (!Array.isArray(top) || !top.length) return top;
     const need = top.filter(t => !(t.countryRaw || t.countryFlagEmoji || t.countryFlagUrl || t.city || t.countryName))
                     .map(t => String(t.userId || t._id || t.id)).filter(Boolean);
-    if (!need.length) { top.forEach(item => item._isoCode = resolveIsoFromNameOrCode(item.countryRaw || item.countryName)); return top; }
+    if (!need.length) { 
+      top.forEach(item => item._isoCode = resolveIsoFromNameOrCode(item.countryRaw || item.countryName));
+      return top;}
     const ids = Array.from(new Set(need));
     const uncached = ids.filter(id => !window._lh_profile_cache[id]);
     if (uncached.length) {
@@ -389,11 +546,2223 @@
     return merged;
   }
 
-  /* ---------- socket + state ---------- */
-  let comp = null;
-  let socket = null;
-  let showingAll = false;
-  let countdownTimer = null;
+
+  (function () {
+  const DAILY_LIMIT = 5;
+  const MIN_BET = 10;
+  const MAX_BET = 100;            // client cap
+  const API_BASE = 'http://localhost:4000';
+
+  // ---------- HTTP helpers ----------
+  async function fetchJson(url, opts = {}) {
+    try {
+      const full = (url.startsWith('http') ? url : API_BASE + url);
+      const res = await fetch(full, opts);
+      const text = await res.text();
+      let data = null;
+      try { data = text ? JSON.parse(text) : null; } catch(e){ data = null; }
+      if (!res.ok) return { ok:false, error: (data && (data.error || data.message)) ? (data.error || data.message) : res.statusText, data };
+      return { ok:true, data };
+    } catch(err){ return { ok:false, error: err.message || 'Network error' }; }
+  }
+  function getToken(){ return localStorage.getItem('token'); }
+  function getUser(){
+     const s = localStorage.getItem('user');
+      return s ? JSON.parse(s) : null; }
+  function authHeaders(isJson=false){ const h={};
+   const t=getToken(); 
+   if(t) h.Authorization='Bearer '+t; 
+   if(isJson) h['Content-Type']='application/json'; 
+   return h; }
+  function apiGet(p){ 
+    return fetchJson(p, { 
+      method:'GET', headers: authHeaders() }); }
+  function apiPost(p, body){ return fetchJson(p, { 
+    method:'POST', headers: authHeaders(true), body: JSON.stringify(body) }); }
+    function ensureOutcomeInAnimOptions(animOptions, outcome) {
+  if (!Array.isArray(animOptions)) animOptions = [];
+  const outStr = String(outcome);
+  if (animOptions.indexOf(outStr) !== -1) return animOptions;
+  const middle = Math.floor(animOptions.length / 2);
+  const copy = animOptions.slice();
+  copy.splice(middle, 0, outStr);
+  if (copy.length > Math.max(40, animOptions.length + 6)) {
+    copy.splice(copy.length - 1, 1);
+  }
+  return copy;
+}
+  // ---------- toast system ----------
+  let toastContainer = null;
+  function ensureToastContainer() {
+    const modalRoot = document.getElementById('luckyModalRoot');
+    if (modalRoot) {
+      let c = modalRoot.querySelector('.lh-toast-container');
+      if (!c) {
+        c = document.createElement('div');
+        c.className = 'lh-toast-container';
+        Object.assign(c.style, {
+          position: 'absolute',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          bottom: '20px',
+          zIndex: 10010,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '8px',
+          alignItems: 'center',
+          pointerEvents: 'none'
+        });
+        modalRoot.style.position = modalRoot.style.position || 'fixed';
+        modalRoot.appendChild(c);
+      }
+      toastContainer = c;
+      return c;
+    }
+    if(!toastContainer) {
+      toastContainer = document.createElement('div');
+      toastContainer.className = 'lh-toast-container';
+      Object.assign(toastContainer.style, { position:'fixed', left:'50%', transform:'translateX(-50%)', bottom:'60px', zIndex:99999, display:'flex', flexDirection:'column', gap:'8px', alignItems:'center' });
+      document.body.appendChild(toastContainer);
+    }
+    return toastContainer;
+  }
+  function showToast(msg, type='info', ms=3800) {
+    const c = ensureToastContainer();
+    const t = document.createElement('div');
+    t.className = `lh-toast ${type}`;
+    t.innerText = msg;
+    Object.assign(t.style, { minWidth: '220px', padding: '10px 14px', borderRadius: '10px', color:'#fff', fontWeight:700, pointerEvents:'auto' });
+    if (type === 'success') t.style.background = '#0bda78', t.style.color = '#063';
+    if (type === 'info') t.style.background = '#0b5cff';
+    if (type === 'warn') t.style.background = '#f59e0b', t.style.color = '#422800';
+    if (type === 'error') t.style.background = '#ef4444';
+    c.appendChild(t);
+    setTimeout(()=> {
+      t.style.transition = 'opacity .3s ease, transform .3s ease';
+      t.style.opacity = '0';
+      t.style.transform = 'translateY(-6px)';
+      setTimeout(()=> { try{ t.remove(); }catch(e){} }, 350);
+    }, ms);
+    return t;
+  }
+  const showError = m => showToast(m, 'error', 4500);
+  const showWarn = m => showToast(m, 'warn', 4200);
+  const showInfo = m => showToast(m, 'info', 3400);
+  const showSuccess = m => showToast(m, 'success', 3800);
+
+  function getUserId() {
+    try {
+      const u = getUser();
+      if (!u) return null;
+      return String(u._id || u.id || u.userId || u.uid || '');
+    } catch(e){ return null; }
+  }
+
+  function saveLastSpin(spin) {
+    try {
+      const uid = getUserId() || 'anon';
+      const safe = Object.assign({}, spin);
+      safe.won = (typeof spin.won !== 'undefined') ? spin.won : (typeof spin.outcome !== 'undefined' ? spin.outcome : spin.value);
+      safe.outcome = safe.won;
+      localStorage.setItem('lastSpin_' + uid, JSON.stringify(safe));
+    } catch(e){ console.warn('saveLastSpin failed', e); }
+  }
+  function loadLastSpin() {
+    try {
+      const uid = getUserId() || 'anon';
+      const s = localStorage.getItem('lastSpin_' + uid);
+      return s ? JSON.parse(s) : null;
+    } catch(e){ return null; }
+  }
+
+  // ---------- confetti (unchanged) ----------
+  function fireConfetti(count=30) {
+    const colors = ['#f97316','#f59e0b','#10b981','#3b82f6','#8b5cf6','#ec4899'];
+    for (let i=0;i<count;i++){
+      const el = document.createElement('div');
+      el.className = 'confetti-piece';
+      el.style.left = (Math.random()*100) + 'vw';
+      el.style.background = colors[Math.floor(Math.random()*colors.length)];
+      el.style.transform = `rotate(${Math.random()*360}deg)`;
+      el.style.position = 'fixed';
+      el.style.width = '10px';
+      el.style.height = '14px';
+      el.style.zIndex = 99999;
+      document.body.appendChild(el);
+      const dur = 2000 + Math.random()*1800;
+      el.style.animation = `confettiFall ${dur}ms linear forwards`;
+      setTimeout(()=>{ try{ el.remove(); }catch(e){} }, dur + 300);
+    }
+  }
+
+  
+  // client: fetch spin-control state (server stores disabled flag + reason)
+async function fetchSpinControl() {
+  try {
+    const r = await apiGet('/api/leaderboard/spin-control');
+    if (r && r.ok) return r.data || r.control || r;
+    return { disabled: false, reason: null };
+  } catch (e) {
+    return { disabled:false, reason:null };
+  }
+}
+// ---------- spin control client helpers ----------
+function applySpinControl(ctrl) {
+  try {
+    if (!ctrl) ctrl = { disabled:false, reason: null };
+    window._spinControl = ctrl;
+    try { localStorage.setItem('spinControl_cache', JSON.stringify({ ts: Date.now(), ctrl })); } catch(e){}
+    document.querySelectorAll('#lucky_spin_btn, #luckyBtn, [data-action="open-spin"]').forEach(el => {
+      try {
+        if (!el) return;
+        if (ctrl.disabled) {
+          el.disabled = true;
+          if (el.id === 'lucky_spin_btn') el.innerText = 'Spin (disabled)';
+        } else {
+          el.disabled = false;
+          if (el.id === 'lucky_spin_btn') el.innerText = 'Spin';
+        }
+      } catch (e) {}
+    });
+    // Notify the admin who pressed the action (no spam for regular users)
+    if (ctrl._lastAdminAction) {
+      // ignore; reserved for future telemetry
+    }
+  } catch (e) { console.warn('applySpinControl failed', e); }
+}
+
+async function fetchSpinControlFresh() {
+  const suffix = '?_=' + Date.now();
+  try {
+    const r = await fetchJson('/api/leaderboard/spin-control' + suffix, { method:'GET', headers: authHeaders() });
+    if (r && r.ok) {
+      const ctrl = (r.data && r.data.data) ? r.data.data : (r.data || r.control || r);
+      applySpinControl(ctrl);
+      return ctrl;
+    }
+    // sometimes server returns {ok:true, data: {...}} or {ok:true, ...}, handle both
+    if (r && r.data) {
+      const ctrl = r.data;
+      applySpinControl(ctrl);
+      return ctrl;
+    }
+    // fallback to local cached copy
+    try {
+      const cached = JSON.parse(localStorage.getItem('spinControl_cache') || 'null');
+      if (cached && cached.ctrl) return cached.ctrl;
+    } catch (e) {}
+    return { disabled:false, reason:null };
+  } catch (e) {
+    console.debug('fetchSpinControlFresh failed', e);
+    try {
+      const cached = JSON.parse(localStorage.getItem('spinControl_cache') || 'null');
+      if (cached && cached.ctrl) return cached.ctrl;
+    } catch (e) {}
+    return { disabled:false, reason:null };
+  }
+}
+
+// ---------- Small style injection (you already had this; keep it) ----------
+(function injectLuckyModalStyles(){
+  if (document.getElementById('lh-modal-styles')) return;
+  const s = document.createElement('style');
+  s.id = 'lh-modal-styles';
+  s.innerText = `
+  /* Modal backdrop / card */
+  .lh-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(2,6,23,0.48), rgba(2,6,23,0.58));
+    z-index: 100000;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding: 20px;
+    -webkit-font-smoothing:antialiased;
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  }
+  .lh-modal-card {
+    width: min(880px, 100%);
+    max-width: 980px;
+    background: linear-gradient(180deg,#ffffff,#fbfdff);
+    border-radius: 14px;
+    box-shadow: 0 12px 40px rgba(2,6,23,0.18);
+    padding: 18px;
+    color: #0f172a;
+    border: 1px solid rgba(13, 83, 255, 0.06);
+    overflow: hidden;
+  }
+  .lh-modal-header {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    margin-bottom:12px;
+  }
+  .lh-modal-title { font-size:18px; font-weight:800; letter-spacing:-0.02em; color: #07103a; }
+  .lh-modal-sub { font-size:13px; color:#64748b; margin-top:2px; }
+
+  /* body */
+  .lh-modal-body { font-size:14px; color:#0f172a; margin-bottom:12px; }
+  .lh-row { display:flex; gap:8px; align-items:center; }
+  .lh-input, .lh-textarea, .lucky-input {
+    width:100%;
+    padding:10px 12px;
+    border-radius:10px;
+    border:1px solid #e6eef8;
+    font-size:14px;
+    outline:none;
+    background: #fff;
+    box-shadow: inset 0 1px 0 rgba(14,56,120,0.02);
+  }
+  .lh-textarea { min-height:96px; resize:vertical; }
+  .lh-muted { color:#64748b; font-size:13px; }
+
+  /* Buttons */
+  .lh-actions { display:flex; gap:10px; justify-content:flex-end; align-items:center; margin-top:6px; }
+  .lh-btn {
+    padding:9px 14px;
+    border-radius:10px;
+    border:0;
+    cursor:pointer;
+    font-weight:700;
+    background:#0b5cff;
+    color:#fff;
+    box-shadow: 0 6px 14px rgba(11,92,255,0.14);
+    transition: transform .08s ease, box-shadow .12s ease, opacity .12s ease;
+  }
+  .lh-btn:active { transform: translateY(1px) scale(.998); }
+  .lh-btn.ghost {
+    background: transparent;
+    color:#0b5cff;
+    border:1px solid #e6eef8;
+    box-shadow: none;
+  }
+  .lh-btn.warn {
+    background:#f59e0b;
+    color:#2a1a02;
+    box-shadow: 0 6px 14px rgba(245,158,11,0.12);
+  }
+  .lh-btn.help {
+    background: transparent;
+    color: #0b5cff;
+    border: 1px dashed rgba(11,92,255,0.12);
+    padding:8px 12px;
+    font-weight:700;
+  }
+  .lh-close-x {
+    background:transparent;
+    border:0;
+    font-size:20px;
+    cursor:pointer;
+    color:#94a3b8;
+    padding:6px;
+    border-radius:8px;
+  }
+  .lh-close-x:hover { background: rgba(14,39,78,0.03); color:#0b5cff; }
+
+  /* toast */
+  .lh-toast-container { pointer-events: none; }
+  .lh-toast { padding:10px 14px; border-radius:10px; color:#fff; font-weight:700; pointer-events:auto; min-width:220px; text-align:center; }
+  .lh-toast.info { background: #0b5cff; }
+  .lh-toast.success { background: #0bbf6a; color: #063; }
+  .lh-toast.warn { background: #f59e0b; color: #422800; }
+  .lh-toast.error { background: #ef4444; }
+
+  /* spinner area and tiles */
+  .spinner-wrap { display:flex; align-items:center; justify-content:center; position:relative; margin-top:14px; min-height:96px; }
+  .spinner-track {
+    display:flex;
+    gap:10px;
+    align-items:center;
+    padding:14px;
+    will-change: transform;
+    transform: translateX(0);
+    transition: transform .3s ease;
+  }
+  .spin-tile {
+    min-width:100px;
+    padding:12px 14px;
+    border-radius:12px;
+    background: linear-gradient(180deg,#ffffff,#f8fbff);
+    border:1px solid rgba(14,56,120,0.06);
+    box-shadow: 0 6px 18px rgba(7,18,44,0.04);
+    text-align:center;
+    font-weight:800;
+    font-size:14px;
+    color:#07103a;
+    flex: 0 0 auto;
+  }
+  .spin-tile.dim { opacity: 0.32; transform: scale(.98); filter: blur(.2px); }
+  .spin-tile.winner { outline: 3px solid rgba(11,92,255,0.12); box-shadow: 0 12px 26px rgba(11,92,255,0.12); transform: scale(1.03); }
+  .spin-tile.ultimate { background: linear-gradient(90deg,#fff4e6,#fff6f0); color:#9a3d00; box-shadow: 0 18px 44px rgba(250,130,0,0.10); border:1px solid rgba(250,130,0,0.08); }
+
+  .spinner-pointer {
+    width:36px; height:36px; border-radius:50%;
+    position:absolute; top:-12px; right: calc(50% - 18px);
+    background: linear-gradient(180deg,#0b5cff,#0746d1); color:#fff;
+    display:flex; align-items:center; justify-content:center; font-weight:900; z-index: 10;
+    box-shadow: 0 8px 20px rgba(11,92,255,0.14);
+  }
+  .spinner-pointer.pulse { animation: lhPulse .9s ease; }
+  @keyframes lhPulse { 0% { transform: scale(1); } 50% { transform: scale(1.06); } 100% { transform: scale(1); } }
+
+  /* history table */
+  .lucky-history-table { width:100%; border-collapse: collapse; font-size:13px; margin-top:8px; }
+  .lucky-history-table th, .lucky-history-table td { text-align:left; padding:8px 10px; border-bottom: 1px solid #eef4fb; }
+  .lucky-history-day { background: linear-gradient(180deg,#fbfdff,#fff); padding:12px; border-radius:10px; border:1px solid #eef6ff; margin:6px 0; cursor:pointer; }
+  .lucky-history-day.active { box-shadow: 0 10px 24px rgba(7,18,44,0.06); transform: translateY(-2px); }
+
+  /* responsive */
+  @media (max-width:720px) {
+    .lh-modal-card { width: calc(100% - 32px); padding:12px; border-radius:12px; }
+    .spin-tile { min-width:82px; font-size:13px; padding:10px 12px; }
+    .spinner-pointer { right: calc(50% - 16px); width:32px; height:32px; top:-10px; }
+  }
+  `;
+  document.head.appendChild(s);
+})();
+// ---------- user-facing disabled modal ----------
+
+function showDisabledSpinModal(reason) {
+  const root = ensureModalRoot();
+  root.innerHTML = '';
+  root.style.display = 'flex';
+  root.style.alignItems = 'center';
+  root.style.justifyContent = 'center';
+
+  const backdrop = document.createElement('div');
+  backdrop.className = 'lh-modal-backdrop';
+
+  const card = document.createElement('div');
+  card.className = 'lh-modal-card';
+  card.setAttribute('role', 'dialog');
+  card.setAttribute('aria-modal', 'true');
+  card.innerHTML = `
+    <div class="lh-modal-header">
+      <div>
+        <div class="lh-modal-title">Lucky Spin is temporarily paused</div>
+        <div class="lh-modal-sub">An admin has paused the Lucky Spin feature. We're sorry for the interruption.</div>
+      </div>
+      <button class="lh-close-x" aria-label="Close">&times;</button>
+    </div>
+
+    <div class="lh-modal-body">
+      <div style="margin-bottom:12px">
+        <div class="lh-muted" style="margin-bottom:6px">Reason</div>
+        <div style="background:#f8fafc;padding:12px;border-radius:10px;border:1px solid #eef6ff;color:#0b1220">
+          ${ reason ? escapeHtml(reason) : '<span class="lh-muted">Temporarily paused for maintenance. Please check back soon.</span>' }
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;align-items:center;justify-content:space-between;">
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button id="lh_disabled_help" class="lh-btn help">Need help?</button>
+          <a href="/status.html" style="font-size:13px;color:#64748b;text-decoration:none">Check status</a>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button id="lh_disabled_ok" class="lh-btn lh-btn-primary">Close</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  backdrop.appendChild(card);
+  root.appendChild(backdrop);
+
+  function close() { try { root.innerHTML = ''; root.style.display = 'none'; } catch (e) {} }
+
+  // Close handlers
+  backdrop.addEventListener('click', (ev) => { if (ev.target === backdrop) close(); });
+  const closeX = card.querySelector('.lh-close-x');
+  if (closeX) closeX.addEventListener('click', close);
+  const okBtn = card.querySelector('#lh_disabled_ok');
+  if (okBtn) okBtn.addEventListener('click', close);
+
+  // Help button: go to helpCenter.html and close modal
+  const helpBtn = card.querySelector('#lh_disabled_help');
+  if (helpBtn) {
+    helpBtn.addEventListener('click', (ev) => {
+      try {
+        // prefer same-tab navigation to keep context
+        window.location.href = 'helpCenter.html';
+      } catch (e) {
+        window.open('helpCenter.html');
+      }
+      close();
+    });
+  }
+
+  // Keyboard escape closes
+  document.addEventListener('keydown', function escOnce(e){
+    if (e.key === 'Escape') { close(); document.removeEventListener('keydown', escOnce); }
+  });
+}
+
+// small helper to safely escape inserted text
+function escapeHtml(s) { 
+  return String(s || '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); 
+}
+
+
+async function openManageSpinModal() {
+  const me = getUser() || {};
+  const isAdmin = (me.role === 'admin' || me.isAdmin === true || (Array.isArray(me.roles) && me.roles.indexOf('admin') !== -1));
+  if (!isAdmin) return showWarn('Only admins can manage spins');
+
+  // fetch latest control state (fresh)
+  let control = { disabled:false, reason: '' };
+  try { control = await fetchSpinControlFresh() || control;
+
+   } 
+   catch(e)
+   { console.debug('fetchSpinControl err', e);
+
+    }
+
+  // build modal UI
+  const root = ensureModalRoot();
+  root.innerHTML = ''; root.style.display = 'flex';
+  const backdrop = document.createElement('div'); backdrop.className = 'lh-modal-backdrop';
+  const card = document.createElement('div'); card.className = 'lh-modal-card';
+  card.innerHTML = `
+    <div class="lh-modal-header">
+      <div>
+        <div class="lh-modal-title">Manage Lucky Spin</div>
+        <div class="lh-modal-sub">Pause or resume spins and provide an optional reason shown to users.</div>
+      </div>
+      <button class="lh-close-x" aria-label="Close">&times;</button>
+    </div>
+    <div class="lh-modal-body">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <div style="font-weight:700">Status:</div>
+        <div id="lh_manage_status" class="lh-muted">${control.disabled ? '<strong style="color:#b91c1c">Disabled</strong>' : '<strong style="color:#047857">Enabled</strong>'}</div>
+      </div>
+      <label class="lh-muted" style="display:block;margin-bottom:6px">Reason (shown to users when spins are disabled)</label>
+      <textarea id="spin_control_reason" class="lh-textarea" placeholder="Optional explanation for users...">${escapeHtml(control.reason || '')}</textarea>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button id="spin_control_help" class="lh-btn ghost">Help</button>
+      <button id="spin_control_enable" class="lh-btn">${control.disabled ? 'Enable Spins' : 'Enable (no-op)'}</button>
+      <button id="spin_control_disable" class="lh-btn ghost">${control.disabled ? 'Disabled (no-op)' : 'Disable Spins'}</button>
+      <button id="spin_control_close" class="lh-btn ghost">Close</button>
+    </div>
+  `;
+  backdrop.appendChild(card); root.appendChild(backdrop);
+
+  function close() { try{ root.innerHTML=''; root.style.display='none'; }catch(e){} }
+  function setWorking(state) { const sBtn = card.querySelector('#spin_control_enable'); const dBtn = card.querySelector('#spin_control_disable'); if (sBtn) sBtn.disabled = state; if (dBtn) dBtn.disabled = state; }
+
+  backdrop.addEventListener('click', (ev) => { if (ev.target === backdrop) close(); });
+  card.querySelector('.lh-close-x').addEventListener('click', close);
+  document.addEventListener('keydown', function escManage(e){ if (e.key === 'Escape') { close(); document.removeEventListener('keydown', escManage); } });
+
+  // Help button (open helpCenter.html and close modal)
+  card.querySelector('#spin_control_help').addEventListener('click', () => {
+    try { window.location.href = '/helpCenter.html'; } catch(e) { window.open('/helpCenter.html', '_blank'); }
+    close();
+  });
+
+  card.querySelector('#spin_control_close').addEventListener('click', close);
+
+  // Enable action
+  card.querySelector('#spin_control_enable').addEventListener('click', async () => {
+    const reason = (card.querySelector('#spin_control_reason').value || '').trim();
+    if (!control.disabled) { showInfo('Spins already enabled'); return; }
+    setWorking(true);
+    try {
+      const out = await apiPost('/api/leaderboard/spin-control', { disabled:false, reason });
+      if (out && out.ok) {
+        // server returned ok; try to extract doc robustly
+        const doc = (out.data && out.data.data) ? out.data.data : (out.data || out);
+        showSuccess('You enabled spins');
+        control.disabled = false;
+        control.reason = reason;
+        card.querySelector('#lh_manage_status').innerHTML = '<strong style="color:#047857">Enabled</strong>';
+        // apply to this client immediately and inform others via socket (server emits)
+        applySpinControl({ disabled:false, reason });
+        close();
+      } else {
+        // handle server error message
+        const errMsg = (out && (out.error || (out.data && out.data.error))) || 'Server error';
+        showError('Failed to enable spins: ' + errMsg);
+        console.error('enable failed', out);
+      }
+    } catch (err) {
+      console.error('enable err', err);
+      showError('Network or server error while enabling');
+    } finally { setWorking(false); }
+  });
+
+  // Disable action
+  card.querySelector('#spin_control_disable').addEventListener('click', async () => {
+    const reason = (card.querySelector('#spin_control_reason').value || '').trim();
+    if (!reason && !confirm('You are disabling spins without a reason. Continue?')) return;
+    if (control.disabled && !confirm('Spins already disabled. Re-apply?')) return;
+    setWorking(true);
+    try {
+      const out = await apiPost('/api/leaderboard/spin-control', { disabled:true, reason });
+      if (out && out.ok) {
+        const doc = (out.data && out.data.data) ? out.data.data : (out.data || out);
+        showSuccess('You disabled spins');
+        control.disabled = true;
+        control.reason = reason;
+        card.querySelector('#lh_manage_status').innerHTML = '<strong style="color:#b91c1c">Disabled</strong>';
+        // apply locally and let server socket notify others
+        applySpinControl({ disabled:true, reason });
+        close();
+      } else {
+        const errMsg = (out && (out.error || (out.data && out.data.error))) || 'Server error';
+        showError('Failed to disable spins: ' + errMsg);
+        console.error('disable failed', out);
+      }
+    } catch (err) {
+      console.error('disable err', err);
+      showError('Network or server error while disabling');
+    } finally { setWorking(false); }
+  });
+}
+  // ---------- tuning ----------
+  const TOP_PRIZE_PROB = (typeof window !== 'undefined' && window.LuckySpinConfig && typeof window.LuckySpinConfig.TOP_PRIZE_PROB === 'number')
+    ? window.LuckySpinConfig.TOP_PRIZE_PROB
+    : 0.001;
+
+    // ---------- helper: clamp & escape ----------
+function clamp(n, lo, hi) { return Math.max(lo, Math.min(hi, n)); }
+function escapeHtml(s) { return String(s || '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+// ---------- device slot count (unchanged but used) ----------
+function computeDeviceTotalSlots() {
+  try {
+    const w = (typeof window !== 'undefined') ? (window.innerWidth || 1024) : 1024;
+    const isTouch = (typeof navigator !== 'undefined') && ('ontouchstart' in navigator || navigator.maxTouchPoints > 0);
+    if (isTouch || w <= 640) return 80;
+    if (w <= 960) return 120;
+    return 200;
+  } catch (e) { return 120; }
+}
+
+// ---------- preset options (same idea, kept) ----------
+function getPresetOptions(bet) {
+  bet = Math.max(1, Math.round(Number(bet) || 0));
+  if (bet >= 9 && bet <= 11) return [0,3,5,7,8,10,15,20,50,80,100];
+  if (bet >= 18 && bet <= 22) return [0,5,10,14,17,20,40,80,100,150,200];
+  if (bet >= 28 && bet <= 32) return [0,5,10,15,20,25,30,40,60,100,150,300];
+  if (bet >= 65 && bet <= 75) return [10,15,30,40,55,70,80,120,200,250,700];
+
+  if (bet < 50) {
+    const small = [0,3,5, Math.max(5, Math.round(bet * 0.6)), Math.round(bet * 0.85)];
+    const core  = [Math.round(bet * 0.5), Math.round(bet * 0.75), bet];
+    const big   = [Math.round(bet * 2), Math.round(bet * 4), Math.round(bet * 8)];
+    return Array.from(new Set(small.concat(core, big))).sort((a,b)=>a-b);
+  } else {
+    const near = [Math.round(bet * 0.2), Math.round(bet * 0.5), Math.round(bet * 0.8)];
+    const core = [Math.round(bet * 1), Math.round(bet * 1.5), Math.round(bet * 2)];
+    const big  = [Math.round(bet * 3), Math.round(bet * 5), Math.round(bet * 7.5)];
+    return Array.from(new Set([0,5].concat(near, core, big))).sort((a,b)=>a-b);
+  }
+}
+
+
+/* =========================
+   buildAnimationOptionsFromPercents
+   (more precise slot allocation)
+   ========================= */
+   function buildAnimationOptionsFromPercents(percents, totalSlots) {
+  totalSlots = Math.max(40, Math.round(Number(totalSlots || computeDeviceTotalSlots()) || 120));
+  const keys = Object.keys(percents || {});
+  if (!keys.length) return [];
+
+  const entries = keys.map(k => ({k: String(k), p: Math.max(0.01, Number(percents[k] || 0))}));
+  const raw = entries.map(e => (e.p / 100) * totalSlots);
+
+  // take floor counts, then distribute leftover by largest fractional part
+  let floorCounts = raw.map(v => Math.max(1, Math.floor(v)));
+  let sum = floorCounts.reduce((s,x) => s + x, 0);
+  const remainders = raw.map((v,i) => ({i, rem: v - Math.floor(v)}));
+  remainders.sort((a,b) => b.rem - a.rem);
+  let remain = totalSlots - sum;
+  for (let r = 0; r < remainders.length && remain > 0; r++, remain--) {
+    floorCounts[remainders[r].i]++;
+  }
+  // if still not matching due to odd rounding, adjust safely
+  while (floorCounts.reduce((s,x) => s + x, 0) > totalSlots) {
+    const idxObj = floorCounts.map((v,i) => ({v,i})).sort((a,b)=>b.v-a.v)[0];
+    if (floorCounts[idxObj.i] > 1) floorCounts[idxObj.i]--;
+    else break;
+  }
+  while (floorCounts.reduce((s,x) => s + x, 0) < totalSlots) {
+    const idx = entries.map((e,i)=>({p:e.p,i})).sort((a,b)=>b.p-a.p)[0].i;
+    floorCounts[idx] = (floorCounts[idx] || 0) + 1;
+  }
+
+  const out = [];
+  for (let i = 0; i < entries.length; i++) {
+    for (let j = 0; j < floorCounts[i]; j++) out.push(entries[i].k);
+  }
+
+  // shuffle for randomness
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+
+  // ensure every key appears at least once
+  for (const e of entries) if (!out.includes(e.k)) out.push(e.k);
+  return out;
+}
+
+/* =========================
+   ensureOutcomeInAnimOptions
+   (improved; can force center later)
+   ========================= */
+function ensureOutcomeInAnimOptions(animArray, outcome) {
+  const outStr = String(outcome);
+  const arr = animArray.slice().map(String);
+  if (arr.indexOf(outStr) !== -1) return arr;
+  const insertAt = Math.max(1, Math.floor(arr.length / 2));
+  arr.splice(insertAt, 0, outStr);
+  return arr;
+}
+
+
+// ---------- client-side outcome weight generator (mirrors server) ----------
+function computeOutcomeWeightsClient(bet, opts = {}) {
+  const totalSlots = Number(opts.totalSlots || computeDeviceTotalSlots()) || 120;
+  const betNum = Math.max(1, Math.round(Number(bet) || 0));
+
+  // use preset options for cleaner UX (same logic as your getPresetOptions)
+  let optionsUnique = (typeof getPresetOptions === 'function') ? getPresetOptions(betNum).map(Number) : [0,5,betNum,Math.round(betNum*2)];
+  optionsUnique = Array.from(new Set(optionsUnique)).sort((a,b)=>a-b);
+  const highest = optionsUnique[optionsUnique.length - 1];
+
+  // templates (use exact numbers you requested for bet ~10)
+  const templates = {
+    10: { 0:10.26, 3:10.26, 5:10.26, 7:20.53, 8:25.66, 10:15.40, 15:3.18, 20:2.12, 50:1.69, 80:0.51, 100:0.10 },
+    20: { 0:20.0, 5:60.0, 20:10.0, 30:3.2, 40:3.0, 60:2.8, 100:1.5, 150:0.7, 180:0.4, 200:0.1 }
+  };
+
+  const percents = {};
+  optionsUnique.forEach(v => percents[String(v)] = 0.01); // minimal floor
+
+  // apply templates when near 10 or 20
+  if (Math.abs(betNum - 10) <= 1 && templates[10]) {
+    const raw = templates[10];
+    let sumUsed = 0, present = [];
+    for (const kStr in raw) {
+      const k = Number(kStr);
+      if (optionsUnique.includes(k)) { percents[String(k)] = raw[k]; sumUsed += raw[k]; present.push(String(k)); }
+    }
+    if (sumUsed > 0 && Math.abs(sumUsed - 100) > 0.0001) {
+      const scale = 100 / sumUsed;
+      present.forEach(k => percents[k] = +(percents[k] * scale));
+    }
+  } else if (Math.abs(betNum - 20) <= 2 && templates[20]) {
+    const raw = templates[20];
+    let sumUsed = 0, present = [];
+    for (const kStr in raw) {
+      const k = Number(kStr);
+      if (optionsUnique.includes(k)) { percents[String(k)] = raw[k]; sumUsed += raw[k]; present.push(String(k)); }
+    }
+    if (sumUsed > 0 && Math.abs(sumUsed - 100) > 0.0001) {
+      const scale = 100 / sumUsed;
+      present.forEach(k => percents[k] = +(percents[k] * scale));
+    }
+  } else {
+    // generic distribution: bias to values near bet
+    if (betNum <= 10) {
+      if (optionsUnique.includes(0)) percents['0'] = 20;
+      if (optionsUnique.includes(5)) percents['5'] = 60;
+    } else if (betNum <= 20) {
+      if (optionsUnique.includes(0)) percents['0'] = 7;
+      if (optionsUnique.includes(5)) percents['5'] = 15;
+    } else if (betNum < 50) {
+      if (optionsUnique.includes(0)) percents['0'] = 3;
+      if (optionsUnique.includes(5)) percents['5'] = 6;
+    } else {
+      if (optionsUnique.includes(0)) percents['0'] = 0.5;
+      if (optionsUnique.includes(5)) percents['5'] = 1.0;
+    }
+
+    if (optionsUnique.includes(highest)) percents[String(highest)] = Math.max(0.01, (opts.topPrizeProb || TOP_PRIZE_PROB) * 100);
+
+    const rest = optionsUnique.filter(v => v !== 0 && v !== 5 && v !== highest);
+    if (rest.length) {
+      const scores = rest.map(v => {
+        const dist = Math.max(1, Math.abs(v - betNum));
+        const boost = (v >= betNum) ? 1.25 : 1.0;
+        const score = (1 / (1 + Math.log10(1 + dist))) * boost;
+        return { v, score };
+      });
+      const totalScore = scores.reduce((s,x) => s + x.score, 0) || 1;
+      const usedSoFar = Object.keys(percents).reduce((s,k)=>s + (percents[k]||0), 0);
+      const remaining = Math.max(0.0001, 100 - usedSoFar);
+      scores.forEach(x => { percents[String(x.v)] = Math.max(0.01, (x.score / totalScore) * remaining); });
+    }
+  }
+
+  // caps for fairness
+  if (betNum > 10) {
+    if (optionsUnique.includes(0)) percents['0'] = Math.min(percents['0'] || 0.01, 1.0);
+    if (optionsUnique.includes(5)) percents['5'] = Math.min(percents['5'] || 0.01, 1.0);
+  }
+  if (betNum >= 50) {
+    const smalls = optionsUnique.filter(v => v < 20);
+    if (smalls.length) {
+      let totalSmalls = smalls.reduce((s,v) => s + (percents[String(v)] || 0), 0);
+      const cap = 1.0;
+      if (totalSmalls > cap) {
+        const factor = cap / totalSmalls;
+        smalls.forEach(v => percents[String(v)] = +(percents[String(v)] * factor));
+      }
+    }
+  }
+
+  // floor and normalize to exactly 100
+  optionsUnique.forEach(v => { if (!Number.isFinite(percents[String(v)]) || percents[String(v)] < 0.01) percents[String(v)] = 0.01; });
+  let sum = optionsUnique.reduce((s,v) => s + (percents[String(v)] || 0), 0) || 1;
+  const scale = 100 / sum;
+  optionsUnique.forEach(v => percents[String(v)] = +(percents[String(v)] * scale));
+
+  // weights and animationOptions
+  const weights = optionsUnique.map(v => Math.max(0.0001, (percents[String(v)] || 0) * 10));
+  const animationOptions = buildAnimationOptionsFromPercents(percents, totalSlots);
+
+  return {
+    options: optionsUnique.map(String),
+    percents,
+    weights,
+    animationOptions
+  };
+}
+
+// ---------- renderOverview (uses computeOutcomeWeightsClient) ----------
+function renderOverview(bet, container){
+  try {
+    const data = computeOutcomeWeightsClient(bet);
+    const options = data.options || [];
+    const perc = data.percents || {};
+    let rows = `<table class="lucky-table"><thead><tr><th style="text-align:left">Outcome</th><th style="text-align:right">Probability</th></tr></thead><tbody>`;
+    for (let i = 0; i < options.length; i++) {
+      const v = options[i];
+      let p = (typeof perc[v] === 'number') ? Number(perc[v]) : 0;
+      if (!Number.isFinite(p) || p <= 0) p = 0.01;
+      rows += `<tr><td>${escapeHtml(String(v))} pts</td><td style="text-align:right">${p.toFixed(2)}%</td></tr>`;
+    }
+    rows += '</tbody></table>';
+    container.innerHTML = rows;
+  } catch (e) {
+    container.innerHTML = '<div class="small-muted">Unable to render overview</div>';
+    console.warn('renderOverview failed', e);
+  }
+}
+
+// ---------- animateSpin (hardened, stable final state) ----------
+function getCurrentTranslateX(el) {
+  const st = window.getComputedStyle(el);
+  const tr = st.transform || st.webkitTransform || '';
+  if (!tr || tr === 'none') return 0;
+  try {
+    const m = tr.match(/matrix(?:3d)?\((.+)\)/);
+    if (!m) return 0;
+    const parts = m[1].split(',').map(s => parseFloat(s.trim()));
+    if (parts.length === 16) return parts[12] || 0;
+    if (parts.length === 6) return parts[4] || 0;
+  } catch (e) {}
+  return 0;
+}
+
+/* =========================
+   animateSpin - deterministic final tile
+   - ensures a tile equal to targetOutcome is placed at the exact center index
+   - rotates array so that a pre-existing occurrence lands at center (preferred)
+   - if none exists, overwrites the center tile with outcome (safe)
+   ========================= */
+   function animateSpin(trackOptions, targetOutcome, opts = {}) {
+  const slowDurationMs = opts.slowDurationMs || 2400;
+  const defaultRepeats = (computeDeviceTotalSlots() <= 80) ? 5 : 8;
+  const repeats = typeof opts.repeats === 'number' ? Math.max(1, opts.repeats) : defaultRepeats;
+
+  return new Promise((resolve) => {
+    try {
+      const area = document.getElementById('lucky_spinner_area');
+      const track = document.getElementById('lucky_spinner_track');
+      const resultEl = document.getElementById('lucky_result');
+      if (!area || !track || !Array.isArray(trackOptions) || trackOptions.length === 0) {
+        return resolve({ finalIndex: 0, value: Number(targetOutcome) });
+      }
+
+      // normalize
+      let cycleOptions = trackOptions.map(String);
+
+      // Build repeated base array (will be transformed to ensure exact center)
+      let base = [];
+      for (let r = 0; r < repeats; r++) {
+        base = base.concat(cycleOptions);
+      }
+      const totalTiles = base.length;
+      const desiredIndex = Math.floor(totalTiles / 2);
+
+      // find any index that already equals targetOutcome
+      const numericTarget = String(targetOutcome);
+      let foundIndex = base.findIndex(v => String(v) === numericTarget);
+
+      // helper: right-rotate by k
+      function rotateRight(arr, k) {
+        const n = arr.length;
+        if (n === 0) return arr.slice();
+        k = ((k % n) + n) % n;
+        if (k === 0) return arr.slice();
+        return arr.slice(n - k).concat(arr.slice(0, n - k));
+      }
+
+      if (foundIndex >= 0) {
+        // rotate base so that foundIndex goes to desiredIndex
+        const k = (desiredIndex - foundIndex + totalTiles) % totalTiles; // how much to add to index to reach desiredIndex
+        base = rotateRight(base, k);
+      } else {
+        // no occurrence: ensure at least one entry by overwriting center slot
+        base[desiredIndex] = numericTarget;
+      }
+
+      // Rebuild DOM tiles from 'base' sequence (we know base[desiredIndex] === numericTarget now)
+      track.innerHTML = '';
+      if (resultEl) resultEl.style.display = 'none';
+      area.style.display = '';
+
+      const tiles = [];
+      for (let i = 0; i < base.length; i++) {
+        const val = String(base[i]);
+        const tile = document.createElement('div');
+        tile.className = 'spin-tile';
+        tile.innerText = val + ' pts';
+        tile.dataset.val = val;
+        track.appendChild(tile);
+        tiles.push({ el: tile, value: Number(val) });
+      }
+
+      // now targetIndex is desiredIndex (we forced/rotated it)
+      const targetIndex = desiredIndex;
+
+      // layout measurement on next frames
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        try {
+          // compute stride
+          let tileStride = 0;
+          if (tiles.length >= 2) {
+            const r0 = tiles[0].el.getBoundingClientRect();
+            const r1 = tiles[1].el.getBoundingClientRect();
+            tileStride = Math.round(r1.left - r0.left);
+            if (!tileStride || tileStride <= 0) tileStride = Math.round(tiles[0].el.offsetWidth + 8);
+          } else tileStride = Math.round(tiles[0].el.offsetWidth + 8);
+
+          const areaRect = area.getBoundingClientRect();
+          const areaCenterX = areaRect.left + (areaRect.width / 2);
+
+          const firstTileRect = tiles[0].el.getBoundingClientRect();
+          const trackRect = track.getBoundingClientRect();
+          const firstTileCenterFromTrackLeft = (firstTileRect.left + firstTileRect.width / 2) - trackRect.left;
+
+          const targetTileCenterFromTrackLeft = firstTileCenterFromTrackLeft + (targetIndex * tileStride);
+          const trackLeft = trackRect.left;
+          const finalTranslatePx = Math.round(areaCenterX - trackLeft - targetTileCenterFromTrackLeft);
+
+          // overshoot cycles (fast phase)
+          const maxCycles = Math.max(1, Math.min(3, Math.floor(cycleOptions.length / 20)));
+          const overshootCycles = Math.max(1, Math.floor(2 + Math.random() * maxCycles));
+          const overshootTranslatePx = finalTranslatePx - (cycleOptions.length * tileStride * overshootCycles);
+
+          // audio
+          try { stopSpinAudio(); } catch(e){}
+          const g = ensureAudioOnGesture();
+          const ctx = (g && g.ctx) ? g.ctx : ((window.AudioContext || window.webkitAudioContext) ? new (window.AudioContext || window.webkitAudioContext)() : null);
+          const audio = ctx ? startSpinAudio(ctx, 220) : null;
+
+          track.style.transition = 'none';
+          track.style.transform = `translateX(0px)`;
+
+          const fastMs = 520 + Math.random() * 260;
+          const deltaPx = Math.abs(overshootTranslatePx - 0);
+          let tilesCrossed = Math.max(4, Math.round(deltaPx / (tileStride || 1)));
+          const tickIntervalMs = Math.max(20, (fastMs / (tilesCrossed || 1)) | 0);
+
+          let tickTimer = null;
+          if (ctx) {
+            let tickCount = 0;
+            tickTimer = setInterval(() => {
+              try { const f = 1000 + Math.min(2000, 1200 + (tickCount % 6) * 80); playTick(ctx, f, 0.03); } catch(e){}
+              tickCount++;
+            }, tickIntervalMs);
+          }
+
+          // start fast phase
+          setTimeout(() => {
+            track.style.transition = `transform ${fastMs}ms cubic-bezier(.12,.9,.24,1)`;
+            track.style.transform = `translateX(${overshootTranslatePx}px)`;
+          }, 20);
+
+          let settled = false;
+          let microTimeout = null;
+
+          function finalizeAtExact(tileIndex) {
+            try {
+              const winTile = tiles[tileIndex];
+              if (!winTile || !winTile.el) {
+                settled = true;
+                if (tickTimer) clearInterval(tickTimer);
+                if (audio) try { stopSpinAudio(); } catch(e){}
+                return resolve({ finalIndex: tileIndex, value: Number(targetOutcome) });
+              }
+
+              const winRect = winTile.el.getBoundingClientRect();
+              const curTrackRect = track.getBoundingClientRect();
+              const exactFinal = Math.round(areaCenterX - (curTrackRect.left) - (((winRect.left + winRect.width / 2) - curTrackRect.left)));
+
+              // micro snap
+              requestAnimationFrame(() => {
+                track.style.transition = `transform 180ms cubic-bezier(.22,.9,.32,1)`;
+                track.style.transform = `translateX(${exactFinal}px)`;
+              });
+
+              const microComplete = () => {
+                if (settled) return;
+                settled = true;
+                if (tickTimer) clearInterval(tickTimer);
+                try { if (audio) stopSpinAudio(); } catch(e){}
+                tiles.forEach(t => t.el.classList.remove('winner','ultimate','adjacent','dim'));
+                const top = Math.max(...base.map(x => Number(x)));
+                if (Number(winTile.value) === top) {
+                  winTile.el.classList.add('ultimate');
+                  try { playApplause(); } catch(e){}
+                  try { fireConfetti(80); } catch(e){}
+                } else {
+                  winTile.el.classList.add('winner');
+                }
+                const prev = tiles[tileIndex - 1]; const next = tiles[tileIndex + 1];
+                if (prev && prev.el) prev.el.classList.add('adjacent');
+                if (next && next.el) next.el.classList.add('adjacent');
+                tiles.forEach((t, idx) => {
+                  if (idx !== tileIndex && idx !== tileIndex-1 && idx !== tileIndex+1) t.el.classList.add('dim');
+                });
+                const pointer = document.querySelector('.spinner-pointer');
+                if (pointer) { pointer.classList.add('pulse'); setTimeout(()=>pointer.classList.remove('pulse'), 1100); }
+
+                // return the numeric value of the centered tile (should match server targetOutcome)
+                const finalVal = Number(tiles[tileIndex].value);
+                return resolve({ finalIndex: tileIndex, value: finalVal });
+              };
+
+              const onMicroEnd = (ev) => {
+                if (ev && ev.target !== track) return;
+                if (ev && ev.propertyName && ev.propertyName !== 'transform') return;
+                track.removeEventListener('transitionend', onMicroEnd);
+                if (microTimeout) { clearTimeout(microTimeout); microTimeout = null; }
+                microComplete();
+              };
+              track.addEventListener('transitionend', onMicroEnd);
+              microTimeout = setTimeout(() => {
+                try { track.removeEventListener('transitionend', onMicroEnd); } catch(e){}
+                microComplete();
+              }, 450);
+
+            } catch (e) {
+              console.warn('finalizeAtExact failed', e);
+              if (!settled) {
+                settled = true;
+                if (tickTimer) clearInterval(tickTimer);
+                try { if (audio) stopSpinAudio(); } catch(e){}
+                return resolve({ finalIndex: tileIndex, value: Number(targetOutcome) });
+              }
+            }
+          }
+
+          function onFastEnd(ev) {
+            if (ev && ev.target !== track) return;
+            if (ev && ev.propertyName && ev.propertyName !== 'transform') return;
+            track.removeEventListener('transitionend', onFastEnd);
+            if (tickTimer) { clearInterval(tickTimer); tickTimer = null; }
+            try { if (audio && audio.osc && audio.ctx) audio.osc.frequency.setValueAtTime(420, audio.ctx.currentTime); } catch(e){}
+            track.style.transition = `transform ${slowDurationMs}ms cubic-bezier(.22,.9,.32,1)`;
+            track.style.transform = `translateX(${finalTranslatePx}px)`;
+
+            function onSlowEnd(ev2) {
+              if (ev2 && ev2.target !== track) return;
+              if (ev2 && ev2.propertyName && ev2.propertyName !== 'transform') return;
+              track.removeEventListener('transitionend', onSlowEnd);
+              finalizeAtExact(targetIndex);
+            }
+            track.addEventListener('transitionend', onSlowEnd);
+
+            setTimeout(() => {
+              if (!settled) finalizeAtExact(targetIndex);
+            }, slowDurationMs + 600);
+          }
+
+          track.addEventListener('transitionend', onFastEnd);
+
+          // fallback if fast doesn't occur
+          setTimeout(() => {
+            if (!settled) {
+              try { track.removeEventListener('transitionend', onFastEnd); } catch(e){}
+              if (tickTimer) { clearInterval(tickTimer); tickTimer = null; }
+              try {
+                track.style.transition = `transform ${slowDurationMs}ms cubic-bezier(.22,.9,.32,1)`;
+                track.style.transform = `translateX(${finalTranslatePx}px)`;
+                setTimeout(() => { if (!settled) finalizeAtExact(targetIndex); }, slowDurationMs + 40);
+              } catch(e) {
+                if (!settled) { settled = true; resolve({ finalIndex: targetIndex, value: Number(targetOutcome) }); }
+              }
+            }
+          }, fastMs + 700);
+
+        } catch (err) {
+          console.warn('animateSpin inner failure', err);
+          return resolve({ finalIndex: Math.floor(totalTiles/2), value: Number(targetOutcome) });
+        }
+      })); // rAF x2
+
+    } catch (outerErr) {
+      console.warn('animateSpin failure', outerErr);
+      return resolve({ finalIndex: 0, value: Number(targetOutcome) });
+    }
+  });
+}
+
+
+  /* =======================
+   AUDIO: unlock + start/stop
+   ======================= */
+   let _gestureAudioCtx = null;
+    let currentSpinAudio = null;
+
+function ensureAudioOnGesture() {
+  try {
+    if (_gestureAudioCtx && _gestureAudioCtx.ctx) {
+      const ctx = _gestureAudioCtx.ctx;
+      if (ctx.state === 'suspended' && typeof ctx.resume === 'function') ctx.resume().catch(()=>{});
+      return _gestureAudioCtx;
+    }
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return null;
+    const ctx = new Ctx();
+    try {
+      const g = ctx.createGain();
+      g.gain.value = 0.00001;
+      g.connect(ctx.destination);
+      if (ctx.state === 'suspended' && typeof ctx.resume === 'function') ctx.resume().catch(()=>{});
+    } catch(e){}
+    _gestureAudioCtx = { ctx };
+    return _gestureAudioCtx;
+  } catch (e) {
+    return null;
+  }
+}
+
+function startSpinAudio(ctx, freq = 220) {
+  try {
+    if (!ctx) {
+      const g = ensureAudioOnGesture();
+      if (!g || !g.ctx) return null;
+      ctx = g.ctx;
+    }
+    stopSpinAudio();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.value = freq;
+    gain.gain.value = 0.02;
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    currentSpinAudio = { ctx, osc, gain };
+    return currentSpinAudio;
+  } catch (e) {
+    console.warn('startSpinAudio failed', e);
+    return null;
+  }
+}
+
+function stopSpinAudio() {
+  try {
+    if (!currentSpinAudio) return;
+    const { ctx, osc, gain } = currentSpinAudio;
+    try {
+      if (gain && ctx && typeof ctx.currentTime === 'number') {
+        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.05);
+      }
+      if (osc && ctx && typeof ctx.currentTime === 'number') {
+        osc.stop(ctx.currentTime + 0.06);
+      } else if (osc && typeof osc.stop === 'function') {
+        try { osc.stop(); } catch(e){}
+      }
+    } catch(e){}
+  } catch(e){}
+  currentSpinAudio = null;
+}
+
+function playTick(ctx, freq = 1200, dur = 0.035) {
+  try {
+    if (!ctx) return;
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = 'sine';
+    o.frequency.value = freq + (Math.random() * 80 - 40);
+    g.gain.value = 0.0001;
+    o.connect(g);
+    g.connect(ctx.destination);
+    const now = ctx.currentTime;
+    g.gain.setValueAtTime(0.0001, now);
+    g.gain.linearRampToValueAtTime(0.04, now + 0.003);
+    g.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+    o.start(now);
+    o.stop(now + dur + 0.01);
+  } catch(e){}
+}
+
+function playApplause() {
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return;
+    const ctx = new Ctx();
+    const bufferSize = Math.floor(ctx.sampleRate * 0.12);
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i=0;i<bufferSize;i++){
+      data[i] = (Math.random()*2 - 1) * (1 - i / bufferSize);
+    }
+    const src = ctx.createBufferSource();
+    src.buffer = buffer;
+    const band = ctx.createBiquadFilter();
+    band.type = 'highpass';
+    band.frequency.value = 1200;
+    const g = ctx.createGain();
+    g.gain.value = 0.9;
+    src.connect(band);
+    band.connect(g);
+    g.connect(ctx.destination);
+    src.start();
+    setTimeout(()=> {
+      const osc = ctx.createOscillator();
+      const g2 = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.value = 880;
+      g2.gain.value = 0.01;
+      osc.connect(g2);
+      g2.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.35);
+      try { src.stop(ctx.currentTime + 0.16); } catch(e){}
+    }, 30);
+  } catch(e){ console.warn('applause fail', e); }
+}
+
+
+
+// ---------- get balance fallback & misc (unchanged) ----------
+  async function fetchBalanceFallback() {
+    try {
+      const local = getUser();
+      if(local && typeof local.pointsCurrent === 'number') return local.pointsCurrent;
+    } catch(e){}
+    try {
+      const myId = (getUser && (getUser()._id || getUser().id)) || null;
+      if(myId){
+        const r = await apiGet('/api/leaderboard?limit=500');
+        if(r && r.ok && r.data){
+          let list = null;
+          if(Array.isArray(r.data.leaderboard)) list = r.data.leaderboard;
+          else if(Array.isArray(r.data)) list = r.data;
+          else if(Array.isArray(r.data.users)) list = r.data.users;
+          if(!list && typeof r.data === 'object'){
+            for(const k of Object.keys(r.data)){ if(Array.isArray(r.data[k])){ list = r.data[k]; break; } }
+          }
+          if(Array.isArray(list)){
+            const found = list.find(u => {
+              const ids = [u.userId, u._id, u.id, (u.user && u.user._id)];
+              return ids.some(x => x && String(x) === String(myId));
+            });
+            if(found) return (typeof found.points === 'number') ? found.points : (typeof found.pointsCurrent === 'number' ? found.pointsCurrent : 0);
+          }
+        }
+      }
+    } catch(e){}
+    try {
+      const myId = (getUser && (getUser()._id || getUser().id)) || null;
+      const candidates = myId ? [
+        `/api/users/${encodeURIComponent(myId)}`,
+        `/api/user/${encodeURIComponent(myId)}`,
+        `/api/account/users/${encodeURIComponent(myId)}`
+      ] : [];
+      for(const url of candidates){
+        try {
+          const r = await apiGet(url);
+          if(r && r.ok && r.data){
+            const payload = r.data.user || r.data || (r.data.data && r.data.data.user) || null;
+            if(payload && typeof payload.pointsCurrent === 'number') {
+              try { const s = getUser() || {}; s.pointsCurrent = payload.pointsCurrent; localStorage.setItem('user', JSON.stringify(s)); } catch(e){}
+              return payload.pointsCurrent;
+            }
+          }
+        } catch(e){}
+      }
+    } catch(e){}
+    return 0;
+  }
+
+  function nextResetUtcString(){
+    const now = new Date();
+    const nextReset = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()+1, 0,0,0));
+    const parts = nextReset.toLocaleString('en-US', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:true });
+    return parts.replace(',', '');
+  }
+
+    // ---------- modal UI + openLuckyModal (wires using box.querySelector) ----------
+
+  async function openLuckyModal() {
+    const token = getToken();
+    if(!token){ showInfo('Please login to use Lucky Spin.'); return; }
+
+
+    const balance = await fetchBalanceFallback();
+    const st = await apiGet('/api/leaderboard/spin-status');
+    let spinsToday = 0;
+    try {
+      if (st && st.ok && typeof st.spinsToday !== 'undefined') {
+        spinsToday = st.spinsToday || 0;
+        const uid = getUserId();
+        if (uid) localStorage.setItem('spinStatus_' + uid, JSON.stringify({ spinsToday, ts: Date.now() }));
+      } else {
+        const uid = getUserId();
+        if (uid) {
+          const cached = localStorage.getItem('spinStatus_' + uid);
+          if (cached) {
+            try { spinsToday = JSON.parse(cached).spinsToday || 0; } catch(e){}
+          }
+        }
+      }
+    } catch(e){ console.warn('spin-status fallback error', e); }
+
+    const remaining = Math.max(0, DAILY_LIMIT - spinsToday);
+    const lastSpin = loadLastSpin();
+
+    const html = `
+      <div class="lucky-modal" role="dialog" aria-modal="true" style="width:880px;max-width:96vw;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div>
+            <div style="font-size:20px;font-weight:700">Lucky Spin</div>
+            <div style="color:#64748b;font-size:13px">Bet points for a chance to win more — ${DAILY_LIMIT} spins/day</div>
+          </div>
+          <div style="text-align:right">
+            <div class="small-muted" id="lucky_spins_counter">Spins today: ${spinsToday} / ${DAILY_LIMIT}</div>
+            <div style="margin-top:6px;font-size:28px;font-weight:800;color:#0b5cff" id="lucky_modal_balance">${balance || 0} pts</div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:10px;align-items:center">
+          <input id="lucky_bet_input" class="lucky-input" type="number" min="${MIN_BET}" placeholder="Enter bet (min ${MIN_BET}, max ${MAX_BET})" value="${MIN_BET}">
+          <button id="lucky_tab_overview" class="lucky-btn lucky-ghost">Overview</button>
+          <button id="lucky_tab_history" class="lucky-btn lucky-ghost">History</button>
+          <button id="lucky_spin_btn" class="lucky-btn" ${ (remaining <= 0) ? 'disabled' : '' }>Spin</button>
+          <button id="lucky_close_btn" class="lucky-btn lucky-ghost">Close</button>
+        </div>
+
+        <div id="lucky_tab_panes" style="margin-top:12px">
+          <div id="lucky_overview_panel" class="lucky-overview" style="display:block"></div>
+          <div id="lucky_history_panel" class="lucky-overview" style="display:none; max-height:240px; overflow:auto"></div>
+        </div>
+
+        <div class="spinner-wrap" id="lucky_spinner_area" style="display:none">
+          <div class="spinner-track" id="lucky_spinner_track"></div>
+          <div class="spinner-pointer"></div>
+        </div>
+
+        <div id="lucky_result" class="lucky-result" style="display:${lastSpin ? '' : 'none'}; margin-top:12px">
+          ${ lastSpin ? `Last: you won ${ (lastSpin.won || lastSpin.outcome || lastSpin.value) } pts (bet ${lastSpin.bet || '-'}) — total ${lastSpin.newPoints || '-' } pts` : '' }
+        </div>
+      </div>
+    `;
+  // create modal DOM (as you already do)
+  const root = ensureModalRoot();
+  root.innerHTML = '';
+  root.style.position='fixed';
+  root.style.inset=0; root.style.display='flex';
+  root.style.alignItems='center'; root.style.justifyContent='center';
+  root.style.zIndex=9998;
+  const overlay = document.createElement('div');
+  overlay.style.position='absolute';
+  overlay.style.inset=0; overlay.style.background='rgba(0,0,0,0.36)';
+  const box = document.createElement('div'); box.innerHTML = html;
+  box.style.zIndex = 9999;
+  root.appendChild(overlay); root.appendChild(box);
+
+  // now query local elements
+  const betInput = box.querySelector('#lucky_bet_input');
+  const spinBtn = box.querySelector('#lucky_spin_btn');
+  const ovBtn = box.querySelector('#lucky_tab_overview');
+  const histBtn = box.querySelector('#lucky_tab_history');
+  const closeBtn = box.querySelector('#lucky_close_btn');
+  const ovPanel = box.querySelector('#lucky_overview_panel');
+  const histPanel = box.querySelector('#lucky_history_panel');
+  const balanceEl = box.querySelector('#lucky_modal_balance');
+  const spinsCounterEl = box.querySelector('#lucky_spins_counter');
+
+  // --- MOVE the spin-control check here (after spinBtn exists) ---
+  try {
+  // inside spinBtn.onclick before UI changes:
+const ctrl = await fetchSpinControlFresh();
+if (ctrl && ctrl.disabled) {
+  showDisabledSpinModal(ctrl.reason || 'Spins are temporarily disabled by admin.');
+  // reset UI if needed
+  try { spinBtn.disabled = false; spinBtn.innerText = 'Spin'; } catch(e){}
+  return;
+}
+
+  } catch (e) {
+    // ignore control fetch failures silently
+    console.debug('fetchSpinControl failed', e);
+  }
+
+    try {
+      const localPointer = box.querySelector('.spinner-pointer');
+      if (localPointer) localPointer.style.display = 'none';
+      document.querySelectorAll('.spinner-pointer').forEach(el => el.style.display = 'none');
+    } catch (e) { /* ignore */ }
+
+    overlay.addEventListener('click', closeModal);
+
+    // wire header & cleanup (local to box)
+    (function wireHeaderAndCleanup(){
+      try {
+        const spinsCounterEl = box.querySelector('#lucky_spins_counter');
+        if (!spinsCounterEl) return;
+        const headerRight = spinsCounterEl.parentNode;
+
+        const me = getUser() || {};
+        const fullName = me.fullName || me.name || (me.firstName && me.lastName && `${me.firstName} ${me.lastName}`) || null;
+        if (fullName) {
+          const nameEl = document.createElement('div');
+          nameEl.className = 'lucky-user-name';
+          nameEl.style.fontSize = '14px';
+          nameEl.style.fontWeight = '800';
+          nameEl.style.marginBottom = '6px';
+          nameEl.innerText = fullName;
+          headerRight.insertBefore(nameEl, headerRight.firstChild);
+        }
+
+        let cdEl = box.querySelector('.lucky-countdown');
+        if (!cdEl) {
+          cdEl = document.createElement('div');
+          cdEl.className = 'lucky-countdown';
+          cdEl.style.marginTop = '6px';
+          cdEl.style.fontSize = '13px';
+          cdEl.style.fontWeight = '700';
+          cdEl.style.color = '#f97316';
+          headerRight.appendChild(cdEl);
+        }
+
+        function getUserTimezone() {
+          try {
+            const u = getUser() || {};
+            if (u.timezone) return u.timezone;
+            if (u.tz) return u.tz;
+            if (u.timeZone) return u.timeZone;
+            if (typeof Intl !== 'undefined' && Intl.DateTimeFormat) {
+              const ro = Intl.DateTimeFormat().resolvedOptions();
+              if (ro && ro.timeZone) return ro.timeZone;
+            }
+          } catch (e) {}
+          return null;
+        }
+
+        function computeRemainingHHMMSS(tz) {
+          const now = new Date();
+          let next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0);
+          const diff = Math.max(0, next - now);
+          const s = Math.floor(diff / 1000);
+          const hh = String(Math.floor(s / 3600)).padStart(2, '0');
+          const mm = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
+          const ss = String(s % 60).padStart(2, '0');
+          return { hhmmss: `${hh}:${mm}:${ss}`, nextDate: next };
+        }
+
+        window._luckyCountdownEl = cdEl;
+
+        window.updateLuckyCountdown = function(spinsToday) {
+          try {
+            if (!window._luckyCountdownEl) return;
+            const reached = (typeof spinsToday !== 'undefined') && Number(spinsToday) >= Number(DAILY_LIMIT);
+            if (!window._luckyTimers) window._luckyTimers = {};
+            if (window._luckyTimers.countdown) { clearInterval(window._luckyTimers.countdown); window._luckyTimers.countdown = null; }
+            const tz = getUserTimezone();
+            const spinBtnLocal = box.querySelector('#lucky_spin_btn') || document.getElementById('lucky_spin_btn');
+            if (reached) {
+              if (tz) {
+                const info = computeRemainingHHMMSS(tz);
+                try {
+                  const nextLocalStr = info.nextDate.toLocaleString(undefined, { timeZone: tz, year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit' });
+                  window._luckyCountdownEl.innerText = 'Next spins in: ' + info.hhmmss + ' • available at: ' + nextLocalStr;
+                } catch (e) { window._luckyCountdownEl.innerText = 'Next spins in: ' + info.hhmmss; }
+                window._luckyTimers.countdown = setInterval(() => {
+                  try {
+                    const info2 = computeRemainingHHMMSS(tz);
+                    const nextLocalStr2 = info2.nextDate.toLocaleString(undefined, { timeZone: tz, year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit' });
+                    window._luckyCountdownEl.innerText = 'Next spins in: ' + info2.hhmmss + ' • available at: ' + nextLocalStr2;
+                  } catch (err) {
+                    const info2 = computeRemainingHHMMSS(tz);
+                    window._luckyCountdownEl.innerText = 'Next spins in: ' + info2.hhmmss;
+                  }
+                }, 1000);
+              } else {
+                window._luckyCountdownEl.innerText = 'Next spins in: 12:00:00 (default) • please edit your profile to set country/timezone for accurate times';
+                window._luckyTimers.countdown = setInterval(() => {
+                  try { window._luckyCountdownEl.innerText = 'Next spins in: 12:00:00 (default) • please edit your profile to set country/timezone for accurate times'; } catch (e) {}
+                }, 60 * 1000);
+              }
+              if (spinBtnLocal) { spinBtnLocal.disabled = true; spinBtnLocal.innerText = 'Spin (locked)'; }
+            } else {
+              window._luckyCountdownEl.innerText = '';
+              if (spinBtnLocal) { spinBtnLocal.disabled = false; spinBtnLocal.innerText = 'Spin'; }
+            }
+          } catch (e) { console.warn('updateLuckyCountdown', e); }
+        };
+
+        try {
+          window.updateLuckyCountdown(typeof spinsToday !== 'undefined' ? Number(spinsToday) : (Number(remaining) <= 0 ? Number(DAILY_LIMIT) : Number(spinsToday)));
+        } catch(e){}
+
+        overlay.removeEventListener('click', closeModal);
+        overlay.addEventListener('click', () => { cleanupLuckyHistory(); closeModal(); });
+
+        const closeBtnLocal = box.querySelector('#lucky_close_btn');
+        if (closeBtnLocal) {
+          closeBtnLocal.removeEventListener('click', closeModal);
+          closeBtnLocal.addEventListener('click', () => { cleanupLuckyHistory(); closeModal(); });
+        }
+
+        function cleanupLuckyHistory() {
+          try {
+            if (window._luckyTimers) {
+              if (window._luckyTimers.motivation) { clearInterval(window._luckyTimers.motivation); window._luckyTimers.motivation = null; }
+              if (window._luckyTimers.countdown) { clearInterval(window._luckyTimers.countdown); window._luckyTimers.countdown = null; }
+            }
+            const footerMsg = box.querySelector('#lucky_history_msg');
+            if (footerMsg) footerMsg.innerText = '';
+          } catch (e) { console.warn('cleanupLuckyHistory', e); }
+        }
+      } catch (e) { console.warn('wireHeaderAndCleanup failed', e); }
+    })();
+
+    
+    function setBalanceDisplay(v){ if(balanceEl) balanceEl.innerText = `${v||0} pts`; }
+    function setSpinsCounter(s){
+      if (spinsCounterEl) spinsCounterEl.innerText = `Spins today: ${s} / ${DAILY_LIMIT}`;
+      updateGlobalSpinStatusElements(s);
+      try { if (typeof window.updateLuckyCountdown === 'function') window.updateLuckyCountdown(s); } catch(e){}
+    }
+
+    renderOverview(Number(betInput.value || MIN_BET), ovPanel);
+
+    function updateSpinEnable(){
+      let val = Number(betInput.value || 0);
+      if (!Number.isFinite(val)) val = 0;
+      if (val > MAX_BET) { betInput.value = String(MAX_BET); showWarn(`Maximum bet is ${MAX_BET}. Your bet was set to ${MAX_BET}.`); val = MAX_BET; }
+      spinBtn.disabled = !(Number.isFinite(val) && val >= MIN_BET && val <= (balance || 0) && ( (spinsToday || 0) < DAILY_LIMIT ));
+    }
+    betInput.addEventListener('input', () => { renderOverview(Number(betInput.value||MIN_BET), ovPanel); updateSpinEnable(); });
+    updateSpinEnable();
+
+    ovBtn.onclick = () => { ovPanel.style.display = ''; 
+    histPanel.style.display='none'; 
+  };
+   
+  histBtn.onclick = async () => {
+  ovPanel.style.display = 'none';
+  histPanel.style.display = '';
+  histPanel.innerHTML = '<div class="small-muted">Loading history...</div>';
+
+  function dayKey(ts) {
+    const d = new Date(ts);
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+  function dayLabel(key) {
+    const [y,m,d] = key.split('-');
+    const dt = new Date(Number(y), Number(m)-1, Number(d));
+    return dt.toLocaleDateString();
+  }
+
+  try {
+    const r = await apiGet('/api/leaderboard/spins?limit=200');
+    if (!r || !r.ok) { histPanel.innerHTML = '<div class="small-muted">Failed to load history</div>'; return; }
+    const spins = r.data.spins || r.spins || [];
+
+    if (!spins || !spins.length) { histPanel.innerHTML = '<div class="small-muted">No spins yet</div>'; return; }
+
+    // sort most recent first
+    spins.sort((a,b) => new Date(b.createdAt || b.created) - new Date(a.createdAt || a.created));
+
+    // group by day and compute summary per day
+    const groups = {};
+    for (const s of spins) {
+      const k = dayKey(s.createdAt || s.created || Date.now());
+      (groups[k] = groups[k] || []).push(s);
+    }
+    const dayKeys = Object.keys(groups).sort((a,b) => a < b ? 1 : -1); // newest first
+
+    // build UI container
+    histPanel.innerHTML = '';
+    const wrap = document.createElement('div');
+    wrap.className = 'lucky-history-wrap';
+
+    // days summary header row (cards)
+    const daysRow = document.createElement('div');
+    daysRow.className = 'lucky-history-days';
+
+    // helper to compute totals for a day's spins
+    function computeTotals(list) {
+      let totalBet = 0, totalWon = 0;
+      for (const s of list) {
+        totalBet += Number(s.bet || 0);
+        totalWon += Number(s.won || s.outcome || 0);
+      }
+      return { totalBet, totalWon, count: list.length };
+    }
+
+    // container to hold day panels (so we can expand/collapse individually)
+    const dayPanelsContainer = document.createElement('div');
+
+    // for each day create a summary card + hidden details table
+    for (const k of dayKeys) {
+      const list = groups[k];
+      const { totalBet, totalWon, count } = computeTotals(list);
+
+      // summary card (click toggles details)
+      const card = document.createElement('div');
+      card.className = 'lucky-history-day';
+      card.dataset.day = k;
+      card.innerHTML = `<div style="display:flex;flex-direction:column;gap:4px">
+                          <div style="font-weight:800">${dayLabel(k)}</div>
+                          <div style="font-size:13px;color:#64748b">
+                            total bet: ${totalBet} pts (${count} spins) • total points won: ${totalWon} pts
+                          </div>
+                        </div>`;
+
+      // details panel (hidden by default)
+      const details = document.createElement('div');
+      details.className = 'lucky-history-details';
+      details.style.margin = '10px 0 18px 0';
+      details.style.display = 'none';
+      // build table for this day's spins
+      const table = document.createElement('table');
+      table.className = 'lucky-history-table';
+      table.innerHTML = '<thead><tr><th>Date</th><th>Bet</th><th>Won</th></tr></thead>';
+      const tbody = document.createElement('tbody');
+      for (const s of list) {
+        const d = new Date(s.createdAt || s.created || Date.now());
+        const tr = document.createElement('tr');
+        const tdDate = document.createElement('td'); tdDate.innerText = d.toLocaleString();
+        const tdBet = document.createElement('td'); tdBet.innerText = `${s.bet} pts`;
+        const tdWon = document.createElement('td'); tdWon.innerText = `${s.won} pts`;
+        tr.appendChild(tdDate); tr.appendChild(tdBet); tr.appendChild(tdWon);
+        tbody.appendChild(tr);
+      }
+      table.appendChild(tbody);
+      details.appendChild(table);
+
+      // allow toggling details via card click
+      card.addEventListener('click', () => {
+        // toggle this day's details
+        const isOpen = details.style.display === '';
+        // close other day details
+        dayPanelsContainer.querySelectorAll('.lucky-history-details').forEach(dv => dv.style.display = 'none');
+        dayPanelsContainer.querySelectorAll('.lucky-history-day').forEach(btn => btn.classList.remove('active'));
+        if (!isOpen) {
+          details.style.display = '';
+          card.classList.add('active');
+          // scroll into view nicely
+          try { details.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch(e){}
+        } else {
+          details.style.display = 'none';
+          card.classList.remove('active');
+        }
+      });
+
+      daysRow.appendChild(card);
+
+      const dayPanel = document.createElement('div');
+      dayPanel.appendChild(card.cloneNode(true)); // not used visually, keep separation
+      // actually use the original card for interaction and append details after day title
+      const wrapper = document.createElement('div');
+      wrapper.appendChild(card);
+      wrapper.appendChild(details);
+      dayPanelsContainer.appendChild(wrapper);
+    }
+
+    // show-all button (expands all day details)
+    const controls = document.createElement('div');
+    controls.className = 'lucky-history-controls';
+    controls.style.display = 'flex';
+    controls.style.justifyContent = 'flex-end';
+    controls.style.marginTop = '6px';
+    const showAllBtn = document.createElement('button');
+    showAllBtn.className = 'lucky-btn';
+    showAllBtn.innerText = 'Show all history';
+    showAllBtn.addEventListener('click', () => {
+      // expand every day's details and mark headers active
+      dayPanelsContainer.querySelectorAll('.lucky-history-details').forEach(dv => dv.style.display = '');
+      dayPanelsContainer.querySelectorAll('.lucky-history-day').forEach(btn => btn.classList.add('active'));
+      // scroll to top of history
+      try { histPanel.scrollTop = 0; } catch(e){}
+    });
+    controls.appendChild(showAllBtn);
+
+    // one message chosen randomly (single motivational message)
+    function buildMessagesOnce(list) {
+      const me = getUser() || {};
+      const name = me.fullName || me.name || (me.firstName && me.lastName && `${me.firstName} ${me.lastName}`) || 'friend';
+      // check conditions
+      const recent = list.slice(0, 8);
+      let lowWins = 0;
+      let bigWin = null;
+      for (const s of recent) {
+        const bet = Number(s.bet || 0);
+        const won = Number(s.won || s.outcome || 0);
+        if (bet >= 100 && won <= 10) lowWins++;
+        if (!bigWin && won >= Math.max(1000, bet * 10)) bigWin = s;
+        if (!bigWin && won >= bet * 10) bigWin = s;
+      }
+      let pool = [];
+      if (bigWin) {
+        pool = [
+          `🔥 ${name} — huge win! Keep the vibes going!`,
+          `That was wild ${name} — big flex, don’t lose it now!`,
+          `Legend move ${name}! Celebrate that one 🥳`
+        ];
+      } else if (lowWins >= 2) {
+        pool = [
+          `Keep going ${name} — luck likes persistence.`,
+          `Small wins add up. Try a different bet size!`,
+          `Don’t give up ${name} — your run could flip soon.`
+        ];
+      } else {
+        pool = [
+          `Tip: mix bet sizes and enjoy the ride.`,
+          `Spin for fun — each spin is a new chance.`,
+          `Try smaller bets to play longer and train luck.`
+        ];
+      }
+      return pool[Math.floor(Math.random() * pool.length)];
+    }
+    const singleMsg = buildMessagesOnce(spins);
+
+    // footer that shows the single message
+    const footer = document.createElement('div');
+    footer.className = 'lucky-history-footer';
+    const msgBox = document.createElement('div');
+    msgBox.className = 'lucky-history-msg';
+    msgBox.innerText = singleMsg;
+    footer.appendChild(msgBox);
+    const footerControls = document.createElement('div');
+    footerControls.className = 'lucky-history-controls';
+    footerControls.appendChild(showAllBtn.cloneNode(true));
+    footer.appendChild(footerControls);
+
+    // append everything
+    wrap.appendChild(daysRow);
+    wrap.appendChild(controls);
+    wrap.appendChild(dayPanelsContainer);
+    wrap.appendChild(footer);
+    histPanel.appendChild(wrap);
+
+    // Now populate the dayPanelsContainer with actual day panels (we built wrappers earlier)
+    // We'll rebuild dayPanelsContainer: easier to iterate dayKeys and append the original wrapper created above
+    dayPanelsContainer.innerHTML = ''; // clear (we'll recreate to preserve order)
+    for (const k of dayKeys) {
+      const list = groups[k];
+      const { totalBet, totalWon, count } = computeTotals(list);
+
+      // summary node
+      const card = document.createElement('div');
+      card.className = 'lucky-history-day';
+      card.dataset.day = k;
+      card.innerHTML = `<div style="display:flex;flex-direction:column;gap:4px">
+                          <div style="font-weight:800">${dayLabel(k)}</div>
+                          <div style="font-size:13px;color:#64748b">
+                            total bet: ${totalBet} pts (${count} spins) • total points won: ${totalWon} pts
+                          </div>
+                        </div>`;
+
+      const details = document.createElement('div');
+      details.className = 'lucky-history-details';
+      details.style.margin = '10px 0 18px 0';
+      details.style.display = 'none';
+
+      const table = document.createElement('table');
+      table.className = 'lucky-history-table';
+      table.innerHTML = '<thead><tr><th>Date</th><th>Bet</th><th>Won</th></tr></thead>';
+      const tbody = document.createElement('tbody');
+      for (const s of list) {
+        const d = new Date(s.createdAt || s.created || Date.now());
+        const tr = document.createElement('tr');
+        const tdDate = document.createElement('td'); tdDate.innerText = d.toLocaleString();
+        const tdBet = document.createElement('td'); tdBet.innerText = `${s.bet} pts`;
+        const tdWon = document.createElement('td'); tdWon.innerText = `${s.won} pts`;
+        tr.appendChild(tdDate); tr.appendChild(tdBet); tr.appendChild(tdWon);
+        tbody.appendChild(tr);
+      }
+      table.appendChild(tbody);
+      details.appendChild(table);
+
+      card.addEventListener('click', () => {
+        const isOpen = details.style.display === '';
+        // close other details
+        dayPanelsContainer.querySelectorAll('.lucky-history-details').forEach(dv => dv.style.display = 'none');
+        dayPanelsContainer.querySelectorAll('.lucky-history-day').forEach(btn => btn.classList.remove('active'));
+        if (!isOpen) {
+          details.style.display = '';
+          card.classList.add('active');
+          try { details.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch(e){}
+        } else {
+          details.style.display = 'none';
+          card.classList.remove('active');
+        }
+      });
+
+      const wrapper = document.createElement('div');
+      wrapper.appendChild(card);
+      wrapper.appendChild(details);
+      dayPanelsContainer.appendChild(wrapper);
+    }
+
+    // if there is at least one day, auto-open the newest day's details
+    if (dayPanelsContainer.firstChild) {
+      const firstDetails = dayPanelsContainer.firstChild.querySelector('.lucky-history-details');
+      const firstCard = dayPanelsContainer.firstChild.querySelector('.lucky-history-day');
+      if (firstDetails && firstCard) {
+        firstDetails.style.display = '';
+        firstCard.classList.add('active');
+      }
+    }
+
+  } catch (err) {
+    histPanel.innerHTML = '<div class="small-muted">Error loading history</div>';
+    console.error('history load failed', err);
+  }
+};
+
+    closeBtn.onclick = closeModal;
+
+  // ---------- New helpers ----------
+
+// create/resume audio context synchronously on user gesture.
+// returns a simple ctx wrapper object or null if audio unavailable.
+let _gestureAudioCtx = null;
+function ensureAudioOnGesture() {
+  try {
+    if (_gestureAudioCtx && _gestureAudioCtx.ctx) {
+      // resume if suspended
+      const ctx = _gestureAudioCtx.ctx;
+      if (ctx.state === 'suspended' && typeof ctx.resume === 'function') ctx.resume().catch(()=>{});
+      return _gestureAudioCtx;
+    }
+    const Ctx = (window.AudioContext || window.webkitAudioContext);
+    if (!Ctx) return null;
+    const ctx = new Ctx();
+    // create a tiny gain node and connect to destination so the context is initialized
+    try {
+      const g = ctx.createGain();
+      g.gain.value = 0.00001;
+      g.connect(ctx.destination);
+      // start/resume as user gesture
+      if (ctx.state === 'suspended' && typeof ctx.resume === 'function') ctx.resume().catch(()=>{});
+    } catch(e){}
+    _gestureAudioCtx = { ctx };
+    return _gestureAudioCtx;
+  } catch (e) {
+    return null;
+  }
+}
+
+// refresh authoritative spinsToday/daily limit from server and update UI elements
+async function refreshSpinStatusFromServer() {
+  try {
+    const st = await apiGet('/api/leaderboard/spin-status');
+    if (st && st.ok) {
+      const spinsToday = (typeof st.spinsToday !== 'undefined') ? st.spinsToday : (st.data && st.data.spinsToday) || 0;
+      // store authoritative server value in localStorage with timestamp
+      try {
+        const uid = getUserId();
+        if (uid) localStorage.setItem('spinStatus_' + uid, JSON.stringify({ spinsToday, ts: Date.now() }));
+      } catch(e){}
+      updateGlobalSpinStatusElements(spinsToday);
+      return { spinsToday, spinsRemaining: Math.max(0, (st.spinsRemaining || (st.data && st.data.spinsRemaining) || (DAILY_LIMIT - spinsToday))), ok:true };
+    }
+  } catch(e) { /* ignore */ }
+  return { ok:false };
+}
+
+// guard: ensure we can attempt spin (not disabled by admin, not animating, not over limit)
+async function canAttemptSpin() {
+  if (window._luckyAnimating) { showWarn('Spin already in progress'); return { ok:false }; }
+
+  // fresh server check of control
+  try {
+    const ctrl = await fetchSpinControlFresh(); // you already use this
+    if (ctrl && ctrl.disabled) {
+      applySpinControl({ disabled:true, reason: ctrl.reason || 'Disabled' });
+      showDisabledSpinModal(ctrl.reason || 'Temporarily disabled');
+      return { ok:false };
+    }
+  } catch(e){ /* non-fatal */ }
+
+  // authoritative spin-status check
+  try {
+    const st = await apiGet('/api/leaderboard/spin-status');
+    if (st && st.ok) {
+      const spinsToday = st.spinsToday || (st.data && st.data.spinsToday) || 0;
+      if (spinsToday >= DAILY_LIMIT) {
+        setSpinsCounter(DAILY_LIMIT);
+        spinBtn.disabled = true;
+        spinBtn.innerText = 'Spin (locked)';
+        const nextReset = nextResetUtcString();
+        showWarn(`Daily spin limit reached (${DAILY_LIMIT}). Next: ${nextReset}`);
+        updateGlobalSpinStatusElements(spinsToday);
+        return { ok:false };
+      }
+      // otherwise update UI and allow
+      updateGlobalSpinStatusElements(spinsToday);
+    }
+  } catch(e) {
+    // fallback: read local cache
+    try {
+      const uid = getUserId();
+      if (uid) {
+        const cached = localStorage.getItem('spinStatus_' + uid);
+        if (cached) {
+          const spinsToday = (JSON.parse(cached).spinsToday || 0);
+          if (spinsToday >= DAILY_LIMIT) {
+            spinBtn.disabled = true;
+            spinBtn.innerText = 'Spin (locked)';
+            return { ok:false };
+          }
+        }
+      }
+    } catch(e){}
+  }
+  return { ok:true };
+}
+
+// ---------- Replaced spin handler (drop-in) ----------
+spinBtn.onclick = async () => {
+  // 1) quick validation & early checks that must run synchronously in the click gesture
+  try {
+    // ensure audio context created now (so autoplay policies allow sound)
+    try { ensureAudioOnGesture(); } catch(e){}
+
+    if (window._luckyAnimating) { showWarn('A spin is already in progress.'); return; }
+
+    let betRaw = Number(betInput.value || 0);
+    let bet = Math.floor(betRaw);
+    if (!Number.isFinite(bet) || bet < MIN_BET) { showWarn(`Minimum bet is ${MIN_BET} points.`); return; }
+    if (typeof MAX_BET !== 'undefined' && bet > MAX_BET) { bet = MAX_BET; betInput.value = String(bet); showWarn(`Maximum bet is ${MAX_BET}.`); }
+
+    if (typeof balance !== 'undefined' && balance < MIN_BET) { showError('Not enough points to play.'); return; }
+    if (typeof balance !== 'undefined' && bet > balance) { showError('Not enough points for that bet.'); return; }
+
+    // authoritative checks (may await)
+    const can = await canAttemptSpin();
+    if (!can.ok) return;
+
+    // disable UI immediately
+    spinBtn.disabled = true;
+    spinBtn.innerText = 'Spinning...';
+    window._luckyAnimating = true; // global guard
+
+    // create audio immediately on gesture (again safe) and keep global currentSpinAudio
+    try {
+      const g = ensureAudioOnGesture();
+      if (g && g.ctx) startSpinAudio(g.ctx, 220);
+    } catch(e){ console.debug('audio start failed', e); }
+
+    // call server
+    const r = await apiPost('/api/leaderboard/spin', { bet });
+
+    // handle errors
+    if (!r || !r.ok) {
+      const err = (r && (r.error || (r.data && r.data.error))) || 'Server error';
+      const lower = String(err).toLowerCase();
+      if (lower.includes('spins are disabled') || (r && r.status === 403) || (r && r.data && r.data.reason)) {
+        const reason = (r && r.data && (r.data.reason || r.data.error)) || r.reason || r.error || 'Spins disabled by admin';
+        applySpinControl({ disabled: true, reason });
+        showDisabledSpinModal(reason);
+      } else if (lower.includes('daily spin limit') || lower.includes('daily limit') || (r && r.status === 429)) {
+        // refresh authoritative status and lock UI
+        await refreshSpinStatusFromServer();
+        spinBtn.disabled = true;
+        spinBtn.innerText = 'Spin (locked)';
+        showWarn(`Daily spin limit reached (${DAILY_LIMIT}).`);
+      } else {
+        showError('Spin failed: ' + (err || 'Server error'));
+        console.warn('spin API error', r);
+      }
+      window._luckyAnimating = false;
+      try { stopSpinAudio(); } catch(e){}
+      spinBtn.disabled = false;
+      spinBtn.innerText = 'Spin';
+      return;
+    }
+
+    // success path
+    const payload = (r.data && r.data.data) ? r.data.data : (r.data || r);
+    const outcome = (payload && (typeof payload.outcome !== 'undefined' ? payload.outcome : payload.won));
+    const newPoints = (payload && (typeof payload.newPoints !== 'undefined')) ? payload.newPoints : (payload && payload.newPoints) || null;
+
+    // build animation options preferring server-provided percents
+    let animOptions = null;
+    if (payload && payload.percents && typeof payload.percents === 'object' && Object.keys(payload.percents).length) {
+      try { animOptions = buildAnimationOptionsFromPercents(payload.percents, computeDeviceTotalSlots()); } catch(e){ animOptions = null; }
+    }
+    if (!animOptions) {
+      if (payload && Array.isArray(payload.options) && payload.options.length) {
+        // treat equal distribution if server didn't give percents
+        const eq = {};
+        payload.options.forEach(o => { eq[String(o)] = 100 / payload.options.length; });
+        try { animOptions = buildAnimationOptionsFromPercents(eq, computeDeviceTotalSlots()); } catch(e){ animOptions = payload.options.map(String); }
+      } else {
+        // client fallback
+        try {
+          const localOverview = computeOutcomeWeightsClient(bet);
+          animOptions = (Array.isArray(localOverview.animationOptions) && localOverview.animationOptions.length) ? localOverview.animationOptions.slice() : (localOverview.options || []).map(String);
+        } catch(e) {
+          animOptions = [String(outcome)];
+        }
+      }
+    }
+
+    // ensure outcome present and bias toward center
+    try { animOptions = ensureOutcomeInAnimOptions(animOptions, outcome); } catch(e) { if (!animOptions.includes(String(outcome))) animOptions.push(String(outcome)); }
+    // simple bias toward center
+    const mid = Math.floor(animOptions.length/2);
+    const occIdx = animOptions.findIndex(x => String(x) === String(outcome));
+    if (occIdx > -1) {
+      const val = animOptions.splice(occIdx,1)[0];
+      const insertAt = Math.max(1, Math.min(animOptions.length, mid + (Math.random()>0.5?1:-1)));
+      animOptions.splice(insertAt,0,val);
+    }
+
+    // run animation
+    let animResult = null;
+    try {
+      animResult = await animateSpin(animOptions, outcome, { slowDurationMs: 2400 });
+    } catch (e) {
+      console.warn('animateSpin failed', e);
+      animResult = { finalIndex: 0, value: outcome };
+    }
+
+    // show result text
+    const resEl = box && box.querySelector ? (box.querySelector('#lucky_result') || document.getElementById('lucky_result')) : document.getElementById('lucky_result');
+    const wonAmount = (typeof outcome !== 'undefined' && outcome !== null) ? Number(outcome) : (payload && (payload.won || payload.outcome));
+    if (resEl) {
+      try { resEl.innerText = `You won ${wonAmount} pts — new total: ${newPoints} pts`; resEl.style.display = ''; } catch(e){}
+    }
+
+    // update UI/state
+    try { saveLastSpin({ bet, outcome: wonAmount, newPoints, createdAt: new Date().toISOString(), won: wonAmount }); } catch(e){}
+    try { refreshUserPointsDisplay(newPoints); } catch(e){}
+    try { setBalanceDisplay(newPoints); } catch(e){}
+    showSuccess(`You won ${wonAmount} pts — new total: ${newPoints} pts`);
+    if (typeof wonAmount === 'number' && wonAmount >= Math.max(1000, bet * 5)) {
+      try { fireConfetti(50); } catch(e){}
+    }
+
+    // refresh spins count from server (authoritative)
+    try {
+      const st2 = await apiGet('/api/leaderboard/spin-status');
+      if (st2 && st2.ok) {
+        const sToday = (typeof st2.spinsToday !== 'undefined') ? st2.spinsToday : (st2.data && st2.data.spinsToday) || 0;
+        setSpinsCounter(sToday);
+        updateGlobalSpinStatusElements(sToday);
+        // persist authoritative cache
+        try {
+          const uid = getUserId();
+          if (uid) localStorage.setItem('spinStatus_' + uid, JSON.stringify({ spinsToday: sToday, ts: Date.now() }));
+        } catch(e){}
+      }
+    } catch(e){ console.debug('failed to refresh spin-status after spin', e && e.message); }
+
+  } catch (err) {
+    console.error('spin request failed', err);
+    showError('Spin request failed');
+  } finally {
+    // keep final tiles & result visible - do NOT clear them.
+    try { stopSpinAudio(); } catch(e){}
+    window._luckyAnimating = false;
+    try { spinBtn.disabled = false; spinBtn.innerText = 'Spin'; } catch(e){}
+  }
+}};
+
+
+  // ---------- small helpers ----------
+  function ensureModalRoot(){
+    let root = document.getElementById('luckyModalRoot');
+    if(!root){ root = document.createElement('div'); root.id='luckyModalRoot'; document.body.appendChild(root); }
+    return root;
+  }
+  function closeModal(){
+    const root = document.getElementById('luckyModalRoot');
+    if(root){ root.innerHTML=''; root.style.display='none'; }
+  }
+
+  function refreshUserPointsDisplay(newPoints){
+    try { const me = getUser(); if(me){ me.pointsCurrent = newPoints; localStorage.setItem('user', JSON.stringify(me)); } } catch(e){}
+    const myId = (getUser && getUser()._id) || (getUser && getUser().id);
+    if(myId){
+      document.querySelectorAll(`.pts[data-userid="${myId}"]`).forEach(el => { el.innerText = `${newPoints} pts`; });
+    }
+  }
+
+  function updateGlobalSpinStatusElements(spinsToday){
+    if (typeof spinsToday === 'undefined' || spinsToday === null) {
+      const uid = getUserId();
+      if (uid) {
+        try {
+          const cached = localStorage.getItem('spinStatus_' + uid);
+          if (cached) {
+            spinsToday = (JSON.parse(cached).spinsToday || 0);
+          } else spinsToday = 0;
+        } catch(e){ spinsToday = 0; }
+      } else spinsToday = 0;
+    }
+    const els = [];
+    const a = document.getElementById('globalSpinStatus'); if(a) els.push(a);
+    document.querySelectorAll('[data-spin-counter]').forEach(e => els.push(e));
+    document.querySelectorAll('div,span').forEach(node => {
+      if(node.innerText && /^Spins today:/i.test(node.innerText.trim())) els.push(node);
+    });
+    for(const el of els){
+      try { el.innerText = `Spins today: ${spinsToday} / ${DAILY_LIMIT}`; } catch(e){}
+    }
+  }
+
+  // monkey-patch button into UI (unchanged)
+  (function patchSetup(){
+  if(typeof setupLeaderControls !== 'function'){
+    let tries=0;
+    const t = setInterval(()=>{
+      tries++;
+      if(typeof setupLeaderControls === 'function' || tries>40){
+        clearInterval(t);
+        if(typeof setupLeaderControls === 'function') patchSetup();
+      }
+    },100);
+    return;
+  }
+
+  const orig = setupLeaderControls;
+  window.setupLeaderControls = function(top){
+    try { orig(top); } catch(e){ console.warn('orig setupLeaderControls err', e); }
+
+    try {
+      const controls = document.getElementById('leaderControls');
+      if (!controls) return;
+
+      // do not re-add
+      if (controls.querySelector('#luckyBtn')) return;
+
+      // require logged-in user
+      const token = getToken();
+      if (!token) return;
+
+      // user info (safe)
+      const me = getUser() || {};
+
+      // find the "clear my points" button (if present) to insert after it
+      const clearBtn = Array.from(controls.children).find(n => /clear my points/i.test(n.innerText || ''));
+
+      // Lucky Spin button
+      const luckyBtn = document.createElement('button');
+      luckyBtn.id = 'luckyBtn';
+      luckyBtn.className = 'small-btn';
+      luckyBtn.style.background = '#f0f9ff';
+      luckyBtn.style.color = '#0b5cff';
+      luckyBtn.style.fontWeight = '700';
+      luckyBtn.innerText = 'Lucky Spin';
+      luckyBtn.onclick = () => openLuckyModal();
+
+      if (clearBtn && clearBtn.parentNode === controls) clearBtn.insertAdjacentElement('afterend', luckyBtn);
+      else controls.appendChild(luckyBtn);
+
+      // Manage Spins button for admins only
+      const isAdmin = (me.role === 'admin' || me.isAdmin === true || (Array.isArray(me.roles) && me.roles.indexOf('admin') !== -1));
+      if (isAdmin) {
+        const manageBtn = document.createElement('button');
+        manageBtn.id = 'manageSpinBtn';
+        manageBtn.className = 'small-btn';
+        manageBtn.style.marginLeft = '8px';
+        manageBtn.innerText = 'Manage Spins';
+        manageBtn.onclick = () => openManageSpinModal();
+
+        // insert manage button next to luckyBtn (after luckyBtn preferred)
+        if (luckyBtn && luckyBtn.parentNode === controls) luckyBtn.insertAdjacentElement('afterend', manageBtn);
+        else if (clearBtn && clearBtn.parentNode === controls) clearBtn.insertAdjacentElement('afterend', manageBtn);
+        else controls.appendChild(manageBtn);
+      }
+    } catch (e) {
+      console.warn('patchSetup error', e);
+    }
+  };
+})();
+
+// ---------- socket wiring (apply control immediately on incoming events) ----------
+try {
+  if (typeof io !== 'undefined') {
+    const socket = io(API_BASE, { transports: ['websocket','polling'], path: '/socket.io' });
+    socket.on('spin:control', (ctrl) => {
+      try { applySpinControl(ctrl); } catch(e){}
+    });
+    socket.on('spin:created', (data) => {
+      try {
+        const myId = (getUser && (getUser()._id || getUser().id)) || null;
+        if(myId && String(myId) === String(data.userId)){
+          apiGet('/api/leaderboard/spin-status').then(st => {
+            if(st && st.ok){
+              const sToday = st.spinsToday || (st.data && st.data.spinsToday) || 0;
+              updateGlobalSpinStatusElements(sToday);
+            }
+          }).catch(()=>{});
+        }
+      } catch(e){}
+    });
+    socket.on('spin:status', (payload) => {
+      try {
+        const myId = (getUser && (getUser()._id || getUser().id)) || null;
+        if(myId && String(myId) === String(payload.userId)){
+          updateGlobalSpinStatusElements(payload.spinsToday || 0);
+        }
+      } catch(e){}
+    });
+  }
+} catch(e){ console.debug('socket not available', e); }
+
+// Example: clicking standalone spinner control
+document.addEventListener('click', async (e) => {
+  const btn = e.target.closest && e.target.closest('[data-action="open-spin"]');
+  if (!btn) return;
+  const local = window._spinControl || (function(){ try { const c = JSON.parse(localStorage.getItem('spinControl_cache')||'null'); return c && c.ctrl ? c.ctrl : null; } catch(e){ return null; } })();
+  if (local && local.disabled) { showDisabledSpinModal(local.reason || 'No reason provided'); e.preventDefault(); return; }
+  const ctrl = await fetchSpinControlFresh();
+  if (ctrl && ctrl.disabled) { showDisabledSpinModal(ctrl.reason || 'No reason provided'); e.preventDefault(); return; }
+  openLuckyModal();
+});
+
+  window.openLuckyModal = openLuckyModal;
+})();
+
+ /* ---------- socket + state ---------- */
+  let comp = null; 
+  let socket = null; 
+  let showingAll = false; 
+  let showingAround = false;
+   let countdownTimer = null;
   function initSocket(){
     const t = getToken();
     try { socket = t ? io(API_BASE, { auth:{ token: t }}) : io(API_BASE); }
@@ -404,7 +2773,17 @@
     socket.on('comments:deleted', ()=> loadComments && loadComments());
   }
 
-  /* ---------------- NAV & AUTH UI ---------------- */
+  function resolveFlag(item) {
+    if (!item) return { type: 'none', countryName: null, countryCode: null };
+    if (item.countryFlagEmoji) return { type:'emoji', value: item.countryFlagEmoji, countryName: item.countryName || item.countryRaw || null, countryCode: resolveIsoFromNameOrCode(item.countryRaw || item.countryName) || null };
+    if (item.countryFlagUrl && typeof item.countryFlagUrl === 'string' && item.countryFlagUrl.trim().startsWith('http')) return { type:'img', value: item.countryFlagUrl, countryName: item.countryName || item.countryRaw || null, countryCode: resolveIsoFromNameOrCode(item.countryRaw || item.countryName) || null };
+    const cc = item._isoCode || resolveIsoFromNameOrCode(item.countryRaw || item.countryName || '');
+    if (cc) { const em = codeToFlagEmoji(cc); const friendlyName = item.countryName || item.countryRaw || null; return { type: em ? 'emoji' : 'none', value: em || null, countryName: friendlyName, countryCode: cc }; }
+    try { if (typeof item.countryRaw === 'string' && item.countryRaw.match(/[🇦-🇿]/u)) return { type:'emoji', value: item.countryRaw, countryName: item.countryName || null, countryCode: null }; } catch(e){}
+    return { type: 'none', countryName: item.countryName || item.countryRaw || null, countryCode: null };
+  }
+
+  /* ---------------- NAV & AUTH UI (kept names + behavior) ---------------- */
   function renderNav(){
     const nav = document.getElementById('mainNav');
     const mobileNav = document.getElementById('mobileNav');
@@ -426,41 +2805,23 @@
 
     links.forEach(l => {
       if (nav && (!l.adminOnly || (user && user.role === 'admin'))) {
-        const a = document.createElement('a'); a.href = l.href; a.innerText = l.label;
-        nav.appendChild(a);
+        const a = document.createElement('a'); a.href = l.href; a.innerText = l.label; nav.appendChild(a);
       }
       if (mobileNav && (!l.adminOnly || (user && user.role === 'admin'))) {
-        const a = document.createElement('a'); a.href = l.href; a.className='mobile-nav-link'; a.innerText = l.label;
-        mobileNav.appendChild(a);
+        const a = document.createElement('a'); a.href = l.href; a.className='mobile-nav-link'; a.innerText = l.label; mobileNav.appendChild(a);
       }
     });
 
-    const auth = document.getElementById('authLinks');
-    if (!auth) return;
-    auth.innerHTML = '';
+    const auth = document.getElementById('authLinks'); if (!auth) return; auth.innerHTML = '';
+
     if (getToken()) {
       const u = getUser() || {};
-      // name button (opens legacy dropdown)
-      const btn = document.createElement('button'); btn.className='small-btn'; btn.id='btnUserName'; btn.style.fontWeight='700';
-      btn.innerText = u.fullName || u.username || 'Me';
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const dd = document.getElementById('userDropdown');
-        if (!dd) return;
-        dd.classList.toggle('open');
-      });
+      const btn = document.createElement('button'); btn.className='small-btn'; btn.id='btnUserName'; btn.style.fontWeight='700'; btn.innerText = u.fullName || u.username || 'Me';
+      btn.addEventListener('click', (e) => { e.stopPropagation(); const dd = document.getElementById('userDropdown'); if (!dd) return; dd.classList.toggle('open'); });
       auth.appendChild(btn);
     } else {
       const login = document.createElement('button'); login.className='small-btn'; login.innerText='Login';
-      login.onclick = async ()=> {
-        const username = prompt('username'); const password = prompt('password');
-        if (!username || !password) return;
-        const r = await fetchJson('/api/auth/login', { method:'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username, password }) });
-        if (!r.ok) return alert('Login failed: ' + (r.error || ''));
-        localStorage.setItem('token', r.data.token); localStorage.setItem('user', JSON.stringify(r.data.user));
-        renderNav();
-        load();
-      };
+      login.onclick = async ()=> { const username = prompt('username'); const password = prompt('password'); if (!username || !password) return; const r = await fetchJson('/api/auth/login', { method:'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username, password }) }); if (!r.ok) return alert('Login failed: ' + (r.error || '')); localStorage.setItem('token', r.data.token); localStorage.setItem('user', JSON.stringify(r.data.user)); renderNav(); load(); };
       auth.appendChild(login);
     }
 
@@ -477,35 +2838,15 @@
         mobileUserArea.appendChild(name); mobileUserArea.appendChild(email); mobileUserArea.appendChild(logout);
       } else {
         const login = document.createElement('button'); login.className='small-btn'; login.innerText='Login';
-        login.onclick = async ()=> {
-          const username = prompt('username'); const password = prompt('password');
-          if (!username || !password) return;
-          const r = await fetchJson('/api/auth/login', { method:'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username, password }) });
-          if (!r.ok) return alert('Login failed: ' + (r.error || ''));
-          localStorage.setItem('token', r.data.token); localStorage.setItem('user', JSON.stringify(r.data.user));
-          renderNav();
-          load();
-        };
+        login.onclick = async ()=> { const username = prompt('username'); const password = prompt('password'); if (!username || !password) return; const r = await fetchJson('/api/auth/login', { method:'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username, password }) }); if (!r.ok) return alert('Login failed: ' + (r.error || '')); localStorage.setItem('token', r.data.token); localStorage.setItem('user', JSON.stringify(r.data.user)); renderNav(); load(); };
         mobileUserArea.appendChild(login);
       }
     }
   }
 
-  /* ----------------------- Rank color mapping ----------------------- */
+  /* ----------------------- Rank color mapping (unchanged) ----------------------- */
   function getRankColor(rank) {
-    // 1..10 mapping (greens at top)
-    const map = {
-      1: '#047857', // emerald-700
-      2: '#059669', // emerald-600
-      3: '#10b981', // emerald-500
-      4: '#34d399', // emerald-400
-      5: '#f59e0b', // amber-500
-      6: '#f97316', // orange-500
-      7: '#ef4444', // red-500
-      8: '#8b5cf6', // violet-500
-      9: '#3b82f6', // blue-500
-      10:'#64748b'  // slate-500
-    };
+    const map = {1:'#047857',2:'#059669',3:'#10b981',4:'#34d399',5:'#f59e0b',6:'#f97316',7:'#ef4444',8:'#8b5cf6',9:'#3b82f6',10:'#64748b'};
     return map[rank] || '#111827';
   }
 
@@ -514,45 +2855,22 @@
     renderNav && renderNav();
     try { initSocket(); } catch(e){}
 
+    // keep existing candidate endpoints
     const candidates = ['/api/competitions/current','/api/leaderboard/competitions/current','/api/leaderboard/current'];
     let res = null;
-    for (const p of candidates){
-      try { res = await fetchJson(p); if (res && res.ok) break; } catch(e) { /* try next */ }
-    }
+    for (const p of candidates){ try { res = await fetchJson(p); if (res && res.ok) break; } catch(e) { /* try next */ } }
 
-    if (!res || !res.ok) {
-      const titleEl = document.getElementById('compTitle'); if (titleEl) titleEl.innerText = 'No active competition';
-      const cdEl = document.getElementById('compCountdown'); if (cdEl) cdEl.innerText = '—';
-      renderEmptyLeader();
-      setupLeaderControls && setupLeaderControls([]);
-      return;
-    }
+    if (!res || !res.ok) { const titleEl = document.getElementById('compTitle'); if (titleEl) titleEl.innerText = 'No active competition'; const cdEl = document.getElementById('compCountdown'); if (cdEl) cdEl.innerText = '—'; renderEmptyLeader(); setupLeaderControls && setupLeaderControls([]); return; }
 
     const d = res.data;
     comp = d && d.competition ? d.competition : (d || null);
     const topRaw = d && Array.isArray(d.top) ? d.top : (Array.isArray(d) ? d : (d.top || []));
 
-    let top = topRaw.map(u => ({
-      userId: (u.userId || u._id || u.id || null),
-      userName: u.userName || u.fullName || u.username || (u.name || ''),
-      points: (typeof u.points === 'number') ? u.points : (u.pointsCurrent || u.points || 0),
-      countryRaw: u.country || u.countryRaw || (u.user && (u.user.country || u.user.countryCode || u.user.countryName)) || u.countryName || null,
-      countryName: u.countryName || (u.user && u.user.countryName) || null,
-      countryFlagEmoji: u.countryFlagEmoji || u.flagEmoji || (u.user && u.user.countryFlagEmoji) || null,
-      countryFlagUrl: u.countryFlagUrl || u.flagUrl || (u.user && u.user.countryFlagUrl) || null,
-      city: u.city || (u.user && u.user.city) || u.town || u.region || null,
-      __raw: u
-    }));
+    let top = topRaw.map(u => ({ userId: (u.userId || u._id || u.id || null), userName: u.userName || u.fullName || u.username || (u.name || ''), points: (typeof u.points === 'number') ? u.points : (u.pointsCurrent || u.points || 0), countryRaw: u.country || u.countryRaw || (u.user && (u.user.country || u.user.countryCode || u.user.countryName)) || u.countryName || null, countryName: u.countryName || (u.user && u.user.countryName) || null, countryFlagEmoji: u.countryFlagEmoji || u.flagEmoji || (u.user && u.user.countryFlagEmoji) || null, countryFlagUrl: u.countryFlagUrl || u.flagUrl || (u.user && u.user.countryFlagUrl) || null, city: u.city || (u.user && u.user.city) || u.town || u.region || null, __raw: u }));
 
-    try {
-      const enriched = await enrichTopWithProfiles(top);
-      if (Array.isArray(enriched) && enriched.length) top = enriched;
-    } catch (err) { console.warn('enrichTopWithProfiles failed', err); }
+    try { const enriched = await enrichTopWithProfiles(top); if (Array.isArray(enriched) && enriched.length) top = enriched; } catch (err) { console.warn('enrichTopWithProfiles failed', err); }
 
-    // keep lastTop for re-render on resize
     window._lastTop = top;
-
-    // set title only here
     const titleEl = document.getElementById('compTitle'); if (titleEl) titleEl.innerText = comp && comp.name ? comp.name : 'Competition';
     setupLeaderControls && setupLeaderControls(top);
     renderBoard && renderBoard(top);
@@ -563,368 +2881,393 @@
 
   /* ----------------- Render board (responsive) ----------------- */
   function renderBoard(rawTop){
-    // cache for resize re-rendering
-    window._lastTop = rawTop;
+  window._lastTop = rawTop;
+  const el = document.getElementById('leaderboard'); if (!el) return;
+  el.innerHTML = '';
+  const me = getUser();
+  const isAdmin = me && me.role === 'admin';
+  const arr = Array.isArray(rawTop) ? rawTop : (rawTop || []);
 
-    const el = document.getElementById('leaderboard'); if (!el) return;
-    el.innerHTML = '';
-    const me = getUser();
-    const isAdmin = me && me.role === 'admin';
-    const arr = Array.isArray(rawTop) ? rawTop : (rawTop || []);
+  const norm = arr.map((u) => ({
+    userId: (u.userId || u._id || u.id || null),
+    userName: u.userName || u.fullName || u.username || 'Anonymous',
+    points: (typeof u.points === 'number') ? u.points : (u.pointsCurrent || 0),
+    countryRaw: u.countryRaw || u.country || (u.user && (u.user.country || u.user.countryCode || u.user.countryName)) || null,
+    countryName: u.countryName || null,
+    countryFlagEmoji: u.countryFlagEmoji || null,
+    countryFlagUrl: u.countryFlagUrl || null,
+    city: u.city || null,
+    _isoCode: u._isoCode || null,
+    __raw: u.__raw || u
+  }));
 
-    const norm = arr.map((u) => ({
-      userId: (u.userId || u._id || u.id || null),
-      userName: u.userName || u.fullName || u.username || 'Anonymous',
-      points: (typeof u.points === 'number') ? u.points : (u.pointsCurrent || 0),
-      countryRaw: u.countryRaw || u.country || (u.user && (u.user.country || u.user.countryCode || u.user.countryName)) || null,
-      countryName: u.countryName || null,
-      countryFlagEmoji: u.countryFlagEmoji || null,
-      countryFlagUrl: u.countryFlagUrl || null,
-      city: u.city || null,
-      _isoCode: u._isoCode || null,
-      __raw: u.__raw || u
-    }));
-
-    function resolveCountryCode(val) {
-      if (!val) return null;
-      const s = String(val).trim();
-      if (!s) return null;
-      if (s.length === 2 && /^[A-Za-z]{2}$/.test(s)) return s.toUpperCase();
-      if (Array.isArray(window.COUNTRIES)) {
-        const exact = window.COUNTRIES.find(c => c.name && c.name.toLowerCase() === s.toLowerCase());
-        if (exact && exact.code) return String(exact.code).toUpperCase();
-        const partial = window.COUNTRIES.find(c => c.name && s.toLowerCase().includes(c.name.toLowerCase()));
-        if (partial && partial.code) return String(partial.code).toUpperCase();
-      }
-      return null;
+  let visible = [];
+  if (isAdmin) visible = norm.slice();
+  else {
+    visible = norm.filter(u => (u.points && u.points > 0));
+    if (me) {
+      const meId = String(me._id || me.id || me.userId || '');
+      const meInNorm = norm.find(x => String(x.userId) === meId);
+      if (meInNorm && !visible.find(x => String(x.userId) === meId)) visible.push(meInNorm);
     }
+  }
+  visible.sort((a,b)=> (b.points||0) - (a.points||0));
 
-    function resolveFlag(item) {
-      if (!item) return { type:'none' };
-      if (item.countryFlagEmoji) return { type:'emoji', value: item.countryFlagEmoji, countryName: item.countryName || item.countryRaw || null, countryCode: resolveCountryCode(item.countryRaw || item.countryName) || null };
-      if (item.countryFlagUrl && typeof item.countryFlagUrl === 'string' && item.countryFlagUrl.trim().startsWith('http')) return { type:'img', value: item.countryFlagUrl, countryName: item.countryName || item.countryRaw || null, countryCode: resolveCountryCode(item.countryRaw || item.countryName) || null };
-      const cc = item._isoCode || resolveCountryCode(item.countryRaw || item.countryName || '');
-      if (cc) {
-        const em = codeToFlagEmoji(cc);
-        const friendlyName = (Array.isArray(window.COUNTRIES) && window.COUNTRIES.find(c=>String(c.code).toUpperCase()===cc)?.name) || item.countryName || item.countryRaw || null;
-        return { type: em ? 'emoji' : 'none', value: em || null, countryName: friendlyName, countryCode: cc };
-      }
-      if (typeof item.countryRaw === 'string' && item.countryRaw.match(/[\u{1F1E6}-\u{1F1FF}]/u)) {
-        return { type:'emoji', value: item.countryRaw, countryName: item.countryName || null, countryCode: null };
-      }
-      return { type:'none', countryName: item.countryName || item.countryRaw || null, countryCode: null };
-    }
-
-    let visible = [];
-    if (isAdmin) visible = norm.slice();
-    else {
-      visible = norm.filter(u => (u.points && u.points > 0));
-      if (me) {
-        const meId = String(me._id || me.id || me.userId || '');
-        const found = visible.find(x => String(x.userId) === meId);
-        const meInNorm = norm.find(x => String(x.userId) === meId);
-        if (!found && meInNorm) visible.push(meInNorm);
-      }
-    }
-
-    visible.sort((a,b)=> (b.points||0) - (a.points||0));
-    let toShow = visible;
-    if (!showingAll) toShow = visible.slice(0, 10);
-
-    if (!toShow.length) { renderEmptyLeader(); return; }
-
-    const listClass = showingAll ? 'leader-list all' : 'leader-list top10';
-    el.className = listClass;
-
-    // detect mobile layout
-    const isMobile = (window.innerWidth <= 700);
-
-    toShow.forEach((t, idx) => {
-      const div = document.createElement('div'); div.className = 'row';
-      const rank = idx + 1;
-      const flagInfo = resolveFlag(t);
-
-      // RANK COLUMN
-    // RANK COLUMN (new: stripe + badge)
-const rankCol = document.createElement('div');
-rankCol.className = 'rank';
-
-const stripe = document.createElement('div');
-stripe.className = 'rankStripe';
-stripe.style.background = getRankColor(rank);
-
-const rankNum = document.createElement('div');
-rankNum.className = 'rankNum';
-rankNum.innerText = rank;
-
-// mobile tweaks (keeps badge readable on small screens)
-if (isMobile) {
-  rankNum.style.background = 'transparent';
-  rankNum.style.color = '#0f172a';
-  rankNum.style.fontSize = '13px';
-  rankNum.style.fontWeight = 800;
-} else {
-  rankNum.style.background = '#149be4bd';
-  rankNum.style.color = 'white';
+  // ---------------------- RANKING (competition-style, handle ties) ----------------------
+// Assign competition-style ranks: equal points => same rank number, next rank = index+1
+const rankMap = {};
+for (let i = 0; i < visible.length; i++) {
+  const u = visible[i];
+  if (i === 0) {
+    u._rank = 1;
+  } else {
+    // same points as previous => same rank, otherwise rank = index+1 (competition ranking)
+    u._rank = (u.points === visible[i-1].points) ? visible[i-1]._rank : (i + 1);
+  }
+  rankMap[String(u.userId)] = u._rank;
 }
 
-rankCol.appendChild(stripe);
-rankCol.appendChild(rankNum);
+// ---------------------- SELECT ROWS TO SHOW ----------------------
+// For admin: showingAll => all visible, otherwise show only those with rank <= 10
+// For normal users: show all users whose rank <= 10 (this can be >10 rows if ties exist).
+let toShow = [];
+if (isAdmin) {
+  toShow = showingAll ? visible.slice() : visible.filter(u => u._rank <= 10);
+} else {
+  // top-ranked users with rank <= 10
+  const topRanked = visible.filter(u => u._rank <= 10);
+  toShow = topRanked.slice();
 
+  if (showingAround && me) {
+    const meId = String(me._id || me.id || me.userId || '');
+    const meEntry = visible.find(x => String(x.userId) === meId);
+    if (meEntry && !toShow.find(x => String(x.userId) === meId)) {
+      const copy = Object.assign({}, meEntry);
+      copy.__aroundMe = true;
+      toShow.push(copy);
+    } else if (!meEntry) {
+      // create placeholder for logged-in user with no points
+      const meProfile = me || {};
+      const placeholder = {
+        userId: meProfile._id || meProfile.id || null,
+        userName: meProfile.fullName || meProfile.username || 'You',
+        points: 0,
+        countryRaw: meProfile.country || null,
+        countryFlagEmoji: meProfile.countryFlagEmoji || null,
+        countryFlagUrl: meProfile.countryFlagUrl || null,
+        city: meProfile.city || null,
+        _isoCode: resolveIsoFromNameOrCode(meProfile.country || meProfile.countryName || null),
+        __aroundMe: true,
+        _rank: null
+      };
+      toShow.push(placeholder);
+    }
+  }
+}
 
-      // SHOW RANK BAR TO EVERYONE FOR TOP 10
-      const showRankToAll = rank <= 10;
-      if (showRankToAll) {
+  if (!toShow.length) { renderEmptyLeader(); return; }
+
+  const isMobile = (window.innerWidth <= 700);
+
+  toShow.forEach((t, idx) => {
+    const div = document.createElement('div'); div.className = 'row';
+    const rank = (typeof t._rank === 'number') ? t._rank : (rankMap[String(t.userId)] || (idx + 1));
+
+    const rankCol = document.createElement('div'); rankCol.className = 'rank';
+    const stripe = document.createElement('div'); stripe.className = 'rankStripe';
+    stripe.classList.add('rank-' + Math.min(rank,10));
+    stripe.style.background = ''; // CSS class handles gradient
+
+    const rankNum = document.createElement('div'); rankNum.className = 'rankNum'; rankNum.innerText = rank;
+    if (isMobile) {
+      rankNum.style.background = 'transparent';
+      rankNum.style.color = '#0f172a';
+      rankNum.style.fontSize = '13px';
+      rankNum.style.fontWeight = 800;
+      rankNum.style.boxShadow = 'none';
+    }
+
+    rankCol.appendChild(stripe);
+    rankCol.appendChild(rankNum);
+
+    // Left column visibility
+    if (rank <= 10) {
+      rankCol.style.display = '';
+      rankNum.style.display = '';
+    } else {
+      if (!isAdmin) {
+        rankCol.style.display = (t.__aroundMe ? '' : 'none');
+        rankNum.style.display = (t.__aroundMe ? '' : 'none');
+      } else {
         rankCol.style.display = '';
         rankNum.style.display = '';
-      } else {
-        // for ranks > 10, only admins see it
-        if (!isAdmin) {
-          rankCol.style.display = 'none';
-          rankNum.style.display = 'none';
-        } else {
-          rankCol.style.display = '';
-          rankNum.style.display = '';
-        }
       }
+    }
 
-      // LEFT CONTENT
-      const left = document.createElement('div'); left.className = 'left';
-      const topRow = document.createElement('div'); topRow.className = 'top';
+    const left = document.createElement('div'); left.className = 'left';
+    const topRow = document.createElement('div'); topRow.className = 'top';
 
-      // title (full name first)
-      const titleText = document.createElement('div'); titleText.className = 'title'; titleText.textContent = `${t.userName || 'Anonymous'}`;
+    const titleText = document.createElement('div'); titleText.className = 'title';
+    titleText.textContent = `${t.userName || 'Anonymous'}`;
 
-      // flag AFTER name
-      const flagWrap = document.createElement('span'); flagWrap.className = 'leader-flag';
-      if (flagInfo.type === 'img') {
-        const img = document.createElement('img'); img.src = flagInfo.value; img.alt = flagInfo.countryName || ''; img.style.width='20px'; img.style.height='14px'; img.style.objectFit='cover'; img.style.borderRadius='3px'; flagWrap.appendChild(img);
-      } else if (flagInfo.type === 'emoji' && flagInfo.value) flagWrap.textContent = String(flagInfo.value);
-      else flagWrap.textContent = '🌐';
+    const flagWrap = document.createElement('span'); flagWrap.className = 'leader-flag';
+    const flagInfo = resolveFlag(t);
+    if (flagInfo.type === 'img') {
+      const img = document.createElement('img');
+      img.src = flagInfo.value;
+      img.alt = flagInfo.countryName || '';
+      img.style.width = '20px';
+      img.style.height = '14px';
+      img.style.objectFit = 'cover';
+      img.style.borderRadius = '3px';
+      flagWrap.appendChild(img);
+    } else if (flagInfo.type === 'emoji' && flagInfo.value) {
+      flagWrap.textContent = String(flagInfo.value);
+    } else {
+      flagWrap.textContent = '🌐';
+    }
 
-      if (isAdmin) topRow.appendChild(rankNum);
-      topRow.appendChild(titleText);
-      topRow.appendChild(flagWrap);
-
+    // --- FIX: DO NOT clone the left .rankNum (that caused duplicate numbers for admins)
+    // Instead create a separate inline rank element when we want a small inline cue for admins.
+    if (isAdmin) {
+      const inlineRank = document.createElement('div');
+      inlineRank.className = 'rankInline';
+      inlineRank.innerText = rank;
+      // Tweak size for mobile
       if (isMobile) {
-        const ptsInline = document.createElement('div');
-        ptsInline.className = 'pts-inline';
-        ptsInline.innerText = `${t.points || 0} pts`;
-        topRow.appendChild(ptsInline);
+        inlineRank.style.fontSize = '13px';
+        inlineRank.style.height = '26px';
+        inlineRank.style.display = 'inline-flex';
+        inlineRank.style.alignItems = 'center';
+        inlineRank.style.justifyContent = 'center';
+        inlineRank.style.padding = '0 8px';
+        inlineRank.style.borderRadius = '8px';
+        inlineRank.style.background = 'transparent';
+        inlineRank.style.color = '#0f172a';
+      } else {
+        // Slightly muted inline style for desktop so it doesn't visually conflict with left badge
+        inlineRank.style.marginRight = '8px';
+        inlineRank.style.fontWeight = '700';
+        inlineRank.style.color = '#0b5cff';
       }
-
-      left.appendChild(topRow);
-
-      // country / city
-      let countryFriendly = flagInfo.countryName || (t.countryName || t.countryRaw || null);
-      if (countryFriendly && typeof countryFriendly === 'string') {
-        const maybe = countryFriendly.trim();
-        if (/^[A-Za-z]{2}$/.test(maybe)) {
-          const mapped = (Array.isArray(window.COUNTRIES) && window.COUNTRIES.find(c=>String(c.code).toUpperCase()===maybe)?.name) || null;
-          countryFriendly = mapped || null;
-        }
-        if (countryFriendly && countryFriendly === flagInfo.value) countryFriendly = null;
-      }
-
-      if (t.city || countryFriendly) {
-        const sub = document.createElement('div'); sub.className = 'sub';
-        sub.textContent = ((t.city ? t.city : '') + (t.city && countryFriendly ? ', ' : '') + (countryFriendly ? countryFriendly : '')).trim();
-        if (sub.textContent) left.appendChild(sub);
-      }
-
-      const right = document.createElement('div'); right.className = 'right';
-
-      // desktop: points at right
-      if (!isMobile) {
-        const ptsDiv = document.createElement('div'); ptsDiv.className = 'pts'; ptsDiv.innerText = (t.points || 0) + ' pts';
-        ptsDiv.dataset.userid = t.userId;
-        right.appendChild(ptsDiv);
-      }
-
-      if (isAdmin) {
-        const adjWrap = document.createElement('div'); adjWrap.className='admin-adjust';
-        const adjBtn = document.createElement('button'); adjBtn.className='adjust-icon'; adjBtn.title='Adjust points'; adjBtn.innerText='+';
-        adjWrap.appendChild(adjBtn);
-        const form = document.createElement('span'); form.style.display='none'; form.style.gap='6px'; form.style.alignItems='center'; form.style.marginLeft='6px';
-        const input = document.createElement('input'); input.type='number'; input.placeholder='± pts'; input.style.width='80px'; input.value='0';
-        const apply = document.createElement('button'); apply.className='small-btn'; apply.innerText='Add';
-        const cancel = document.createElement('button'); cancel.className='small-btn'; cancel.innerText='Cancel';
-        form.appendChild(input); form.appendChild(apply); form.appendChild(cancel); adjWrap.appendChild(form);
-        adjBtn.addEventListener('click', (e) => { e.stopPropagation(); form.style.display = form.style.display === 'none' ? 'inline-flex' : 'none'; if (form.style.display !== 'none') input.focus(); });
-        cancel.addEventListener('click', (e) => { e.stopPropagation(); form.style.display = 'none'; input.value = '0'; });
-        apply.addEventListener('click', async (e) => {
-          e.stopPropagation();
-          const delta = Number(input.value || 0);
-          if (!Number.isFinite(delta)) return alert('Enter a valid number');
-          const tkn = getToken(); if (!tkn) return alert('Admin login required');
-          apply.disabled = true; apply.innerText = 'Saving...';
-          try {
-            const resp = await fetchJson('/api/leaderboard/adjust', {
-              method:'POST',
-              headers: { 'Content-Type':'application/json', Authorization: 'Bearer ' + tkn },
-              body: JSON.stringify({ userId: t.userId, delta })
-            });
-            if (!resp.ok) alert('Failed: ' + (resp.error || 'Server error'));
-            else { if (socket) socket.emit('leaderboard:update', { userId: t.userId, delta }); const prev = Number(t.points || 0); t.points = prev + delta; if (!isMobile) { right.querySelector('.pts') && (right.querySelector('.pts').innerText = (t.points||0)+' pts'); } else { topRow.querySelector('.pts-inline') && (topRow.querySelector('.pts-inline').innerText = (t.points||0)+' pts'); } form.style.display='none'; input.value='0'; setTimeout(()=>load(),400); }
-          } catch (err) { alert('Request failed: ' + (err && err.message ? err.message : 'Network error')); console.error(err); }
-          finally { apply.disabled = false; apply.innerText = 'Add'; }
-        });
-        right.appendChild(adjWrap);
-      }
-
-      // assemble row: for top-10 show the rankCol to everyone
-      if (rank <= 10) div.appendChild(rankCol);
-      else if (isAdmin) div.appendChild(rankCol);
-      div.appendChild(left);
-      div.appendChild(right);
-
-      el.appendChild(div);
-    });
-
-    const foot = document.getElementById('leaderFoot'); if (foot) foot.innerText = `Showing ${toShow.length} of ${visible.length} users (users with >0 points only).`;
-  }
-
-  function renderEmptyLeader(){
-    const el = document.getElementById('leaderboard'); if (el) el.innerHTML = '<div class="muted">No scores yet.</div>';
-    const foot = document.getElementById('leaderFoot'); if (foot) foot.innerText = '';
-  }
-
-  /* ---------------- ADMIN controls and Clear buttons ----------------- */
-  function setupLeaderControls(top){
-    const controls = document.getElementById('leaderControls');
-    if (!controls) return;
-    controls.innerHTML = '';
-
-    const toggleBtn = document.createElement('button');
-    toggleBtn.className = 'small-btn';
-    toggleBtn.id = 'toggleViewBtn';
-    toggleBtn.innerText = showingAll ? 'View Top 10' : 'View All';
-    toggleBtn.onclick = ()=> {
-      showingAll = !showingAll;
-      renderBoard(top);
-      toggleBtn.innerText = showingAll ? 'View Top 10' : 'View All';
-    };
-    controls.appendChild(toggleBtn);
-
-    const t = getToken();
-    if (t) {
-      const clearMe = document.createElement('button');
-      clearMe.className = 'small-btn';
-      clearMe.innerText = 'Clear my points';
-      clearMe.onclick = async () => {
-        if (!confirm('Clear your points?')) return;
-        const r = await fetchJson('/api/leaderboard/clear', { method:'POST', headers: { Authorization: 'Bearer ' + t } });
-        if (!r.ok) return alert('Failed: ' + (r.error||''));
-        alert('Your points cleared');
-        if (socket) socket.emit('leaderboard:changed');
-        load();
-      };
-      controls.appendChild(clearMe);
+      topRow.appendChild(inlineRank);
     }
 
-    const user = getUser();
-    if (user && user.role === 'admin') {
-      // Clear all points
-      const clearAll = document.createElement('button');
-      clearAll.className = 'small-btn';
-      clearAll.style.background = '#ffdede';
-      clearAll.innerText = 'Clear all points (admin)';
-      clearAll.onclick = async () => {
-        if (!confirm('Erase points for ALL users? This cannot be undone. Are you sure?')) return;
-        const tkn = getToken();
-        if (!tkn) return alert('Admin login required');
-        clearAll.disabled = true; clearAll.innerText = 'Clearing...';
+    topRow.appendChild(titleText);
+    topRow.appendChild(flagWrap);
+
+    if (isMobile) {
+      const ptsInline = document.createElement('div');
+      ptsInline.className = 'pts-inline';
+      ptsInline.innerText = `${t.points || 0} pts`;
+      topRow.appendChild(ptsInline);
+    }
+
+    left.appendChild(topRow);
+
+    let countryFriendly = flagInfo.countryName || (t.countryName || t.countryRaw || null);
+    if (countryFriendly && typeof countryFriendly === 'string') {
+      const maybe = countryFriendly.trim();
+      if (/^[A-Za-z]{2}$/.test(maybe)) { countryFriendly = countryFriendly; }
+      if (countryFriendly && countryFriendly === flagInfo.value) countryFriendly = null;
+    }
+    if (t.city || countryFriendly) {
+      const sub = document.createElement('div'); sub.className = 'sub';
+      sub.textContent = ((t.city ? t.city : '') + (t.city && countryFriendly ? ', ' : '') + (countryFriendly ? countryFriendly : '')).trim();
+      if (sub.textContent) left.appendChild(sub);
+    }
+
+    const right = document.createElement('div'); right.className = 'right';
+    if (!isMobile) {
+      const ptsDiv = document.createElement('div'); ptsDiv.className = 'pts';
+      ptsDiv.innerText = (t.points || 0) + ' pts';
+      ptsDiv.dataset.userid = t.userId;
+      right.appendChild(ptsDiv);
+    }
+
+    // admin adjust controls unchanged
+    if (isAdmin) {
+      const adjWrap = document.createElement('div'); adjWrap.className='admin-adjust';
+      const adjBtn = document.createElement('button'); adjBtn.className='adjust-icon'; adjBtn.title='Adjust points'; adjBtn.innerText='+';
+      adjWrap.appendChild(adjBtn);
+      const form = document.createElement('span'); form.style.display='none'; form.style.gap='6px'; form.style.alignItems='center'; form.style.marginLeft='6px';
+      const input = document.createElement('input'); input.type='number'; input.placeholder='± pts'; input.style.width='80px'; input.value='0';
+      const apply = document.createElement('button'); apply.className='small-btn'; apply.innerText='Add';
+      const cancel = document.createElement('button'); cancel.className='small-btn'; cancel.innerText='Cancel';
+      form.appendChild(input); form.appendChild(apply); form.appendChild(cancel); adjWrap.appendChild(form);
+      adjBtn.addEventListener('click', (e) => { e.stopPropagation(); form.style.display = form.style.display === 'none' ? 'inline-flex' : 'none'; if (form.style.display !== 'none') input.focus(); });
+      cancel.addEventListener('click', (e) => { e.stopPropagation(); form.style.display = 'none'; input.value = '0'; });
+      apply.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const delta = Number(input.value || 0);
+        if (!Number.isFinite(delta)) return alert('Enter a valid number');
+        const tkn = getToken(); if (!tkn) return alert('Admin login required');
+        apply.disabled = true; apply.innerText = 'Saving...';
         try {
-          const r = await fetchJson('/api/leaderboard/clear-all', {
-            method: 'POST',
-            headers: { 'Authorization': 'Bearer ' + tkn }
-          });
-          if (!r.ok) alert('Failed: ' + (r.error || 'Server error'));
-          else { alert('All points cleared'); if (socket) socket.emit('leaderboard:changed'); load(); }
-        } catch (err) { alert('Request failed'); console.error(err); }
-        finally { clearAll.disabled = false; clearAll.innerText = 'Clear all points (admin)'; }
-      };
-      controls.appendChild(clearAll);
+          const resp = await fetchJson('/api/leaderboard/adjust', { method:'POST', headers: { 'Content-Type':'application/json', Authorization: 'Bearer ' + tkn }, body: JSON.stringify({ userId: t.userId, delta }) });
+          if (!resp.ok) alert('Failed: ' + (resp.error || 'Server error'));
+          else {
+            if (socket) socket.emit('leaderboard:update', { userId: t.userId, delta });
+            const prev = Number(t.points || 0);
+            t.points = prev + delta;
+            if (!isMobile) { right.querySelector('.pts') && (right.querySelector('.pts').innerText = (t.points||0)+' pts'); }
+            else { topRow.querySelector('.pts-inline') && (topRow.querySelector('.pts-inline').innerText = (t.points||0)+' pts'); }
+            form.style.display='none'; input.value='0';
+            setTimeout(()=>load(),400);
+          }
+        } catch (err) { alert('Request failed: ' + (err && err.message ? err.message : 'Network error')); console.error(err); }
+        finally { apply.disabled = false; apply.innerText = 'Add'; }
+      });
+      right.appendChild(adjWrap);
+    }
 
-      // Manage Competitions (admin-only) placed next to clear buttons
-      const manageBtn = document.createElement('button');
-      manageBtn.className = 'small-btn';
-      manageBtn.style.background = '#eef8ff';
-      manageBtn.innerText = 'Manage Competitions';
-      manageBtn.onclick = () => openCompetitionsAdminPanel();
-      controls.appendChild(manageBtn);
+    if (rank <= 10) div.appendChild(rankCol);
+    else if (isAdmin) div.appendChild(rankCol);
+    else if (t.__aroundMe) div.appendChild(rankCol);
+
+    div.appendChild(left);
+    div.appendChild(right);
+
+    if (t.__aroundMe) div.style.outline = '2px solid rgba(20,155,228,0.12)';
+    el.appendChild(div);
+  });
+
+  const foot = document.getElementById('leaderFoot');
+  if (foot) {
+    const totalVisible = visible.length;
+    const shownCount = toShow.length;
+    foot.innerText = `Showing ${shownCount} users (all users with rank ≤ 10; total ${totalVisible} users with points).`;
+  }
+}
+
+  function renderEmptyLeader(){ const el = document.getElementById('leaderboard'); if (el) el.innerHTML = '<div class="muted">No scores yet.</div>'; const foot = document.getElementById('leaderFoot'); if (foot) foot.innerText = ''; }
+
+  function setupLeaderControls(top){
+    const controls = document.getElementById('leaderControls'); if (!controls) return; controls.innerHTML = '';
+    const tkn = getToken(); const user = getUser(); const isAdmin = user && user.role === 'admin';
+
+    if (isAdmin || (tkn && user)) {
+      const toggleBtn = document.createElement('button'); toggleBtn.className = 'small-btn'; toggleBtn.id = 'toggleViewBtn';
+      if (isAdmin) { toggleBtn.innerText = showingAll ? 'View Top 10' : 'View All'; toggleBtn.onclick = ()=> { showingAll = !showingAll; showingAround = false; renderBoard(top); toggleBtn.innerText = showingAll ? 'View Top 10' : 'View All'; }; }
+      else { toggleBtn.innerText = showingAround ? 'View Top 10' : 'View Around Me'; toggleBtn.onclick = ()=> { showingAround = !showingAround; showingAll = false; renderBoard(top); toggleBtn.innerText = showingAround ? 'View Top 10' : 'View Around Me'; }; }
+      controls.appendChild(toggleBtn);
+    } else { const info = document.createElement('div'); info.className = 'muted'; info.style.fontSize = '13px'; info.style.marginRight = '8px'; info.innerText = 'Top 10 (login to see your rank)'; controls.appendChild(info); }
+
+    if (tkn) { const clearMe = document.createElement('button'); clearMe.className = 'small-btn'; clearMe.innerText = 'Clear my points'; clearMe.onclick = async () => { if (!confirm('Clear your points?')) return; const r = await fetchJson('/api/leaderboard/clear', { method:'POST', headers: { Authorization: 'Bearer ' + tkn } }); if (!r.ok) return alert('Failed: ' + (r.error||'')); alert('Your points cleared'); if (socket) socket.emit('leaderboard:changed'); load(); }; controls.appendChild(clearMe); }
+
+    if (user && user.role === 'admin') {
+      const clearAll = document.createElement('button'); clearAll.className = 'small-btn'; clearAll.style.background = '#ffdede'; clearAll.innerText = 'Clear all points (admin)'; clearAll.onclick = async () => { if (!confirm('Erase points for ALL users? This cannot be undone. Are you sure?')) return; const tkn = getToken(); if (!tkn) return alert('Admin login required'); clearAll.disabled = true; clearAll.innerText = 'Clearing...'; try { const r = await fetchJson('/api/leaderboard/clear-all', { method: 'POST', headers: { Authorization: 'Bearer ' + tkn } }); if (!r.ok) alert('Failed: ' + (r.error || 'Server error')); else { alert('All points cleared'); if (socket) socket.emit('leaderboard:changed'); load(); } } catch (err) { alert('Request failed'); console.error(err); } finally { clearAll.disabled = false; clearAll.innerText = 'Clear all points (admin)'; } }; controls.appendChild(clearAll);
+
+      const manageBtn = document.createElement('button'); manageBtn.className = 'small-btn'; manageBtn.style.background = '#eef8ff'; manageBtn.innerText = 'Manage Competitions'; manageBtn.onclick = () => openCompetitionsAdminPanel(); controls.appendChild(manageBtn);
     }
   }
 
-  /* ---------------- COMMENTS (collapsed by default) ---------------- */
-  function renderCommentsTitle(count){ const t = document.getElementById('commentsTitle'); if (t) t.innerText = `Comments (${count})`; }
+    /* ---------------- COMMENTS (collapsed by default) ---------------- */
+    function renderCommentsTitle(count){ const t = document.getElementById('commentsTitle'); if (t) t.innerText = `Comments (${count})`; }
 
-  async function loadComments(){
-    if (!comp || !comp._id) { renderCommentsTitle(0); return; }
-    const r = await fetchJson('/api/leaderboard/comments?competitionId=' + encodeURIComponent(comp._id));
+    async function loadComments(){
+  if (!comp || !comp._id) { renderCommentsTitle(0); return; }
+  const r = await fetchJson('/api/leaderboard/comments?competitionId=' + encodeURIComponent(comp._id));
+  const box = document.getElementById('commentsBox');
+  if (!box) return;
+  box.innerHTML = '';
+  if (!r.ok) { renderCommentsTitle(0); box.innerText = r.error || 'Failed to load comments'; return; }
+
+  const comments = (r.data.comments || []).filter(c => !c.isDeleted).sort((a,b)=> new Date(b.createdAt) - new Date(a.createdAt));
+  renderCommentsTitle(comments.length);
+
+  // Keep collapsed by default unless user expanded
+  if (!box.classList.contains('collapsed') && !box.classList.contains('expanded')) box.classList.add('collapsed');
+
+  comments.forEach(c => {
+    const d = document.createElement('div');
+    d.className = 'comment';
+    d.id = 'c_' + c._id;
+
+    const author = escapeHtml(c.userName || 'Unknown');
+    const time = c.createdAt ? new Date(c.createdAt).toLocaleString() : '';
+    const content = (c.content || '').trim();
+
+    // header
+    const header = document.createElement('div'); header.className = 'comment-header';
+    const avatar = document.createElement('div'); avatar.className = 'comment-avatar';
+    avatar.textContent = (author && author[0]) ? author[0].toUpperCase() : 'U';
+    const authorEl = document.createElement('div'); authorEl.className = 'comment-author'; authorEl.innerText = author;
+    const timeEl = document.createElement('div'); timeEl.className = 'comment-time'; timeEl.innerText = time;
+    header.appendChild(avatar);
+    header.appendChild(authorEl);
+    header.appendChild(timeEl);
+
+    // body
+    const body = document.createElement('div'); body.className = 'comment-body';
+    // preserve simple newlines
+    body.textContent = content;
+
+    // controls
+    const ctrl = document.createElement('div'); ctrl.className = 'comment-controls';
+    const user = getUser();
+    const isOwner = user && (String(user._id || user.id) === String(c.userId));
+    const isAdmin = user && user.role === 'admin';
+    if (isOwner || isAdmin) {
+      const delBtn = document.createElement('button');
+      delBtn.className = 'small-btn';
+      delBtn.textContent = 'Delete';
+      delBtn.dataset.id = c._id;
+      delBtn.addEventListener('click', async (e) => {
+        const id = e.target.dataset.id;
+        if (!confirm('Delete comment?')) return;
+        const tkn = getToken();
+        if (!tkn) return alert('Login required');
+        const resp = await fetchJson('/api/leaderboard/comments/' + encodeURIComponent(id), { method:'DELETE', headers: { Authorization: 'Bearer ' + tkn } });
+        if (resp.ok) {
+          const el = document.getElementById('c_' + id);
+          if (el) el.remove();
+          renderCommentsTitle(box.querySelectorAll('.comment').length);
+          if (socket) socket.emit('comments:deleted', { id });
+        } else {
+          alert(resp.error || 'Delete failed');
+        }
+      });
+      ctrl.appendChild(delBtn);
+    }
+
+    d.appendChild(header);
+    d.appendChild(body);
+    if (ctrl.children.length) d.appendChild(ctrl);
+
+    box.appendChild(d);
+  });
+}
+
+(function wireCommentsToggle(){
+  const el = document.getElementById('commentsTitle');
+  if (!el) return;
+  el.onclick = () => {
     const box = document.getElementById('commentsBox');
-    if (!box) return;
-    box.innerHTML = '';
-    if (!r.ok) { renderCommentsTitle(0); box.innerText = r.error || 'Failed to load comments'; return; }
-    const comments = (r.data.comments || []).filter(c => !c.isDeleted).sort((a,b)=> new Date(b.createdAt) - new Date(a.createdAt));
-    renderCommentsTitle(comments.length);
+    const compose = document.getElementById('commentsCompose');
+    if (!box || !compose) return;
+    const collapsed = box.classList.contains('collapsed');
+    if (collapsed) { box.classList.remove('collapsed'); box.classList.add('expanded'); compose.style.display = ''; }
+    else { box.classList.remove('expanded'); box.classList.add('collapsed'); compose.style.display = 'none'; }
+  };
+})();
 
-    // Keep collapsed by default (comments hidden until user clicks)
-    if (!box.classList.contains('collapsed') && !box.classList.contains('expanded')) box.classList.add('collapsed');
+(function attachPost(){
+  const postBtn = document.getElementById('postComment');
+  if (!postBtn) return;
+  postBtn.addEventListener('click', async () => {
+    const tkn = getToken();
+    if (!tkn) return alert('Login required');
+    if (!comp || !comp._id) return alert('No competition selected');
+    const content = document.getElementById('commentInput').value.trim();
+    if (!content) return;
+    const r = await fetchJson('/api/leaderboard/comments', { method:'POST', headers: { 'Content-Type':'application/json', Authorization: 'Bearer ' + tkn }, body: JSON.stringify({ competitionId: comp._id, content }) });
+    if (!r.ok) return alert(r.error || 'Failed to post comment');
+    document.getElementById('commentInput').value = '';
+    loadComments();
+  });
+})();
 
-    comments.forEach(c => {
-      const d = document.createElement('div'); d.className='comment'; d.id = 'c_' + c._id;
-      const author = escapeHtml(c.userName || 'Unknown');
-      const time = c.createdAt ? new Date(c.createdAt).toLocaleString() : '';
-      const content = escapeHtml(c.content || '');
-      let controls = '';
-      const user = getUser();
-      const isOwner = user && (String(user._id || user.id) === String(c.userId));
-      const isAdmin = user && user.role === 'admin';
-      if (isOwner || isAdmin) controls = `<div style="margin-top:6px"><button class="delBtn small-btn" data-id="${c._id}">Delete</button></div>`;
-      d.innerHTML = `<div style="font-weight:600">${author} <small style="color:#666">${time}</small></div><div style="margin-top:6px">${content}</div>${controls}`;
-      box.appendChild(d);
-    });
-
-    box.querySelectorAll('.delBtn').forEach(b => b.onclick = async (e) => {
-      const id = e.target.dataset.id;
-      if (!confirm('Delete comment?')) return;
-      const tkn = getToken();
-      if (!tkn) return alert('Login required');
-      const resp = await fetchJson('/api/leaderboard/comments/' + encodeURIComponent(id), { method:'DELETE', headers: { Authorization: 'Bearer ' + tkn } });
-      if (resp.ok) { const el = document.getElementById('c_' + id); if (el) el.remove(); renderCommentsTitle(box.querySelectorAll('.comment').length); if (socket) socket.emit('comments:deleted', { id }); }
-      else alert(resp.error || 'Delete failed');
-    });
-  }
-
-  (function wireCommentsToggle(){
-    const el = document.getElementById('commentsTitle');
-    if (!el) return;
-    el.onclick = () => {
-      const box = document.getElementById('commentsBox');
-      const compose = document.getElementById('commentsCompose');
-      if (!box || !compose) return;
-      const collapsed = box.classList.contains('collapsed');
-      if (collapsed) { box.classList.remove('collapsed'); box.classList.add('expanded'); compose.style.display = ''; }
-      else { box.classList.remove('expanded'); box.classList.add('collapsed'); compose.style.display = 'none'; }
-    };
-  })();
-
-  (function attachPost(){
-    const postBtn = document.getElementById('postComment');
-    if (!postBtn) return;
-    postBtn.addEventListener('click', async () => {
-      const tkn = getToken();
-      if (!tkn) return alert('Login required');
-      if (!comp || !comp._id) return alert('No competition selected');
-      const content = document.getElementById('commentInput').value.trim();
-      if (!content) return;
-      const r = await fetchJson('/api/leaderboard/comments', { method:'POST', headers: { 'Content-Type':'application/json', Authorization: 'Bearer ' + tkn }, body: JSON.stringify({ competitionId: comp._id, content }) });
-      if (!r.ok) return alert(r.error || 'Failed to post comment');
-      document.getElementById('commentInput').value = '';
-      loadComments();
-    });
-  })();
 
   /* ---------------- COMPETITION COUNTDOWN (fixed: no duplicate title) ---------------- */
   function tryParseDate(val) {
@@ -1163,7 +3506,160 @@ rankCol.appendChild(rankNum);
     });
   }
 
-  /* ---------------- MOBILE MENU wiring & user dropdown handling ---------------- */
+
+  (function wireCommentsToggle(){
+  const titleEl = document.getElementById('commentsTitle');
+  const box = document.getElementById('commentsBox');
+  const compose = document.getElementById('commentsCompose');
+  const textarea = document.getElementById('commentInput');
+  const postBtn = document.getElementById('postComment');
+  const cancelBtn = document.getElementById('cancelComment');
+  const charCount = document.getElementById('charCount');
+  if (!titleEl || !box || !compose || !textarea || !postBtn || !cancelBtn || !charCount) return;
+
+  // helper to refresh char counter & post button state
+  function refreshComposeState() {
+    const val = textarea.value || '';
+    const len = val.length;
+    charCount.innerText = `${len} / ${textarea.getAttribute('maxlength') || 1000}`;
+    if (len === 0) {
+      postBtn.disabled = true;
+      charCount.classList.remove('over');
+    } else {
+      postBtn.disabled = false;
+      if (textarea.maxLength > 0 && len > textarea.maxLength) charCount.classList.add('over');
+      else charCount.classList.remove('over');
+    }
+  }
+
+  // wire input changes
+  textarea.addEventListener('input', refreshComposeState);
+
+  // Cancel behaviour: clear text, hide compose, collapse comments box (keeps comments visible when user re-opens)
+  cancelBtn.addEventListener('click', () => {
+    textarea.value = '';
+    refreshComposeState();
+    // hide compose area
+    compose.style.display = 'none';
+    // optionally collapse comments list back
+    if (!box.classList.contains('collapsed')) {
+      box.classList.remove('expanded');
+      box.classList.add('collapsed');
+    }
+  });
+
+  // Toggle logic (open/close)
+  titleEl.onclick = () => {
+    const collapsed = box.classList.contains('collapsed');
+    if (collapsed) {
+      // expand
+      box.classList.remove('collapsed');
+      box.classList.add('expanded');
+      compose.style.display = '';          // show compose area
+      // small delay to ensure element visible before focusing (helps on some mobile browsers)
+      setTimeout(() => {
+        textarea.focus();
+        // restore caret to end
+        const v = textarea.value || '';
+        textarea.setSelectionRange(v.length, v.length);
+      }, 80);
+      refreshComposeState();
+    } else {
+      // collapse
+      box.classList.remove('expanded');
+      box.classList.add('collapsed');
+      compose.style.display = 'none';
+    }
+  };
+
+  // ensure initial state
+  if (!box.classList.contains('collapsed') && !box.classList.contains('expanded')) {
+    box.classList.add('collapsed');
+    compose.style.display = 'none';
+  } else {
+    // reflect current classes
+    compose.style.display = box.classList.contains('expanded') ? '' : 'none';
+  }
+
+})();
+
+(function wireCommentsToggle(){
+  const titleEl = document.getElementById('commentsTitle');
+  const box = document.getElementById('commentsBox');
+  const compose = document.getElementById('commentsCompose');
+  const textarea = document.getElementById('commentInput');
+  const postBtn = document.getElementById('postComment');
+  const cancelBtn = document.getElementById('cancelComment');
+  const charCount = document.getElementById('charCount');
+  if (!titleEl || !box || !compose || !textarea || !postBtn || !cancelBtn || !charCount) return;
+
+  // helper to refresh char counter & post button state
+  function refreshComposeState() {
+    const val = textarea.value || '';
+    const len = val.length;
+    charCount.innerText = `${len} / ${textarea.getAttribute('maxlength') || 1000}`;
+    if (len === 0) {
+      postBtn.disabled = true;
+      charCount.classList.remove('over');
+    } else {
+      postBtn.disabled = false;
+      if (textarea.maxLength > 0 && len > textarea.maxLength) charCount.classList.add('over');
+      else charCount.classList.remove('over');
+    }
+  }
+
+  // wire input changes
+  textarea.addEventListener('input', refreshComposeState);
+
+  // Cancel behaviour: clear text, hide compose, collapse comments box (keeps comments visible when user re-opens)
+  cancelBtn.addEventListener('click', () => {
+    textarea.value = '';
+    refreshComposeState();
+    // hide compose area
+    compose.style.display = 'none';
+    // optionally collapse comments list back
+    if (!box.classList.contains('collapsed')) {
+      box.classList.remove('expanded');
+      box.classList.add('collapsed');
+    }
+  });
+
+  // Toggle logic (open/close)
+  titleEl.onclick = () => {
+    const collapsed = box.classList.contains('collapsed');
+    if (collapsed) {
+      // expand
+      box.classList.remove('collapsed');
+      box.classList.add('expanded');
+      compose.style.display = '';          // show compose area
+      // small delay to ensure element visible before focusing (helps on some mobile browsers)
+      setTimeout(() => {
+        textarea.focus();
+        // restore caret to end
+        const v = textarea.value || '';
+        textarea.setSelectionRange(v.length, v.length);
+      }, 80);
+      refreshComposeState();
+    } else {
+      // collapse
+      box.classList.remove('expanded');
+      box.classList.add('collapsed');
+      compose.style.display = 'none';
+    }
+  };
+
+  // ensure initial state
+  if (!box.classList.contains('collapsed') && !box.classList.contains('expanded')) {
+    box.classList.add('collapsed');
+    compose.style.display = 'none';
+  } else {
+    // reflect current classes
+    compose.style.display = box.classList.contains('expanded') ? '' : 'none';
+  }
+
+})();
+
+  /* ---------------- MOBILE MENU wiring & dropdown handling (fixed) ---------------- */
   (function(){
     const btn = document.getElementById('btnHamburger'), mobile = document.getElementById('mobileMenu');
     function openMobile(){ if (!mobile) return; mobile.classList.add('open'); if (btn) btn.setAttribute('aria-expanded','true'); mobile.setAttribute('aria-hidden','false'); }
@@ -1171,54 +3667,44 @@ rankCol.appendChild(rankNum);
     function toggleMobile(){ if (!mobile) return; mobile.classList.contains('open') ? closeMobile() : openMobile(); }
     if (btn && mobile) {
       btn.addEventListener('click', (e) => { e.stopPropagation(); toggleMobile(); });
-      mobile.addEventListener('click', (ev) => {
-        const a = ev.target.closest('a');
-        if (a && a.classList.contains('mobile-nav-link')) { closeMobile(); }
-      });
+      mobile.addEventListener('click', (ev) => { const a = ev.target.closest('a'); if (a && a.classList.contains('mobile-nav-link')) { closeMobile(); } });
     }
     document.addEventListener('click', (ev) => {
-      const dd = document.getElementById('userDropdown');
-      if (dd && !dd.contains(ev.target) && ev.target.id !== 'btnUserName') dd.classList.remove('open');
+      const dd = document.getElementById('userDropdown'); if (dd && !dd.contains(ev.target) && ev.target.id !== 'btnUserName') dd.classList.remove('open');
       if (mobile && !mobile.contains(ev.target) && btn && !btn.contains(ev.target)) closeMobile();
     });
     document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') { const dd = document.getElementById('userDropdown'); if (dd) dd.classList.remove('open'); if (mobile) mobile.classList.remove('open'); } });
   })();
 
-  /* wire logout/profile in dropdowns */
-  (function wireUserDropdownActions(){
-    document.addEventListener('click', (e) => {
-      if (e.target && e.target.id === 'btnLogout') { localStorage.removeItem('token'); localStorage.removeItem('user'); location.reload(); }
-      if (e.target && e.target.id === 'btnProfile') { alert('Open profile page (implement as needed)'); }
-    });
-  })();
+  (function wireUserDropdownActions(){ 
+    document.addEventListener('click', (e) => { if (e.target && e.target.id === 'btnLogout') { 
+    localStorage.removeItem('token'); localStorage.removeItem('user'); 
+    location.reload();
 
-  /* re-render on resize to switch between mobile/desktop presentation */
-  window.addEventListener('resize', () => {
-    if (!window._lastTop) return;
-    clearTimeout(window._resizeTimer);
-    window._resizeTimer = setTimeout(() => {
-      try { renderBoard(window._lastTop); } catch(e){ /* ignore */ }
-    }, 140);
-  });
+   } if (e.target && e.target.id === 'btnProfile') { 
+    alert('Open profile page (implement as needed)'); 
+  } }); 
+})();
 
-  /* ---------------- START ---------------- */
-  renderNav();
-  // ensure user-dropdown shows user info when logged in
-  (function updateUserDropdownInfo(){
-    const u = getUser();
-    const nameEl = document.getElementById('userDropdownName');
-    const emailEl = document.getElementById('userDropdownEmail');
-    if (u) {
-      if (nameEl) nameEl.innerText = u.fullName || u.username || 'Me';
-      if (emailEl) emailEl.innerText = u.email || u.phone || '';
-      // wire btnProfile/Logout just in case
-      const p = document.getElementById('btnProfile');
-      const lo = document.getElementById('btnLogout');
-      if (lo) lo.onclick = ()=> { localStorage.removeItem('token'); localStorage.removeItem('user'); location.reload(); };
-      if (p) p.onclick = ()=> alert('Open profile page (implement as needed)');
-    }
-  })();
+  window.addEventListener('resize', () => { if (!window._lastTop) return; 
+    clearTimeout(window._resizeTimer); window._resizeTimer = setTimeout(() => { 
+      try { renderBoard(window._lastTop); 
 
+      } catch(e){} }, 140); });
+
+  /* ---------------- START (render nav + data) ---------------- */
+  renderNav(); 
+  (function updateUserDropdownInfo(){ 
+    const u = getUser(); 
+    const nameEl = document.getElementById('userDropdownName'); 
+    const emailEl = document.getElementById('userDropdownEmail'); 
+    if (u) { if (nameEl) nameEl.innerText = u.fullName || u.username || 'Me'; 
+    if (emailEl) emailEl.innerText = u.email || u.phone || ''; 
+    const lo = document.getElementById('btnLogout'); 
+    if (lo) lo.onclick = ()=> { localStorage.removeItem('token'); 
+    localStorage.removeItem('user'); location.reload(); 
+  }; 
+} })();
   load();
 </script>
 
